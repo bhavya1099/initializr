@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultMavenVersionResolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Version Resolver</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.versionresolver</a> &gt; <span class="el_source">DefaultMavenVersionResolver.java</span></div><h1>DefaultMavenVersionResolver.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.versionresolver;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.building.DefaultModelBuilder;
+import org.apache.maven.model.building.DefaultModelBuilderFactory;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuildingException;
+import org.apache.maven.model.resolution.ModelResolver;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.project.ProjectModelResolver;
+import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.RequestTrace;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.internal.impl.DefaultRepositorySystem;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.LocalRepositoryManager;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
+import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.spi.locator.ServiceLocator;
+import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.aether.util.repository.SimpleArtifactDescriptorPolicy;
+
+/**
+ * A {@link MavenVersionResolver} that resolves versions using Maven Resolver. Maven's
+ * default {@link LocalRepositoryManager} implementation is not thread-safe. To avoid
+ * corruption of the local repository, interaction with the {@link RepositorySystem} is
+ * single-threaded.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ */
+@SuppressWarnings(&quot;deprecation&quot;)
+class DefaultMavenVersionResolver implements MavenVersionResolver {
+
+<span class="fc" id="L73">	private static final Log logger = LogFactory.getLog(DefaultMavenVersionResolver.class);</span>
+
+<span class="fc" id="L75">	private static final RemoteRepository mavenCentral = new RemoteRepository.Builder(&quot;central&quot;, &quot;default&quot;,</span>
+			&quot;https://repo1.maven.org/maven2&quot;)
+<span class="fc" id="L77">		.build();</span>
+
+<span class="fc" id="L79">	private static final RemoteRepository springMilestones = new RemoteRepository.Builder(&quot;spring-milestones&quot;,</span>
+			&quot;default&quot;, &quot;https://repo.spring.io/milestone&quot;)
+<span class="fc" id="L81">		.build();</span>
+
+<span class="fc" id="L83">	private static final RemoteRepository springSnapshots = new RemoteRepository.Builder(&quot;spring-snapshots&quot;, &quot;default&quot;,</span>
+			&quot;https://repo.spring.io/snapshot&quot;)
+<span class="fc" id="L85">		.build();</span>
+
+<span class="fc" id="L87">	private static final List&lt;RemoteRepository&gt; repositories = Arrays.asList(mavenCentral, springMilestones,</span>
+			springSnapshots);
+
+<span class="fc" id="L90">	private final Object monitor = new Object();</span>
+
+	private final RepositorySystemSession repositorySystemSession;
+
+	private final RemoteRepositoryManager remoteRepositoryManager;
+
+	private final RepositorySystem repositorySystem;
+
+<span class="fc" id="L98">	DefaultMavenVersionResolver(Path cacheLocation) {</span>
+<span class="fc" id="L99">		ServiceLocator serviceLocator = createServiceLocator();</span>
+<span class="fc" id="L100">		DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();</span>
+<span class="fc" id="L101">		session.setArtifactDescriptorPolicy(new SimpleArtifactDescriptorPolicy(false, false));</span>
+<span class="fc" id="L102">		LocalRepository localRepository = new LocalRepository(cacheLocation.toFile());</span>
+<span class="fc" id="L103">		this.repositorySystem = serviceLocator.getService(RepositorySystem.class);</span>
+<span class="fc" id="L104">		session.setLocalRepositoryManager(this.repositorySystem.newLocalRepositoryManager(session, localRepository));</span>
+<span class="fc" id="L105">		session.setUserProperties(System.getProperties());</span>
+<span class="fc" id="L106">		session.setReadOnly();</span>
+<span class="fc" id="L107">		this.repositorySystemSession = session;</span>
+<span class="fc" id="L108">		this.remoteRepositoryManager = serviceLocator.getService(RemoteRepositoryManager.class);</span>
+<span class="fc" id="L109">	}</span>
+
+	@Override
+	public Map&lt;String, String&gt; resolveDependencies(String groupId, String artifactId, String version) {
+<span class="fc" id="L113">		ArtifactDescriptorResult bom = resolveBom(groupId, artifactId, version);</span>
+<span class="fc" id="L114">		Map&lt;String, String&gt; managedVersions = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L115">		bom.getManagedDependencies()</span>
+<span class="fc" id="L116">			.stream()</span>
+<span class="fc" id="L117">			.map(Dependency::getArtifact)</span>
+<span class="fc" id="L118">			.forEach((artifact) -&gt; managedVersions.putIfAbsent(artifact.getGroupId() + &quot;:&quot; + artifact.getArtifactId(),</span>
+<span class="fc" id="L119">					artifact.getVersion()));</span>
+<span class="fc" id="L120">		return managedVersions;</span>
+	}
+
+	@Override
+	public Map&lt;String, String&gt; resolvePlugins(String groupId, String artifactId, String version) {
+<span class="fc" id="L125">		Model model = buildEffectiveModel(groupId, artifactId, version);</span>
+<span class="fc" id="L126">		Map&lt;String, String&gt; managedPluginVersions = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L127">		model.getBuild()</span>
+<span class="fc" id="L128">			.getPluginManagement()</span>
+<span class="fc" id="L129">			.getPlugins()</span>
+<span class="fc" id="L130">			.forEach((plugin) -&gt; managedPluginVersions.putIfAbsent(plugin.getGroupId() + &quot;:&quot; + plugin.getArtifactId(),</span>
+<span class="fc" id="L131">					plugin.getVersion()));</span>
+<span class="fc" id="L132">		return managedPluginVersions;</span>
+	}
+
+	private ArtifactDescriptorResult resolveBom(String groupId, String artifactId, String version) {
+<span class="fc" id="L136">		synchronized (this.monitor) {</span>
+			try {
+<span class="fc" id="L138">				return this.repositorySystem.readArtifactDescriptor(this.repositorySystemSession,</span>
+						new ArtifactDescriptorRequest(new DefaultArtifact(groupId, artifactId, &quot;pom&quot;, version),
+								repositories, null));
+			}
+<span class="fc" id="L142">			catch (ArtifactDescriptorException ex) {</span>
+<span class="fc" id="L143">				throw new IllegalStateException(</span>
+						&quot;Bom '&quot; + groupId + &quot;:&quot; + artifactId + &quot;:&quot; + version + &quot;' could not be resolved&quot;, ex);
+			}
+		}
+	}
+
+	private Model buildEffectiveModel(String groupId, String artifactId, String version) {
+		try {
+<span class="fc" id="L151">			ArtifactResult bom = resolvePom(groupId, artifactId, version);</span>
+<span class="fc" id="L152">			RequestTrace requestTrace = new RequestTrace(null);</span>
+
+<span class="fc" id="L154">			ModelResolver modelResolver = new ProjectModelResolver(this.repositorySystemSession, requestTrace,</span>
+					this.repositorySystem, this.remoteRepositoryManager, repositories,
+					ProjectBuildingRequest.RepositoryMerging.POM_DOMINANT, null);
+<span class="fc" id="L157">			DefaultModelBuildingRequest modelBuildingRequest = new DefaultModelBuildingRequest();</span>
+<span class="fc" id="L158">			modelBuildingRequest.setSystemProperties(System.getProperties());</span>
+<span class="fc" id="L159">			modelBuildingRequest.setPomFile(bom.getArtifact().getFile());</span>
+<span class="fc" id="L160">			modelBuildingRequest.setModelResolver(modelResolver);</span>
+<span class="fc" id="L161">			DefaultModelBuilder modelBuilder = new DefaultModelBuilderFactory().newInstance();</span>
+<span class="fc" id="L162">			return modelBuilder.build(modelBuildingRequest).getEffectiveModel();</span>
+		}
+<span class="fc" id="L164">		catch (ModelBuildingException ex) {</span>
+<span class="fc" id="L165">			Model model = ex.getModel();</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">			if (model != null) {</span>
+<span class="fc" id="L167">				logger.warn(&quot;Model for '&quot; + groupId + &quot;:&quot; + artifactId + &quot;:&quot; + version + &quot;' is incomplete: &quot;</span>
+<span class="fc" id="L168">						+ ex.getProblems());</span>
+<span class="fc" id="L169">				return model;</span>
+			}
+<span class="nc" id="L171">			throw new IllegalStateException(</span>
+					&quot;Model for '&quot; + groupId + &quot;:&quot; + artifactId + &quot;:&quot; + version + &quot;' could not be built&quot;, ex);
+		}
+	}
+
+	private ArtifactResult resolvePom(String groupId, String artifactId, String version) {
+<span class="fc" id="L177">		synchronized (this.monitor) {</span>
+			try {
+<span class="fc" id="L179">				return this.repositorySystem.resolveArtifact(this.repositorySystemSession, new ArtifactRequest(</span>
+						new DefaultArtifact(groupId, artifactId, &quot;pom&quot;, version), repositories, null));
+			}
+<span class="fc" id="L182">			catch (ArtifactResolutionException ex) {</span>
+<span class="fc" id="L183">				throw new IllegalStateException(</span>
+						&quot;Pom '&quot; + groupId + &quot;:&quot; + artifactId + &quot;:&quot; + version + &quot;' could not be resolved&quot;, ex);
+			}
+		}
+	}
+
+	private static ServiceLocator createServiceLocator() {
+<span class="fc" id="L190">		DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();</span>
+<span class="fc" id="L191">		locator.addService(RepositorySystem.class, DefaultRepositorySystem.class);</span>
+<span class="fc" id="L192">		locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);</span>
+<span class="fc" id="L193">		locator.addService(TransporterFactory.class, HttpTransporterFactory.class);</span>
+<span class="fc" id="L194">		return locator;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

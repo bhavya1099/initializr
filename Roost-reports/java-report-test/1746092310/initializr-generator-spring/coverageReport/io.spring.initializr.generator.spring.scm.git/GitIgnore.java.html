@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitIgnore.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.scm.git</a> &gt; <span class="el_source">GitIgnore.java</span></div><h1>GitIgnore.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.scm.git;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+import io.spring.initializr.generator.io.text.Section;
+
+import org.springframework.util.Assert;
+
+/**
+ * Project's {@code .gitignore}. Contain a general section and pre-defined section for
+ * popular IDEs. Empty sections are not rendered.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L36">public class GitIgnore {</span>
+
+<span class="fc" id="L38">	private final GitIgnoreSection general = new GitIgnoreSection(null);</span>
+
+<span class="fc" id="L40">	private final GitIgnoreSection sts = new GitIgnoreSection(&quot;STS&quot;);</span>
+
+<span class="fc" id="L42">	private final GitIgnoreSection intellijIdea = new GitIgnoreSection(&quot;IntelliJ IDEA&quot;);</span>
+
+<span class="fc" id="L44">	private final GitIgnoreSection netBeans = new GitIgnoreSection(&quot;NetBeans&quot;);</span>
+
+<span class="fc" id="L46">	private final GitIgnoreSection vscode = new GitIgnoreSection(&quot;VS Code&quot;);</span>
+
+<span class="fc" id="L48">	private final List&lt;GitIgnoreSection&gt; sections = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L49">			Arrays.asList(this.general, this.sts, this.intellijIdea, this.netBeans, this.vscode));</span>
+
+	public void write(PrintWriter writer) throws IOException {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">		for (GitIgnoreSection section : this.sections) {</span>
+<span class="fc" id="L53">			section.write(writer);</span>
+<span class="fc" id="L54">		}</span>
+<span class="fc" id="L55">	}</span>
+
+	public void addSection(GitIgnoreSection section) {
+<span class="fc" id="L58">		GitIgnoreSection existingSection = getSection(section.name);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		Assert.state(existingSection == null, () -&gt; &quot;Section with name '%s' already exists&quot;.formatted(section.name));</span>
+<span class="fc" id="L60">		this.sections.add(section);</span>
+<span class="fc" id="L61">	}</span>
+
+	/**
+	 * Adds a section if it doesn't already exist.
+	 * @param sectionName the name of the section
+	 * @return the newly added section or the existing one
+	 */
+	public GitIgnoreSection addSectionIfAbsent(String sectionName) {
+<span class="fc" id="L69">		GitIgnoreSection section = getSection(sectionName);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (section != null) {</span>
+<span class="fc" id="L71">			return section;</span>
+		}
+<span class="fc" id="L73">		section = new GitIgnoreSection(sectionName);</span>
+<span class="fc" id="L74">		addSection(section);</span>
+<span class="fc" id="L75">		return section;</span>
+	}
+
+	public GitIgnoreSection getSection(String sectionName) {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (&quot;general&quot;.equalsIgnoreCase(sectionName)) {</span>
+<span class="nc" id="L80">			return this.general;</span>
+		}
+		else {
+<span class="fc" id="L83">			return this.sections.stream()</span>
+<span class="fc bfc" id="L84" title="All 4 branches covered.">				.filter((section) -&gt; section.name != null &amp;&amp; section.name.equalsIgnoreCase(sectionName))</span>
+<span class="fc" id="L85">				.findAny()</span>
+<span class="fc" id="L86">				.orElse(null);</span>
+		}
+	}
+
+	public boolean isEmpty() {
+<span class="fc" id="L91">		return this.sections.stream().allMatch((section) -&gt; section.items.isEmpty());</span>
+	}
+
+	public GitIgnoreSection getGeneral() {
+<span class="fc" id="L95">		return this.general;</span>
+	}
+
+	public GitIgnoreSection getSts() {
+<span class="fc" id="L99">		return this.sts;</span>
+	}
+
+	public GitIgnoreSection getIntellijIdea() {
+<span class="fc" id="L103">		return this.intellijIdea;</span>
+	}
+
+	public GitIgnoreSection getNetBeans() {
+<span class="fc" id="L107">		return this.netBeans;</span>
+	}
+
+	public GitIgnoreSection getVscode() {
+<span class="fc" id="L111">		return this.vscode;</span>
+	}
+
+	/**
+	 * Representation of a section of a {@code .gitignore} file.
+	 */
+	public static class GitIgnoreSection implements Section {
+
+		private final String name;
+
+		private final LinkedList&lt;String&gt; items;
+
+<span class="fc" id="L123">		public GitIgnoreSection(String name) {</span>
+<span class="fc" id="L124">			this.name = name;</span>
+<span class="fc" id="L125">			this.items = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L126">		}</span>
+
+		public void add(String... items) {
+<span class="fc" id="L129">			this.items.addAll(Arrays.asList(items));</span>
+<span class="fc" id="L130">		}</span>
+
+		public LinkedList&lt;String&gt; getItems() {
+<span class="fc" id="L133">			return this.items;</span>
+		}
+
+		@Override
+		public void write(PrintWriter writer) {
+<span class="fc bfc" id="L138" title="All 2 branches covered.">			if (!this.items.isEmpty()) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				if (this.name != null) {</span>
+<span class="fc" id="L140">					writer.println();</span>
+<span class="fc" id="L141">					writer.println(String.format(&quot;### %s ###&quot;, this.name));</span>
+				}
+<span class="fc" id="L143">				this.items.forEach(writer::println);</span>
+			}
+<span class="fc" id="L145">		}</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

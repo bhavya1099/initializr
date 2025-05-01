@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenBuild.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenBuild.java</span></div><h1>MavenBuild.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.buildsystem.BuildItemResolver;
+import io.spring.initializr.generator.buildsystem.MavenRepositoryContainer;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuildSettings.Builder;
+
+/**
+ * Maven-specific {@linkplain Build build configuration}.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ * @author Niklas Herder
+ * @author Maurice Zeijen
+ */
+public class MavenBuild extends Build {
+
+<span class="fc" id="L34">	private final MavenBuildSettings.Builder settings = new Builder();</span>
+
+<span class="fc" id="L36">	private final MavenResourceContainer resources = new MavenResourceContainer();</span>
+
+<span class="fc" id="L38">	private final MavenResourceContainer testResources = new MavenResourceContainer();</span>
+
+<span class="fc" id="L40">	private final MavenPluginContainer pluginManagementPlugins = new MavenPluginContainer();</span>
+
+<span class="fc" id="L42">	private final MavenPluginContainer plugins = new MavenPluginContainer();</span>
+
+<span class="fc" id="L44">	private final MavenExtensionContainer extensions = new MavenExtensionContainer();</span>
+
+<span class="fc" id="L46">	private final MavenDistributionManagement.Builder distributionManagement = new MavenDistributionManagement.Builder();</span>
+
+	private final MavenProfileContainer profiles;
+
+	/**
+	 * Creates a new instance.
+	 * @param buildItemResolver the build item resolver
+	 */
+	public MavenBuild(BuildItemResolver buildItemResolver) {
+<span class="fc" id="L55">		super(buildItemResolver);</span>
+<span class="fc" id="L56">		this.profiles = new MavenProfileContainer(determineBuildItemResolver(buildItemResolver));</span>
+<span class="fc" id="L57">	}</span>
+
+	/**
+	 * Creates a new instance.
+	 */
+	public MavenBuild() {
+<span class="fc" id="L63">		this(null);</span>
+<span class="fc" id="L64">	}</span>
+
+	@Override
+	public MavenBuildSettings.Builder settings() {
+<span class="fc" id="L68">		return this.settings;</span>
+	}
+
+	@Override
+	public MavenBuildSettings getSettings() {
+<span class="fc" id="L73">		return this.settings.build();</span>
+	}
+
+	/**
+	 * Return a builder to configure the {@linkplain MavenDistributionManagement
+	 * distribution management} of this build.
+	 * @return a builder for {@link MavenDistributionManagement}
+	 */
+	public MavenDistributionManagement.Builder distributionManagement() {
+<span class="fc" id="L82">		return this.distributionManagement;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenDistributionManagement distribution management} of this
+	 * build.
+	 * @return the {@link MavenDistributionManagement}
+	 */
+	public MavenDistributionManagement getDistributionManagement() {
+<span class="fc" id="L91">		return this.distributionManagement.build();</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenResource resource container} to use to configure main
+	 * resources.
+	 * @return the {@link MavenRepositoryContainer} for main resources
+	 */
+	public MavenResourceContainer resources() {
+<span class="fc" id="L100">		return this.resources;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenResource resource container} to use to configure test
+	 * resources.
+	 * @return the {@link MavenRepositoryContainer} for test resources
+	 */
+	public MavenResourceContainer testResources() {
+<span class="fc" id="L109">		return this.testResources;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenPluginContainer plugin container} to use to configure
+	 * plugin management plugins.
+	 * @return the {@link MavenPluginContainer}
+	 */
+	public MavenPluginContainer pluginManagementPlugins() {
+<span class="fc" id="L118">		return this.pluginManagementPlugins;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenPluginContainer plugin container} to use to configure
+	 * plugins.
+	 * @return the {@link MavenPluginContainer}
+	 */
+	public MavenPluginContainer plugins() {
+<span class="fc" id="L127">		return this.plugins;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenExtensionContainer extension container} to use to
+	 * configure extensions.
+	 * @return the {@link MavenExtensionContainer}
+	 */
+	public MavenExtensionContainer extensions() {
+<span class="fc" id="L136">		return this.extensions;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenProfileContainer profile container} to use to configure
+	 * profiles.
+	 * @return the {@link MavenProfileContainer}
+	 */
+	public MavenProfileContainer profiles() {
+<span class="fc" id="L145">		return this.profiles;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

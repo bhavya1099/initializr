@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DependencyManagementBuildCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.build</a> &gt; <span class="el_source">DependencyManagementBuildCustomizer.java</span></div><h1>DependencyManagementBuildCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.build;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.metadata.BillOfMaterials;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.Repository;
+import io.spring.initializr.metadata.support.MetadataBuildItemMapper;
+
+import org.springframework.core.Ordered;
+
+/**
+ * A {@link BuildCustomizer} that configures the {@link Build} based on the metadata.
+ *
+ * @author Stephane Nicoll
+ */
+public class DependencyManagementBuildCustomizer implements BuildCustomizer&lt;Build&gt; {
+
+	private final ProjectDescription description;
+
+	private final InitializrMetadata metadata;
+
+<span class="fc" id="L46">	public DependencyManagementBuildCustomizer(ProjectDescription description, InitializrMetadata metadata) {</span>
+<span class="fc" id="L47">		this.description = description;</span>
+<span class="fc" id="L48">		this.metadata = metadata;</span>
+<span class="fc" id="L49">	}</span>
+
+	@Override
+	public void customize(Build build) {
+<span class="fc" id="L53">		contributeDependencyManagement(build);</span>
+<span class="fc" id="L54">	}</span>
+
+	@Override
+	public int getOrder() {
+<span class="fc" id="L58">		return Ordered.LOWEST_PRECEDENCE - 5;</span>
+	}
+
+	protected void contributeDependencyManagement(Build build) {
+<span class="fc" id="L62">		Map&lt;String, BillOfMaterials&gt; resolvedBoms = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L63">		Map&lt;String, Repository&gt; repositories = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L64">		mapDependencies(build).forEach((dependency) -&gt; {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">			if (dependency.getBom() != null) {</span>
+<span class="fc" id="L66">				resolveBom(resolvedBoms, dependency.getBom(), this.description.getPlatformVersion());</span>
+			}
+<span class="fc bfc" id="L68" title="All 2 branches covered.">			if (dependency.getRepository() != null) {</span>
+<span class="fc" id="L69">				String repositoryId = dependency.getRepository();</span>
+<span class="fc" id="L70">				repositories.computeIfAbsent(repositoryId,</span>
+<span class="fc" id="L71">						(key) -&gt; this.metadata.getConfiguration().getEnv().getRepositories().get(key));</span>
+			}
+<span class="fc" id="L73">		});</span>
+<span class="fc" id="L74">		resolvedBoms.values()</span>
+<span class="fc" id="L75">			.forEach((bom) -&gt; bom.getRepositories()</span>
+<span class="fc" id="L76">				.forEach((repositoryId) -&gt; repositories.computeIfAbsent(repositoryId,</span>
+<span class="fc" id="L77">						(key) -&gt; this.metadata.getConfiguration().getEnv().getRepositories().get(key))));</span>
+<span class="fc" id="L78">		resolvedBoms.forEach((key, bom) -&gt; {</span>
+<span class="fc" id="L79">			build.boms().add(key, MetadataBuildItemMapper.toBom(bom));</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">			if (bom.getVersionProperty() != null) {</span>
+<span class="fc" id="L81">				build.properties().version(bom.getVersionProperty(), bom.getVersion());</span>
+			}
+<span class="fc" id="L83">		});</span>
+<span class="fc" id="L84">		repositories.keySet().forEach((id) -&gt; build.repositories().add(id));</span>
+<span class="fc" id="L85">	}</span>
+
+	private Stream&lt;Dependency&gt; mapDependencies(Build build) {
+<span class="fc" id="L88">		return build.dependencies()</span>
+<span class="fc" id="L89">			.ids()</span>
+<span class="fc" id="L90">			.map((id) -&gt; this.metadata.getDependencies().get(id))</span>
+<span class="fc" id="L91">			.filter(Objects::nonNull)</span>
+<span class="fc" id="L92">			.map((dependency) -&gt; dependency.resolve(this.description.getPlatformVersion()));</span>
+	}
+
+	private void resolveBom(Map&lt;String, BillOfMaterials&gt; boms, String bomId, Version requestedVersion) {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (!boms.containsKey(bomId)) {</span>
+<span class="fc" id="L97">			BillOfMaterials bom = this.metadata.getConfiguration()</span>
+<span class="fc" id="L98">				.getEnv()</span>
+<span class="fc" id="L99">				.getBoms()</span>
+<span class="fc" id="L100">				.get(bomId)</span>
+<span class="fc" id="L101">				.resolve(requestedVersion);</span>
+<span class="fc" id="L102">			bom.getAdditionalBoms().forEach((id) -&gt; resolveBom(boms, id, requestedVersion));</span>
+<span class="fc" id="L103">			boms.put(bomId, bom);</span>
+		}
+<span class="fc" id="L105">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

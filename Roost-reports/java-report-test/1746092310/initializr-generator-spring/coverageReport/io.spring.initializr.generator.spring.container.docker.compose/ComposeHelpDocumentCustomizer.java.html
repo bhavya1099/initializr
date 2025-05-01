@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ComposeHelpDocumentCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.container.docker.compose</a> &gt; <span class="el_source">ComposeHelpDocumentCustomizer.java</span></div><h1>ComposeHelpDocumentCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.container.docker.compose;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+
+import io.spring.initializr.generator.container.docker.compose.ComposeFile;
+import io.spring.initializr.generator.container.docker.compose.ComposeService;
+import io.spring.initializr.generator.spring.documentation.HelpDocument;
+import io.spring.initializr.generator.spring.documentation.HelpDocumentCustomizer;
+
+/**
+ * A {@link HelpDocumentCustomizer} that provide additional information about the
+ * {@link ComposeService compose services} that are defined for the project.
+ *
+ * @author Moritz Halbritter
+ */
+public class ComposeHelpDocumentCustomizer implements HelpDocumentCustomizer {
+
+	private final ComposeFile composeFile;
+
+<span class="fc" id="L38">	public ComposeHelpDocumentCustomizer(ComposeFile composeFile) {</span>
+<span class="fc" id="L39">		this.composeFile = composeFile;</span>
+<span class="fc" id="L40">	}</span>
+
+	@Override
+	public void customize(HelpDocument document) {
+<span class="fc" id="L44">		Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		if (this.composeFile.services().isEmpty()) {</span>
+<span class="fc" id="L46">			document.getWarnings()</span>
+<span class="fc" id="L47">				.addItem(</span>
+						&quot;No Docker Compose services found. As of now, the application won't start! Please add at least one service to the `compose.yaml` file.&quot;);
+		}
+		else {
+<span class="fc" id="L51">			model.put(&quot;services&quot;,</span>
+<span class="fc" id="L52">					this.composeFile.services()</span>
+<span class="fc" id="L53">						.values()</span>
+<span class="fc" id="L54">						.sorted(Comparator.comparing(ComposeService::getName))</span>
+<span class="fc" id="L55">						.toList());</span>
+		}
+<span class="fc" id="L57">		document.addSection(&quot;documentation/docker-compose&quot;, model);</span>
+<span class="fc" id="L58">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

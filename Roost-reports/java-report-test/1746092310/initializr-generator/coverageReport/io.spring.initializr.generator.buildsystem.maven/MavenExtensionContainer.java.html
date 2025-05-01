@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenExtensionContainer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenExtensionContainer.java</span></div><h1>MavenExtensionContainer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+/**
+ * A container for {@link MavenExtension maven extensions}.
+ *
+ * @author Niklas Herder
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L30">public class MavenExtensionContainer {</span>
+
+<span class="fc" id="L32">	private final Map&lt;String, MavenExtension.Builder&gt; extensions = new LinkedHashMap&lt;&gt;();</span>
+
+	/**
+	 * Specify if this container is empty.
+	 * @return {@code true} if no {@link MavenExtension} is added
+	 */
+	public boolean isEmpty() {
+<span class="fc" id="L39">		return this.extensions.isEmpty();</span>
+	}
+
+	/**
+	 * Specify if this container has a extension with the specified {@code groupId} and
+	 * {@code artifactId}.
+	 * @param groupId the groupId of the extension
+	 * @param artifactId the artifactId of the extension
+	 * @return {@code true} if an item with the specified {@code groupId} and
+	 * {@code artifactId} exists
+	 */
+	public boolean has(String groupId, String artifactId) {
+<span class="nc" id="L51">		return this.extensions.containsKey(extensionKey(groupId, artifactId));</span>
+	}
+
+	/**
+	 * Returns a {@link Stream} of registered {@link MavenExtension}s.
+	 * @return a stream of {@link MavenExtension}s
+	 */
+	public Stream&lt;MavenExtension&gt; values() {
+<span class="fc" id="L59">		return this.extensions.values().stream().map(MavenExtension.Builder::build);</span>
+	}
+
+	/**
+	 * Add a {@link MavenExtension} with the specified {@code groupId},
+	 * {@code artifactId}, and {@code version}. If the extension has already been added,
+	 * only update the version if necessary.
+	 * @param groupId the groupId of the extension
+	 * @param artifactId the artifactId of the extension
+	 * @param version the version of the extension
+	 * @see #add(String, String, Consumer)
+	 */
+	public void add(String groupId, String artifactId, String version) {
+<span class="fc" id="L72">		add(groupId, artifactId, (extension) -&gt; extension.version(version));</span>
+<span class="fc" id="L73">	}</span>
+
+	/**
+	 * Add a {@link MavenExtension} with the specified {@code groupId} and
+	 * {@code artifactId} and {@link Consumer} to customize the extension. If the
+	 * extension has already been added, the consumer can be used to further tune the
+	 * existing extension configuration.
+	 * @param groupId the groupId of the extension
+	 * @param artifactId the artifactId of the extension
+	 * @param extension a {@link Consumer} to customize the {@link MavenExtension}
+	 */
+	public void add(String groupId, String artifactId, Consumer&lt;MavenExtension.Builder&gt; extension) {
+<span class="fc" id="L85">		extension.accept(addExtension(groupId, artifactId));</span>
+<span class="fc" id="L86">	}</span>
+
+	private MavenExtension.Builder addExtension(String groupId, String artifactId) {
+<span class="fc" id="L89">		return this.extensions.computeIfAbsent(extensionKey(groupId, artifactId),</span>
+<span class="fc" id="L90">				(extensionId) -&gt; new MavenExtension.Builder(groupId, artifactId));</span>
+	}
+
+	/**
+	 * Remove the extension with the specified {@code groupId} and {@code artifactId}.
+	 * @param groupId the groupId of the extension to remove
+	 * @param artifactId the artifactId of the extension to remove
+	 * @return {@code true} if such a extension was registered, {@code false} otherwise
+	 */
+	public boolean remove(String groupId, String artifactId) {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		return this.extensions.remove(extensionKey(groupId, artifactId)) != null;</span>
+	}
+
+	private String extensionKey(String groupId, String artifactId) {
+<span class="fc" id="L104">		return String.format(&quot;%s:%s&quot;, groupId, artifactId);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

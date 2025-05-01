@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GroovyProjectGenerationDefaultContributorsConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.code.groovy</a> &gt; <span class="el_source">GroovyProjectGenerationDefaultContributorsConfiguration.java</span></div><h1>GroovyProjectGenerationDefaultContributorsConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.code.groovy;
+
+import java.lang.reflect.Modifier;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuildSystem;
+import io.spring.initializr.generator.condition.ConditionalOnBuildSystem;
+import io.spring.initializr.generator.condition.ConditionalOnPackaging;
+import io.spring.initializr.generator.language.ClassName;
+import io.spring.initializr.generator.language.CodeBlock;
+import io.spring.initializr.generator.language.Parameter;
+import io.spring.initializr.generator.language.groovy.GroovyMethodDeclaration;
+import io.spring.initializr.generator.language.groovy.GroovyTypeDeclaration;
+import io.spring.initializr.generator.packaging.war.WarPackaging;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.spring.build.BuildCustomizer;
+import io.spring.initializr.generator.spring.code.MainApplicationTypeCustomizer;
+import io.spring.initializr.generator.spring.code.ServletInitializerCustomizer;
+import io.spring.initializr.generator.spring.code.TestApplicationTypeCustomizer;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.generator.version.VersionRange;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * Default Groovy language contributors.
+ *
+ * @author Stephane Nicoll
+ * @author Jean-Baptiste Nizet
+ */
+@Configuration
+<span class="fc" id="L49">class GroovyProjectGenerationDefaultContributorsConfiguration {</span>
+
+<span class="fc" id="L51">	private static final VersionRange GROOVY4 = VersionParser.DEFAULT.parseRange(&quot;3.0.0-M2&quot;);</span>
+
+	@Bean
+	MainApplicationTypeCustomizer&lt;GroovyTypeDeclaration&gt; mainMethodContributor() {
+<span class="fc" id="L55">		return (typeDeclaration) -&gt; typeDeclaration.addMethodDeclaration(GroovyMethodDeclaration.method(&quot;main&quot;)</span>
+<span class="fc" id="L56">			.modifiers(Modifier.PUBLIC | Modifier.STATIC)</span>
+<span class="fc" id="L57">			.returning(&quot;void&quot;)</span>
+<span class="fc" id="L58">			.parameters(Parameter.of(&quot;args&quot;, String[].class))</span>
+<span class="fc" id="L59">			.body(CodeBlock.ofStatement(&quot;$T.run($L, args)&quot;, &quot;org.springframework.boot.SpringApplication&quot;,</span>
+<span class="fc" id="L60">					typeDeclaration.getName())));</span>
+	}
+
+	@Bean
+	TestApplicationTypeCustomizer&lt;GroovyTypeDeclaration&gt; junitJupiterTestMethodContributor() {
+<span class="fc" id="L65">		return (typeDeclaration) -&gt; {</span>
+<span class="fc" id="L66">			GroovyMethodDeclaration method = GroovyMethodDeclaration.method(&quot;contextLoads&quot;)</span>
+<span class="fc" id="L67">				.returning(&quot;void&quot;)</span>
+<span class="fc" id="L68">				.body(CodeBlock.of(&quot;&quot;));</span>
+<span class="fc" id="L69">			method.annotations().add(ClassName.of(&quot;org.junit.jupiter.api.Test&quot;));</span>
+<span class="fc" id="L70">			typeDeclaration.addMethodDeclaration(method);</span>
+<span class="fc" id="L71">		};</span>
+	}
+
+	@Bean
+	BuildCustomizer&lt;Build&gt; groovyDependenciesConfigurer(ProjectDescription description) {
+<span class="fc" id="L76">		return new GroovyDependenciesConfigurer(GROOVY4.match(description.getPlatformVersion()));</span>
+	}
+
+	/**
+	 * Groovy source code contributions for projects using war packaging.
+	 */
+	@Configuration
+	@ConditionalOnPackaging(WarPackaging.ID)
+<span class="fc" id="L84">	static class WarPackagingConfiguration {</span>
+
+		@Bean
+		ServletInitializerCustomizer&lt;GroovyTypeDeclaration&gt; javaServletInitializerCustomizer(
+				ProjectDescription description) {
+<span class="fc" id="L89">			return (typeDeclaration) -&gt; {</span>
+<span class="fc" id="L90">				GroovyMethodDeclaration configure = GroovyMethodDeclaration.method(&quot;configure&quot;)</span>
+<span class="fc" id="L91">					.modifiers(Modifier.PROTECTED)</span>
+<span class="fc" id="L92">					.returning(&quot;org.springframework.boot.builder.SpringApplicationBuilder&quot;)</span>
+<span class="fc" id="L93">					.parameters(</span>
+<span class="fc" id="L94">							Parameter.of(&quot;application&quot;, &quot;org.springframework.boot.builder.SpringApplicationBuilder&quot;))</span>
+<span class="fc" id="L95">					.body(CodeBlock.ofStatement(&quot;application.sources($L)&quot;, description.getApplicationName()));</span>
+<span class="fc" id="L96">				configure.annotations().add(ClassName.of(Override.class));</span>
+<span class="fc" id="L97">				typeDeclaration.addMethodDeclaration(configure);</span>
+<span class="fc" id="L98">			};</span>
+		}
+
+	}
+
+	/**
+	 * Configuration for Groovy projects built with Maven.
+	 */
+	@Configuration
+	@ConditionalOnBuildSystem(MavenBuildSystem.ID)
+<span class="fc" id="L108">	static class GroovyMavenProjectConfiguration {</span>
+
+		@Bean
+		GroovyMavenBuildCustomizer groovyBuildCustomizer() {
+<span class="fc" id="L112">			return new GroovyMavenBuildCustomizer();</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

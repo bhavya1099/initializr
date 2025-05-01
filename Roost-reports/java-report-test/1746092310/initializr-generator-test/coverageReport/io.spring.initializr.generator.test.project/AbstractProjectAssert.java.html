@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractProjectAssert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.project</a> &gt; <span class="el_source">AbstractProjectAssert.java</span></div><h1>AbstractProjectAssert.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.project;
+
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+
+import io.spring.initializr.generator.test.io.TextAssert;
+import org.assertj.core.api.AbstractPathAssert;
+import org.assertj.core.api.ListAssert;
+import org.assertj.core.api.PathAssert;
+
+/**
+ * Base class for project assertions.
+ *
+ * @param &lt;SELF&gt; the type of the concrete assert implementations
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractProjectAssert&lt;SELF extends AbstractProjectAssert&lt;SELF&gt;&gt; extends AbstractPathAssert&lt;SELF&gt; {
+
+	private ListAssert&lt;String&gt; filesAssert;
+
+	protected AbstractProjectAssert(Path projectDirectory, Class&lt;?&gt; selfType) {
+<span class="fc" id="L45">		super(projectDirectory, selfType);</span>
+<span class="fc" id="L46">	}</span>
+
+	/**
+	 * Assert the project has the specified directories.
+	 * @param directoryPaths the directories relative to the project directory.
+	 * @return {@code this} assertion object
+	 */
+	public SELF containsDirectories(String... directoryPaths) {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		for (String directory : directoryPaths) {</span>
+<span class="fc" id="L55">			new PathAssert(this.actual.resolve(directory)).exists().isDirectory();</span>
+		}
+<span class="fc" id="L57">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert the project does not have the specified directories.
+	 * @param directoryPaths the directory paths relative to the project directory.
+	 * @return {@code this} assertion object
+	 */
+	public SELF doesNotContainDirectories(String... directoryPaths) {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">		for (String directory : directoryPaths) {</span>
+<span class="fc" id="L67">			new PathAssert(this.actual.resolve(directory)).doesNotExist();</span>
+		}
+<span class="fc" id="L69">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert the project has the specified files.
+	 * @param filePaths the file paths relative to the project directory.
+	 * @return {@code this} assertion object
+	 */
+	public SELF containsFiles(String... filePaths) {
+<span class="fc" id="L78">		filePaths().contains(filePaths);</span>
+<span class="fc" id="L79">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert the project does not have the specified files.
+	 * @param filePaths the file paths relative to the project directory.
+	 * @return {@code this} assertion object
+	 */
+	public SELF doesNotContainFiles(String... filePaths) {
+<span class="fc" id="L88">		filePaths().doesNotContain(filePaths);</span>
+<span class="fc" id="L89">		return this.myself;</span>
+	}
+
+	/**
+	 * Return an {@link ListAssert assert} for the local file paths of this project, to
+	 * allow chaining of list-specific assertions from this call.
+	 * @return a {@link ListAssert} with the files of this project
+	 */
+	public ListAssert&lt;String&gt; filePaths() {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (this.filesAssert == null) {</span>
+<span class="fc" id="L99">			this.filesAssert = new ListAssert&lt;&gt;(getRelativePathsOfProjectFiles());</span>
+		}
+<span class="fc" id="L101">		return this.filesAssert;</span>
+	}
+
+	/**
+	 * Assert that the project defines the specified file and return a {@link PathAssert}
+	 * for it, to allow chaining of Path-specific assertions from this call.
+	 * @param path the path of the file
+	 * @return a {@link PathAssert} for the specified file
+	 */
+	public PathAssert file(String path) {
+<span class="fc" id="L111">		Path file = this.actual.resolve(path);</span>
+<span class="fc" id="L112">		return new PathAssert(file).exists().isRegularFile();</span>
+	}
+
+	/**
+	 * Assert that the project defines the specified file and return a {@link TextAssert}
+	 * for it, to allow chaining of text file-specific assertions from this call.
+	 * @param path the path of a text file
+	 * @return a {@link TextAssert} for the specified text file
+	 */
+	public TextAssert textFile(String path) {
+<span class="fc" id="L122">		Path file = this.actual.resolve(path);</span>
+<span class="fc" id="L123">		new PathAssert(file).exists().isRegularFile();</span>
+<span class="fc" id="L124">		return new TextAssert(file);</span>
+	}
+
+	/**
+	 * Return the relative paths of all files. For consistency, always use {@code /} as
+	 * path separator.
+	 * @return the relative path of all files
+	 */
+	private List&lt;String&gt; getRelativePathsOfProjectFiles() {
+<span class="fc" id="L133">		List&lt;String&gt; relativePaths = new ArrayList&lt;&gt;();</span>
+		try {
+<span class="fc" id="L135">			Files.walkFileTree(this.actual, new SimpleFileVisitor&lt;&gt;() {</span>
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+<span class="fc" id="L138">					relativePaths.add(createRelativePath(file));</span>
+<span class="fc" id="L139">					return FileVisitResult.CONTINUE;</span>
+				}
+			});
+		}
+<span class="nc" id="L143">		catch (IOException ex) {</span>
+<span class="nc" id="L144">			throw new IllegalStateException(ex);</span>
+<span class="fc" id="L145">		}</span>
+<span class="fc" id="L146">		return relativePaths;</span>
+	}
+
+	private String createRelativePath(Path file) {
+<span class="fc" id="L150">		String relativePath = this.actual.relativize(file).toString();</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (FileSystems.getDefault().getSeparator().equals(&quot;\\&quot;)) {</span>
+<span class="nc" id="L152">			return relativePath.replace('\\', '/');</span>
+		}
+<span class="fc" id="L154">		return relativePath;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServletInitializerContributor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.code</a> &gt; <span class="el_source">ServletInitializerContributor.java</span></div><h1>ServletInitializerContributor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.code;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.language.CompilationUnit;
+import io.spring.initializr.generator.language.SourceCode;
+import io.spring.initializr.generator.language.TypeDeclaration;
+import io.spring.initializr.generator.spring.util.LambdaSafe;
+
+import org.springframework.beans.factory.ObjectProvider;
+
+/**
+ * {@link MainSourceCodeCustomizer} that contributes the servlet initializer to
+ * applications using war packaging.
+ *
+ * @author Andy Wilkinson
+ */
+class ServletInitializerContributor implements
+		MainSourceCodeCustomizer&lt;TypeDeclaration, CompilationUnit&lt;TypeDeclaration&gt;, SourceCode&lt;TypeDeclaration, CompilationUnit&lt;TypeDeclaration&gt;&gt;&gt; {
+
+	private final String packageName;
+
+	private final String initializerClassName;
+
+	private final ObjectProvider&lt;ServletInitializerCustomizer&lt;?&gt;&gt; servletInitializerCustomizers;
+
+	ServletInitializerContributor(String packageName, String initializerClassName,
+<span class="fc" id="L45">			ObjectProvider&lt;ServletInitializerCustomizer&lt;?&gt;&gt; servletInitializerCustomizers) {</span>
+<span class="fc" id="L46">		this.packageName = packageName;</span>
+<span class="fc" id="L47">		this.initializerClassName = initializerClassName;</span>
+<span class="fc" id="L48">		this.servletInitializerCustomizers = servletInitializerCustomizers;</span>
+<span class="fc" id="L49">	}</span>
+
+	@Override
+	public void customize(SourceCode&lt;TypeDeclaration, CompilationUnit&lt;TypeDeclaration&gt;&gt; sourceCode) {
+<span class="fc" id="L53">		CompilationUnit&lt;TypeDeclaration&gt; compilationUnit = sourceCode.createCompilationUnit(this.packageName,</span>
+				&quot;ServletInitializer&quot;);
+<span class="fc" id="L55">		TypeDeclaration servletInitializer = compilationUnit.createTypeDeclaration(&quot;ServletInitializer&quot;);</span>
+<span class="fc" id="L56">		servletInitializer.extend(this.initializerClassName);</span>
+<span class="fc" id="L57">		customizeServletInitializer(servletInitializer);</span>
+<span class="fc" id="L58">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void customizeServletInitializer(TypeDeclaration servletInitializer) {
+<span class="fc" id="L62">		List&lt;ServletInitializerCustomizer&lt;?&gt;&gt; customizers = this.servletInitializerCustomizers.orderedStream()</span>
+<span class="fc" id="L63">			.collect(Collectors.toList());</span>
+<span class="fc" id="L64">		LambdaSafe.callbacks(ServletInitializerCustomizer.class, customizers, servletInitializer)</span>
+<span class="fc" id="L65">			.invoke((customizer) -&gt; customizer.customize(servletInitializer));</span>
+<span class="fc" id="L66">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

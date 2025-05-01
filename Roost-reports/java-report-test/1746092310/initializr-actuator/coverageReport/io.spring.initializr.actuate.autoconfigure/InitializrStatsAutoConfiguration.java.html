@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrStatsAutoConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Actuator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.actuate.autoconfigure</a> &gt; <span class="el_source">InitializrStatsAutoConfiguration.java</span></div><h1>InitializrStatsAutoConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.actuate.autoconfigure;
+
+import java.util.Collections;
+
+import io.spring.initializr.actuate.stat.ProjectGenerationStatPublisher;
+import io.spring.initializr.actuate.stat.ProjectRequestDocumentFactory;
+import io.spring.initializr.actuate.stat.StatsProperties;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
+import org.springframework.boot.autoconfigure.web.client.RestTemplateAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.StringUtils;
+
+/**
+ * {@link org.springframework.boot.autoconfigure.EnableAutoConfiguration
+ * Auto-configuration} to publish statistics of each generated project.
+ *
+ * @author Stephane Nicoll
+ */
+@AutoConfiguration(after = RestTemplateAutoConfiguration.class,
+		afterName = &quot;io.spring.initializr.web.autoconfigure.InitializrAutoConfiguration&quot;)
+@EnableConfigurationProperties(StatsProperties.class)
+@Conditional(InitializrStatsAutoConfiguration.ElasticUriCondition.class)
+class InitializrStatsAutoConfiguration {
+
+	private final StatsProperties statsProperties;
+
+<span class="fc" id="L57">	InitializrStatsAutoConfiguration(StatsProperties statsProperties) {</span>
+<span class="fc" id="L58">		this.statsProperties = statsProperties;</span>
+<span class="fc" id="L59">	}</span>
+
+	@Bean
+	@ConditionalOnBean(InitializrMetadataProvider.class)
+	ProjectGenerationStatPublisher projectRequestStatHandler(RestTemplateBuilder restTemplateBuilder) {
+<span class="fc" id="L64">		return new ProjectGenerationStatPublisher(new ProjectRequestDocumentFactory(), this.statsProperties,</span>
+<span class="fc" id="L65">				restTemplateBuilder, statsRetryTemplate());</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(name = &quot;statsRetryTemplate&quot;)
+	RetryTemplate statsRetryTemplate() {
+<span class="fc" id="L71">		RetryTemplate retryTemplate = new RetryTemplate();</span>
+<span class="fc" id="L72">		ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();</span>
+<span class="fc" id="L73">		backOffPolicy.setInitialInterval(3000L);</span>
+<span class="fc" id="L74">		backOffPolicy.setMultiplier(3);</span>
+<span class="fc" id="L75">		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(this.statsProperties.getElastic().getMaxAttempts(),</span>
+<span class="fc" id="L76">				Collections.singletonMap(Exception.class, true));</span>
+<span class="fc" id="L77">		retryTemplate.setBackOffPolicy(backOffPolicy);</span>
+<span class="fc" id="L78">		retryTemplate.setRetryPolicy(retryPolicy);</span>
+<span class="fc" id="L79">		return retryTemplate;</span>
+	}
+
+<span class="fc" id="L82">	static class ElasticUriCondition extends SpringBootCondition {</span>
+
+		@Override
+		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+<span class="fc" id="L86">			String elasticUri = context.getEnvironment().getProperty(&quot;initializr.stats.elastic.uri&quot;);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (StringUtils.hasText(elasticUri)) {</span>
+<span class="fc" id="L88">				return ConditionOutcome.match(&quot;initializr.stats.elastic.uri is set&quot;);</span>
+			}
+<span class="fc" id="L90">			return ConditionOutcome.noMatch(&quot;initializr.stats.elastic.uri is not set&quot;);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

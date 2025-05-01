@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VersionParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.version</a> &gt; <span class="el_source">VersionParser.java</span></div><h1>VersionParser.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.version;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import io.spring.initializr.generator.version.Version.Qualifier;
+
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+/**
+ * Parser for {@link Version} and {@link VersionRange} that allows to resolve the minor
+ * and patch value against a configurable list of &quot;latest versions&quot;.
+ * &lt;p&gt;
+ * For example a parser that is configured with {@code 1.3.7.RELEASE} and
+ * {@code 1.4.2.RELEASE} as latest versions can parse {@code 1.3.x.RELEASE} to
+ * {@code 1.3.7.RELEASE}. Note that the qualifier is important here:
+ * {@code 1.3.8.BUILD-SNAPSHOT} would be parsed as {@code 1.3.999.BUILD-SNAPSHOT} as the
+ * parser doesn't know the latest {@code BUILD-SNAPSHOT} in the {@code 1.3.x} release
+ * line.
+ *
+ * @author Stephane Nicoll
+ */
+public class VersionParser {
+
+	/**
+	 * The default {@link VersionParser}.
+	 */
+<span class="fc" id="L47">	public static final VersionParser DEFAULT = new VersionParser(Collections.emptyList());</span>
+
+<span class="fc" id="L49">	private static final Pattern VERSION_REGEX = Pattern</span>
+<span class="fc" id="L50">		.compile(&quot;^(\\d+)\\.(\\d+|x)\\.(\\d+|x)(?:([.|-])([^0-9]+)(\\d+)?)?$&quot;);</span>
+
+<span class="fc" id="L52">	private static final Pattern RANGE_REGEX = Pattern.compile(&quot;([(\\[])(.*),(.*)([)\\]])&quot;);</span>
+
+	private final List&lt;Version&gt; latestVersions;
+
+<span class="fc" id="L56">	public VersionParser(List&lt;Version&gt; latestVersions) {</span>
+<span class="fc" id="L57">		this.latestVersions = latestVersions;</span>
+<span class="fc" id="L58">	}</span>
+
+	/**
+	 * Parse the string representation of a {@link Version}. Throws an
+	 * {@link InvalidVersionException} if the version could not be parsed.
+	 * @param text the version text
+	 * @return a Version instance for the specified version text
+	 * @throws InvalidVersionException if the version text could not be parsed
+	 * @see #safeParse(java.lang.String)
+	 */
+	public Version parse(String text) {
+<span class="fc" id="L69">		Assert.notNull(text, &quot;Text must not be null&quot;);</span>
+<span class="fc" id="L70">		Matcher matcher = VERSION_REGEX.matcher(text.trim());</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (!matcher.matches()) {</span>
+<span class="fc" id="L72">			throw new InvalidVersionException(&quot;Could not determine version based on '&quot; + text + &quot;': version format &quot;</span>
+					+ &quot;is Major.Minor.Patch and an optional Qualifier &quot; + &quot;(e.g. 1.0.5.RELEASE)&quot;);
+		}
+<span class="fc" id="L75">		Integer major = Integer.valueOf(matcher.group(1));</span>
+<span class="fc" id="L76">		String minor = matcher.group(2);</span>
+<span class="fc" id="L77">		String patch = matcher.group(3);</span>
+<span class="fc" id="L78">		Qualifier qualifier = parseQualifier(matcher);</span>
+<span class="fc bfc" id="L79" title="All 4 branches covered.">		if (&quot;x&quot;.equals(minor) || &quot;x&quot;.equals(patch)) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">			Integer minorInt = (&quot;x&quot;.equals(minor) ? null : Integer.parseInt(minor));</span>
+<span class="fc" id="L81">			Version latest = findLatestVersion(major, minorInt, qualifier);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			if (latest == null) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">				return new Version(major, (&quot;x&quot;.equals(minor) ? 999 : Integer.parseInt(minor)),</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">						(&quot;x&quot;.equals(patch) ? 999 : Integer.parseInt(patch)), qualifier);</span>
+			}
+<span class="fc" id="L86">			return new Version(major, latest.getMinor(), latest.getPatch(), latest.getQualifier());</span>
+		}
+		else {
+<span class="fc" id="L89">			return new Version(major, Integer.parseInt(minor), Integer.parseInt(patch), qualifier);</span>
+		}
+	}
+
+	private Qualifier parseQualifier(Matcher matcher) {
+<span class="fc" id="L94">		String qualifierSeparator = matcher.group(4);</span>
+<span class="fc" id="L95">		String qualifierId = matcher.group(5);</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">		if (StringUtils.hasText(qualifierSeparator) &amp;&amp; StringUtils.hasText(qualifierId)) {</span>
+<span class="fc" id="L97">			String versionString = matcher.group(6);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">			return new Qualifier(qualifierId, (versionString != null) ? Integer.valueOf(versionString) : null,</span>
+					qualifierSeparator);
+		}
+<span class="fc" id="L101">		return null;</span>
+	}
+
+	/**
+	 * Parse safely the specified string representation of a {@link Version}.
+	 * &lt;p&gt;
+	 * Return {@code null} if the text represents an invalid version.
+	 * @param text the version text
+	 * @return a Version instance for the specified version text
+	 * @see #parse(java.lang.String)
+	 */
+	public Version safeParse(String text) {
+		try {
+<span class="nc" id="L114">			return parse(text);</span>
+		}
+<span class="fc" id="L116">		catch (InvalidVersionException ex) {</span>
+<span class="fc" id="L117">			return null;</span>
+		}
+	}
+
+	/**
+	 * Parse the string representation of a {@link VersionRange}. Throws an
+	 * {@link InvalidVersionException} if the range could not be parsed.
+	 * @param text the range text
+	 * @return a VersionRange instance for the specified range text
+	 * @throws InvalidVersionException if the range text could not be parsed
+	 */
+	public VersionRange parseRange(String text) {
+<span class="fc" id="L129">		Assert.notNull(text, &quot;Text must not be null&quot;);</span>
+<span class="fc" id="L130">		Matcher matcher = RANGE_REGEX.matcher(text.trim());</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (!matcher.matches()) {</span>
+			// Try to read it as simple string
+<span class="fc" id="L133">			Version version = parse(text);</span>
+<span class="fc" id="L134">			return new VersionRange(version, true, null, true);</span>
+		}
+<span class="fc" id="L136">		boolean lowerInclusive = matcher.group(1).equals(&quot;[&quot;);</span>
+<span class="fc" id="L137">		Version lowerVersion = parse(matcher.group(2));</span>
+<span class="fc" id="L138">		Version higherVersion = parse(matcher.group(3));</span>
+<span class="fc" id="L139">		boolean higherInclusive = matcher.group(4).equals(&quot;]&quot;);</span>
+<span class="fc" id="L140">		return new VersionRange(lowerVersion, lowerInclusive, higherVersion, higherInclusive);</span>
+	}
+
+	private Version findLatestVersion(Integer major, Integer minor, Version.Qualifier qualifier) {
+<span class="fc" id="L144">		List&lt;Version&gt; matches = this.latestVersions.stream().filter((it) -&gt; {</span>
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">			if (major != null &amp;&amp; !major.equals(it.getMajor())) {</span>
+<span class="fc" id="L146">				return false;</span>
+			}
+<span class="fc bfc" id="L148" title="All 4 branches covered.">			if (minor != null &amp;&amp; !minor.equals(it.getMinor())) {</span>
+<span class="fc" id="L149">				return false;</span>
+			}
+<span class="fc bfc" id="L151" title="All 4 branches covered.">			if (qualifier != null &amp;&amp; !qualifier.equals(it.getQualifier())) {</span>
+<span class="fc" id="L152">				return false;</span>
+			}
+<span class="fc" id="L154">			return true;</span>
+<span class="fc" id="L155">		}).toList();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		return (matches.size() != 1) ? null : matches.get(0);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

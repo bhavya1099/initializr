@@ -1,0 +1,775 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">InitializrConfiguration.java</span></div><h1>InitializrConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.version.InvalidVersionException;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.Version.Format;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.generator.version.VersionRange;
+
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.StringUtils;
+
+/**
+ * Various configuration options used by the service.
+ *
+ * @author Stephane Nicoll
+ * @author Chris Bono
+ * @author Moritz Halbritter
+ */
+<span class="fc" id="L46">public class InitializrConfiguration {</span>
+
+	/**
+	 * Environment options.
+	 */
+<span class="fc" id="L51">	@NestedConfigurationProperty</span>
+	private final Env env = new Env();
+
+	public Env getEnv() {
+<span class="fc" id="L55">		return this.env;</span>
+	}
+
+	public void validate() {
+<span class="fc" id="L59">		this.env.validate();</span>
+<span class="fc" id="L60">	}</span>
+
+	public void merge(InitializrConfiguration other) {
+<span class="fc" id="L63">		this.env.merge(other.env);</span>
+<span class="fc" id="L64">	}</span>
+
+	/**
+	 * Generate a suitable application name based on the specified name. If no suitable
+	 * application name can be generated from the specified {@code name}, the
+	 * {@link Env#getFallbackApplicationName()} is used instead.
+	 * &lt;p&gt;
+	 * No suitable application name can be generated if the name is {@code null} or if it
+	 * contains an invalid character for a class identifier.
+	 * @param name the the source name
+	 * @return the generated application name
+	 * @see Env#getFallbackApplicationName()
+	 * @see Env#getInvalidApplicationNames()
+	 */
+	public String generateApplicationName(String name) {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (!StringUtils.hasText(name)) {</span>
+<span class="fc" id="L80">			return this.env.fallbackApplicationName;</span>
+		}
+<span class="fc" id="L82">		String text = splitCamelCase(name.trim());</span>
+		// TODO: fix this
+<span class="fc" id="L84">		String result = unsplitWords(text);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (!result.endsWith(&quot;Application&quot;)) {</span>
+<span class="fc" id="L86">			result = result + &quot;Application&quot;;</span>
+		}
+<span class="fc" id="L88">		String candidate = StringUtils.capitalize(result);</span>
+<span class="fc bfc" id="L89" title="All 4 branches covered.">		if (hasInvalidChar(candidate) || this.env.invalidApplicationNames.contains(candidate)) {</span>
+<span class="fc" id="L90">			return this.env.fallbackApplicationName;</span>
+		}
+		else {
+<span class="fc" id="L93">			return candidate;</span>
+		}
+	}
+
+	/**
+	 * Clean the specified package name if necessary. If the package name cannot be
+	 * transformed to a valid package name, the {@code defaultPackageName} is used
+	 * instead.
+	 * &lt;p&gt;
+	 * The package name cannot be cleaned if the specified {@code packageName} is
+	 * {@code null} or if it contains an invalid character for a class identifier.
+	 * @param packageName the package name
+	 * @param language the project language
+	 * @param defaultPackageName the default package name
+	 * @return the cleaned package name
+	 * @see Env#getInvalidPackageNames()
+	 */
+	public String cleanPackageName(String packageName, Language language, String defaultPackageName) {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (!StringUtils.hasText(packageName)) {</span>
+<span class="fc" id="L112">			return defaultPackageName;</span>
+		}
+<span class="fc" id="L114">		String candidate = cleanPackageName(packageName);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!StringUtils.hasText(candidate)) {</span>
+<span class="fc" id="L116">			return defaultPackageName;</span>
+		}
+<span class="pc bpc" id="L118" title="1 of 4 branches missed.">		if (hasInvalidChar(candidate.replace(&quot;.&quot;, &quot;&quot;)) || this.env.invalidPackageNames.contains(candidate)) {</span>
+<span class="fc" id="L119">			return defaultPackageName;</span>
+		}
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		if (!supportsEscapingKeywordsInPackage(language)) {</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			if (hasReservedKeyword(language, candidate)) {</span>
+<span class="fc" id="L123">				return defaultPackageName;</span>
+			}
+		}
+<span class="fc" id="L126">		return candidate;</span>
+	}
+
+	private boolean supportsEscapingKeywordsInPackage(Language language) {
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		return (language != null) ? language.supportsEscapingKeywordsInPackage() : false;</span>
+	}
+
+	static String cleanPackageName(String packageName) {
+<span class="fc" id="L134">		String[] elements = packageName.trim().replaceAll(&quot;-&quot;, &quot;_&quot;).split(&quot;\\W+&quot;);</span>
+<span class="fc" id="L135">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		for (String element : elements) {</span>
+<span class="fc" id="L137">			element = element.replaceFirst(&quot;^[0-9]+(?!$)&quot;, &quot;_&quot;);</span>
+<span class="fc bfc" id="L138" title="All 4 branches covered.">			if (!element.matches(&quot;[0-9]+&quot;) &amp;&amp; !sb.isEmpty()) {</span>
+<span class="fc" id="L139">				sb.append(&quot;.&quot;);</span>
+			}
+<span class="fc" id="L141">			sb.append(element);</span>
+		}
+<span class="fc" id="L143">		return sb.toString();</span>
+	}
+
+	private static String unsplitWords(String text) {
+<span class="fc" id="L147">		return String.join(&quot;&quot;,</span>
+<span class="fc" id="L148">				Arrays.stream(text.split(&quot;([_\\- :])+&quot;)).map(StringUtils::capitalize).toArray(String[]::new));</span>
+	}
+
+	private static String splitCamelCase(String text) {
+<span class="fc" id="L152">		return String.join(&quot;&quot;,</span>
+<span class="fc" id="L153">				Arrays.stream(text.split(&quot;(?&lt;!(^|[A-Z]))(?=[A-Z])|(?&lt;!^)(?=[A-Z][a-z])&quot;))</span>
+<span class="fc" id="L154">					.map((it) -&gt; StringUtils.capitalize(it.toLowerCase()))</span>
+<span class="fc" id="L155">					.toArray(String[]::new));</span>
+	}
+
+	private static boolean hasInvalidChar(String text) {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		if (!Character.isJavaIdentifierStart(text.charAt(0))) {</span>
+<span class="fc" id="L160">			return true;</span>
+		}
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (text.length() &gt; 1) {</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">			for (int i = 1; i &lt; text.length(); i++) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">				if (!Character.isJavaIdentifierPart(text.charAt(i))) {</span>
+<span class="fc" id="L165">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L169">		return false;</span>
+	}
+
+	private static boolean hasReservedKeyword(Language language, String packageName) {
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (language == null) {</span>
+<span class="nc" id="L174">			return false;</span>
+		}
+<span class="fc" id="L176">		return Arrays.stream(packageName.split(&quot;\\.&quot;)).anyMatch(language::isKeyword);</span>
+	}
+
+	/**
+	 * Defines additional environment settings.
+	 */
+	public static class Env {
+
+		/**
+		 * The url of the repository servicing distribution bundle.
+		 */
+<span class="fc" id="L187">		private String artifactRepository = &quot;https://repo.spring.io/release/&quot;;</span>
+
+		/**
+		 * The metadata url of the Spring Boot project.
+		 */
+<span class="fc" id="L192">		private String springBootMetadataUrl = &quot;https://api.spring.io/projects/spring-boot/releases&quot;;</span>
+
+		/**
+		 * Tracking code for Google Analytics. Only enabled if a value is explicitly
+		 * provided.
+		 */
+		private String googleAnalyticsTrackingCode;
+
+		/**
+		 * The application name to use if none could be generated.
+		 */
+<span class="fc" id="L203">		private String fallbackApplicationName = &quot;Application&quot;;</span>
+
+		/**
+		 * The list of invalid application names. If such name is chosen or generated, the
+		 * &quot;fallbackApplicationName&quot; should be used instead.
+		 */
+<span class="fc" id="L209">		private List&lt;String&gt; invalidApplicationNames = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L210">				Arrays.asList(&quot;SpringApplication&quot;, &quot;SpringBootApplication&quot;));</span>
+
+		/**
+		 * The list of invalid package names. If such name is chosen or generated, the the
+		 * default package name should be used instead.
+		 */
+<span class="fc" id="L216">		private List&lt;String&gt; invalidPackageNames = new ArrayList&lt;&gt;(Collections.singletonList(&quot;org.springframework&quot;));</span>
+
+		/**
+		 * Force SSL support. When enabled, any access using http generate https links and
+		 * browsers are redirected to https for html content.
+		 */
+		private boolean forceSsl;
+
+		/**
+		 * The &quot;BillOfMaterials&quot; that are referenced in this instance, identified by an
+		 * arbitrary identifier that can be used in the dependencies definition.
+		 */
+<span class="fc" id="L228">		private final Map&lt;String, BillOfMaterials&gt; boms = new LinkedHashMap&lt;&gt;();</span>
+
+		/**
+		 * The &quot;Repository&quot; instances that are referenced in this instance, identified by
+		 * an arbitrary identifier that can be used in the dependencies definition.
+		 */
+<span class="fc" id="L234">		private final Map&lt;String, Repository&gt; repositories = new LinkedHashMap&lt;&gt;();</span>
+
+		/**
+		 * Gradle-specific settings.
+		 */
+<span class="fc" id="L239">		@NestedConfigurationProperty</span>
+		private final Gradle gradle = new Gradle();
+
+		/**
+		 * Kotlin-specific settings.
+		 */
+<span class="fc" id="L245">		@NestedConfigurationProperty</span>
+		private final Kotlin kotlin = new Kotlin();
+
+		/**
+		 * Maven-specific settings.
+		 */
+<span class="fc" id="L251">		@NestedConfigurationProperty</span>
+		private final Maven maven = new Maven();
+
+		/**
+		 * Platform-specific settings.
+		 */
+<span class="fc" id="L257">		@NestedConfigurationProperty</span>
+		private final Platform platform = new Platform();
+
+<span class="fc" id="L260">		public Env() {</span>
+			try {
+<span class="fc" id="L262">				this.repositories.put(&quot;spring-snapshots&quot;,</span>
+						new Repository(&quot;Spring Snapshots&quot;, new URL(&quot;https://repo.spring.io/snapshot&quot;), false, true));
+<span class="fc" id="L264">				this.repositories.put(&quot;spring-milestones&quot;,</span>
+						new Repository(&quot;Spring Milestones&quot;, new URL(&quot;https://repo.spring.io/milestone&quot;), true, false));
+			}
+<span class="nc" id="L267">			catch (MalformedURLException ex) {</span>
+<span class="nc" id="L268">				throw new IllegalStateException(&quot;Cannot parse URL&quot;, ex);</span>
+<span class="fc" id="L269">			}</span>
+<span class="fc" id="L270">		}</span>
+
+		public String getSpringBootMetadataUrl() {
+<span class="fc" id="L273">			return this.springBootMetadataUrl;</span>
+		}
+
+		public void setSpringBootMetadataUrl(String springBootMetadataUrl) {
+<span class="nc" id="L277">			this.springBootMetadataUrl = springBootMetadataUrl;</span>
+<span class="nc" id="L278">		}</span>
+
+		public String getGoogleAnalyticsTrackingCode() {
+<span class="nc" id="L281">			return this.googleAnalyticsTrackingCode;</span>
+		}
+
+		public void setGoogleAnalyticsTrackingCode(String googleAnalyticsTrackingCode) {
+<span class="fc" id="L285">			this.googleAnalyticsTrackingCode = googleAnalyticsTrackingCode;</span>
+<span class="fc" id="L286">		}</span>
+
+		public String getFallbackApplicationName() {
+<span class="fc" id="L289">			return this.fallbackApplicationName;</span>
+		}
+
+		public void setFallbackApplicationName(String fallbackApplicationName) {
+<span class="fc" id="L293">			this.fallbackApplicationName = fallbackApplicationName;</span>
+<span class="fc" id="L294">		}</span>
+
+		public List&lt;String&gt; getInvalidApplicationNames() {
+<span class="fc" id="L297">			return this.invalidApplicationNames;</span>
+		}
+
+		public void setInvalidApplicationNames(List&lt;String&gt; invalidApplicationNames) {
+<span class="fc" id="L301">			this.invalidApplicationNames = invalidApplicationNames;</span>
+<span class="fc" id="L302">		}</span>
+
+		public List&lt;String&gt; getInvalidPackageNames() {
+<span class="nc" id="L305">			return this.invalidPackageNames;</span>
+		}
+
+		public void setInvalidPackageNames(List&lt;String&gt; invalidPackageNames) {
+<span class="nc" id="L309">			this.invalidPackageNames = invalidPackageNames;</span>
+<span class="nc" id="L310">		}</span>
+
+		public boolean isForceSsl() {
+<span class="fc" id="L313">			return this.forceSsl;</span>
+		}
+
+		public void setForceSsl(boolean forceSsl) {
+<span class="fc" id="L317">			this.forceSsl = forceSsl;</span>
+<span class="fc" id="L318">		}</span>
+
+		public String getArtifactRepository() {
+<span class="fc" id="L321">			return this.artifactRepository;</span>
+		}
+
+		public Map&lt;String, BillOfMaterials&gt; getBoms() {
+<span class="fc" id="L325">			return this.boms;</span>
+		}
+
+		public Map&lt;String, Repository&gt; getRepositories() {
+<span class="fc" id="L329">			return this.repositories;</span>
+		}
+
+		public Gradle getGradle() {
+<span class="nc" id="L333">			return this.gradle;</span>
+		}
+
+		public Kotlin getKotlin() {
+<span class="fc" id="L337">			return this.kotlin;</span>
+		}
+
+		public Maven getMaven() {
+<span class="fc" id="L341">			return this.maven;</span>
+		}
+
+		public Platform getPlatform() {
+<span class="fc" id="L345">			return this.platform;</span>
+		}
+
+		public void setArtifactRepository(String artifactRepository) {
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">			if (!artifactRepository.endsWith(&quot;/&quot;)) {</span>
+<span class="fc" id="L350">				artifactRepository = artifactRepository + &quot;/&quot;;</span>
+			}
+<span class="fc" id="L352">			this.artifactRepository = artifactRepository;</span>
+<span class="fc" id="L353">		}</span>
+
+		public void validate() {
+<span class="fc" id="L356">			this.maven.parent.validate();</span>
+<span class="fc" id="L357">			this.boms.forEach((k, v) -&gt; v.validate());</span>
+<span class="fc" id="L358">			this.kotlin.validate();</span>
+<span class="fc" id="L359">			updateCompatibilityRange(VersionParser.DEFAULT);</span>
+<span class="fc" id="L360">		}</span>
+
+		public void updateCompatibilityRange(VersionParser versionParser) {
+<span class="fc" id="L363">			this.getBoms().values().forEach((it) -&gt; it.updateCompatibilityRange(versionParser));</span>
+<span class="fc" id="L364">			this.getKotlin().updateCompatibilityRange(versionParser);</span>
+<span class="fc" id="L365">			this.getPlatform().updateCompatibilityRange(versionParser);</span>
+<span class="fc" id="L366">		}</span>
+
+		public void merge(Env other) {
+<span class="fc" id="L369">			this.artifactRepository = other.artifactRepository;</span>
+<span class="fc" id="L370">			this.springBootMetadataUrl = other.springBootMetadataUrl;</span>
+<span class="fc" id="L371">			this.googleAnalyticsTrackingCode = other.googleAnalyticsTrackingCode;</span>
+<span class="fc" id="L372">			this.fallbackApplicationName = other.fallbackApplicationName;</span>
+<span class="fc" id="L373">			this.invalidApplicationNames = other.invalidApplicationNames;</span>
+<span class="fc" id="L374">			this.forceSsl = other.forceSsl;</span>
+<span class="fc" id="L375">			this.gradle.merge(other.gradle);</span>
+<span class="fc" id="L376">			this.kotlin.merge(other.kotlin);</span>
+<span class="fc" id="L377">			this.maven.merge(other.maven);</span>
+<span class="fc" id="L378">			this.platform.merge(other.platform);</span>
+<span class="fc" id="L379">			other.boms.forEach(this.boms::putIfAbsent);</span>
+<span class="fc" id="L380">			other.repositories.forEach(this.repositories::putIfAbsent);</span>
+<span class="fc" id="L381">		}</span>
+
+		/**
+		 * Gradle details.
+		 */
+<span class="fc" id="L386">		public static class Gradle {</span>
+
+			/**
+			 * Version of the &quot;dependency-management-plugin&quot; to use.
+			 */
+<span class="fc" id="L391">			private String dependencyManagementPluginVersion = &quot;1.0.0.RELEASE&quot;;</span>
+
+			private void merge(Gradle other) {
+<span class="fc" id="L394">				this.dependencyManagementPluginVersion = other.dependencyManagementPluginVersion;</span>
+<span class="fc" id="L395">			}</span>
+
+			public String getDependencyManagementPluginVersion() {
+<span class="nc" id="L398">				return this.dependencyManagementPluginVersion;</span>
+			}
+
+			public void setDependencyManagementPluginVersion(String dependencyManagementPluginVersion) {
+<span class="nc" id="L402">				this.dependencyManagementPluginVersion = dependencyManagementPluginVersion;</span>
+<span class="nc" id="L403">			}</span>
+
+		}
+
+		/**
+		 * Kotlin details.
+		 */
+<span class="fc" id="L410">		public static class Kotlin {</span>
+
+			/**
+			 * Default kotlin version.
+			 */
+			private String defaultVersion;
+
+			/**
+			 * Kotlin version mappings.
+			 */
+<span class="fc" id="L420">			private final List&lt;Mapping&gt; mappings = new ArrayList&lt;&gt;();</span>
+
+			/**
+			 * Resolve the kotlin version to use based on the Spring Boot version.
+			 * @param bootVersion the Spring Boot version
+			 * @return the kotlin version to use
+			 */
+			public String resolveKotlinVersion(Version bootVersion) {
+<span class="fc bfc" id="L428" title="All 2 branches covered.">				for (Mapping mapping : this.mappings) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">					if (mapping.range.match(bootVersion)) {</span>
+<span class="fc" id="L430">						return mapping.version;</span>
+					}
+<span class="fc" id="L432">				}</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">				if (this.defaultVersion == null) {</span>
+<span class="nc" id="L434">					throw new InvalidInitializrMetadataException(</span>
+							&quot;No Kotlin version mapping available for &quot; + bootVersion);
+				}
+<span class="fc" id="L437">				return this.defaultVersion;</span>
+			}
+
+			public String getDefaultVersion() {
+<span class="fc" id="L441">				return this.defaultVersion;</span>
+			}
+
+			public void setDefaultVersion(String defaultVersion) {
+<span class="fc" id="L445">				this.defaultVersion = defaultVersion;</span>
+<span class="fc" id="L446">			}</span>
+
+			public List&lt;Mapping&gt; getMappings() {
+<span class="fc" id="L449">				return this.mappings;</span>
+			}
+
+			public void validate() {
+<span class="fc" id="L453">				this.mappings.forEach((m) -&gt; {</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">					if (m.compatibilityRange == null) {</span>
+<span class="nc" id="L455">						throw new InvalidInitializrMetadataException(</span>
+								&quot;CompatibilityRange is mandatory, invalid version mapping for &quot; + this);
+					}
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">					if (m.version == null) {</span>
+<span class="nc" id="L459">						throw new InvalidInitializrMetadataException(</span>
+								&quot;Version is mandatory, invalid version mapping for &quot; + this);
+					}
+<span class="fc" id="L462">				});</span>
+<span class="fc" id="L463">				updateCompatibilityRange(VersionParser.DEFAULT);</span>
+<span class="fc" id="L464">			}</span>
+
+			public void updateCompatibilityRange(VersionParser versionParser) {
+<span class="fc" id="L467">				this.mappings.forEach((it) -&gt; {</span>
+					try {
+<span class="fc" id="L469">						it.range = versionParser.parseRange(it.compatibilityRange);</span>
+					}
+<span class="nc" id="L471">					catch (InvalidVersionException ex) {</span>
+<span class="nc" id="L472">						throw new InvalidInitializrMetadataException(</span>
+								&quot;Invalid compatibility range &quot; + it.compatibilityRange + &quot; for &quot; + this, ex);
+<span class="fc" id="L474">					}</span>
+<span class="fc" id="L475">				});</span>
+<span class="fc" id="L476">			}</span>
+
+			private void merge(Kotlin other) {
+<span class="fc" id="L479">				this.defaultVersion = other.defaultVersion;</span>
+<span class="fc" id="L480">				this.mappings.clear();</span>
+<span class="fc" id="L481">				this.mappings.addAll(other.mappings);</span>
+<span class="fc" id="L482">			}</span>
+
+			/**
+			 * Map several attribute of the dependency for a given compatibility range.
+			 */
+<span class="fc" id="L487">			public static class Mapping {</span>
+
+				/**
+				 * The compatibility range of this mapping.
+				 */
+				private String compatibilityRange;
+
+				/**
+				 * The kotlin version for this mapping.
+				 */
+				private String version;
+
+				@JsonIgnore
+				private VersionRange range;
+
+				public String getCompatibilityRange() {
+<span class="nc" id="L503">					return this.compatibilityRange;</span>
+				}
+
+				public void setCompatibilityRange(String compatibilityRange) {
+<span class="fc" id="L507">					this.compatibilityRange = compatibilityRange;</span>
+<span class="fc" id="L508">				}</span>
+
+				public String getVersion() {
+<span class="nc" id="L511">					return this.version;</span>
+				}
+
+				public void setVersion(String version) {
+<span class="fc" id="L515">					this.version = version;</span>
+<span class="fc" id="L516">				}</span>
+
+			}
+
+		}
+
+		/**
+		 * Maven details.
+		 */
+<span class="fc" id="L525">		public static class Maven {</span>
+
+			private static final String DEFAULT_PARENT_GROUP_ID = &quot;org.springframework.boot&quot;;
+
+			private static final String DEFAULT_PARENT_ARTIFACT_ID = &quot;spring-boot-starter-parent&quot;;
+
+			/**
+			 * Custom parent pom to use for generated projects.
+			 */
+<span class="fc" id="L534">			private final ParentPom parent = new ParentPom();</span>
+
+			public ParentPom getParent() {
+<span class="fc" id="L537">				return this.parent;</span>
+			}
+
+			private void merge(Maven other) {
+<span class="fc" id="L541">				this.parent.groupId = other.parent.groupId;</span>
+<span class="fc" id="L542">				this.parent.artifactId = other.parent.artifactId;</span>
+<span class="fc" id="L543">				this.parent.version = other.parent.version;</span>
+<span class="fc" id="L544">				this.parent.includeSpringBootBom = other.parent.includeSpringBootBom;</span>
+<span class="fc" id="L545">			}</span>
+
+			/**
+			 * Resolve the parent pom to use. If no custom parent pom is set, the standard
+			 * spring boot parent pom with the specified {@code bootVersion} is used.
+			 * @param bootVersion the Spring Boot version
+			 * @return the parent POM
+			 */
+			public ParentPom resolveParentPom(String bootVersion) {
+<span class="nc bnc" id="L554" title="All 2 branches missed.">				return (StringUtils.hasText(this.parent.groupId) ? this.parent</span>
+<span class="nc" id="L555">						: new ParentPom(DEFAULT_PARENT_GROUP_ID, DEFAULT_PARENT_ARTIFACT_ID, bootVersion, &quot;&quot;));</span>
+			}
+
+			/**
+			 * Check if the specified {@link ParentPom} is the default spring boot starter
+			 * parent.
+			 * @param parentPom the parent pom to check
+			 * @return {@code true} if the {@code parentPom} is the spring boot starter
+			 * parent
+			 */
+			public boolean isSpringBootStarterParent(ParentPom parentPom) {
+<span class="nc bnc" id="L566" title="All 2 branches missed.">				return DEFAULT_PARENT_GROUP_ID.equals(parentPom.getGroupId())</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">						&amp;&amp; DEFAULT_PARENT_ARTIFACT_ID.equals(parentPom.getArtifactId());</span>
+			}
+
+			/**
+			 * Parent POM details.
+			 */
+			public static class ParentPom {
+
+				/**
+				 * Parent pom groupId.
+				 */
+				private String groupId;
+
+				/**
+				 * Parent pom artifactId.
+				 */
+				private String artifactId;
+
+				/**
+				 * Parent pom version.
+				 */
+				private String version;
+
+				/**
+				 * Parent relative path.
+				 */
+<span class="pc" id="L593">				private String relativePath = &quot;&quot;;</span>
+
+				/**
+				 * Add the &quot;spring-boot-dependencies&quot; BOM to the project.
+				 */
+				private boolean includeSpringBootBom;
+
+<span class="nc" id="L600">				public ParentPom(String groupId, String artifactId, String version, String relativePath) {</span>
+<span class="nc" id="L601">					this.groupId = groupId;</span>
+<span class="nc" id="L602">					this.artifactId = artifactId;</span>
+<span class="nc" id="L603">					this.version = version;</span>
+<span class="nc" id="L604">					this.relativePath = relativePath;</span>
+<span class="nc" id="L605">				}</span>
+
+<span class="fc" id="L607">				public ParentPom() {</span>
+<span class="fc" id="L608">				}</span>
+
+				public String getGroupId() {
+<span class="nc" id="L611">					return this.groupId;</span>
+				}
+
+				public void setGroupId(String groupId) {
+<span class="fc" id="L615">					this.groupId = groupId;</span>
+<span class="fc" id="L616">				}</span>
+
+				public String getArtifactId() {
+<span class="nc" id="L619">					return this.artifactId;</span>
+				}
+
+				public void setArtifactId(String artifactId) {
+<span class="fc" id="L623">					this.artifactId = artifactId;</span>
+<span class="fc" id="L624">				}</span>
+
+				public String getVersion() {
+<span class="nc" id="L627">					return this.version;</span>
+				}
+
+				public void setVersion(String version) {
+<span class="nc" id="L631">					this.version = version;</span>
+<span class="nc" id="L632">				}</span>
+
+				public String getRelativePath() {
+<span class="nc" id="L635">					return this.relativePath;</span>
+				}
+
+				public void setRelativePath(String relativePath) {
+<span class="nc" id="L639">					this.relativePath = relativePath;</span>
+<span class="nc" id="L640">				}</span>
+
+				public boolean isIncludeSpringBootBom() {
+<span class="nc" id="L643">					return this.includeSpringBootBom;</span>
+				}
+
+				public void setIncludeSpringBootBom(boolean includeSpringBootBom) {
+<span class="nc" id="L647">					this.includeSpringBootBom = includeSpringBootBom;</span>
+<span class="nc" id="L648">				}</span>
+
+				public void validate() {
+<span class="pc bpc" id="L651" title="1 of 4 branches missed.">					if (!((!StringUtils.hasText(this.groupId) &amp;&amp; !StringUtils.hasText(this.artifactId)</span>
+<span class="pc bpc" id="L652" title="1 of 2 branches missed.">							&amp;&amp; !StringUtils.hasText(this.version))</span>
+<span class="pc bpc" id="L653" title="2 of 4 branches missed.">							|| (StringUtils.hasText(this.groupId) &amp;&amp; StringUtils.hasText(this.artifactId)</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">									&amp;&amp; StringUtils.hasText(this.version)))) {</span>
+<span class="fc" id="L655">						throw new InvalidInitializrMetadataException(</span>
+								&quot;Custom maven pom &quot; + &quot;requires groupId, artifactId and version&quot;);
+					}
+<span class="fc" id="L658">				}</span>
+
+			}
+
+		}
+
+	}
+
+	/**
+	 * Platform-specific settings.
+	 */
+<span class="fc" id="L669">	public static class Platform {</span>
+
+		/**
+		 * Compatibility range of supported platform versions. Requesting metadata or
+		 * project generation with a platform version that does not match this range is
+		 * not supported.
+		 */
+		private String compatibilityRange;
+
+		@JsonIgnore
+		private VersionRange range;
+
+		/**
+		 * Compatibility range of platform versions using the first version format.
+		 */
+		private String v1FormatCompatibilityRange;
+
+		@JsonIgnore
+		private VersionRange v1FormatRange;
+
+		/**
+		 * Compatibility range of platform versions using the second version format.
+		 */
+		private String v2FormatCompatibilityRange;
+
+		@JsonIgnore
+		private VersionRange v2FormatRange;
+
+		public void updateCompatibilityRange(VersionParser versionParser) {
+<span class="pc bpc" id="L698" title="1 of 2 branches missed.">			this.range = (this.compatibilityRange != null) ? versionParser.parseRange(this.compatibilityRange) : null;</span>
+<span class="pc bpc" id="L699" title="1 of 2 branches missed.">			this.v1FormatRange = (this.v1FormatCompatibilityRange != null)</span>
+<span class="pc" id="L700">					? versionParser.parseRange(this.v1FormatCompatibilityRange) : null;</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">			this.v2FormatRange = (this.v2FormatCompatibilityRange != null)</span>
+<span class="pc" id="L702">					? versionParser.parseRange(this.v2FormatCompatibilityRange) : null;</span>
+<span class="fc" id="L703">		}</span>
+
+		private void merge(Platform other) {
+<span class="fc" id="L706">			this.compatibilityRange = other.compatibilityRange;</span>
+<span class="fc" id="L707">			this.range = other.range;</span>
+<span class="fc" id="L708">			this.v1FormatCompatibilityRange = other.v1FormatCompatibilityRange;</span>
+<span class="fc" id="L709">			this.v1FormatRange = other.v1FormatRange;</span>
+<span class="fc" id="L710">			this.v2FormatCompatibilityRange = other.v2FormatCompatibilityRange;</span>
+<span class="fc" id="L711">			this.v2FormatRange = other.v2FormatRange;</span>
+<span class="fc" id="L712">		}</span>
+
+		/**
+		 * Specify whether the specified {@linkplain Version platform version} is
+		 * supported.
+		 * @param platformVersion the platform version to check
+		 * @return {@code true} if this version is supported, {@code false} otherwise
+		 */
+		public boolean isCompatibleVersion(Version platformVersion) {
+<span class="nc bnc" id="L721" title="All 4 branches missed.">			return (this.range == null || this.range.match(platformVersion));</span>
+		}
+
+		public String determineCompatibilityRangeRequirement() {
+<span class="nc" id="L725">			return this.range.toString();</span>
+		}
+
+		/**
+		 * Format the expected {@link Version platform version}.
+		 * @param platformVersion a platform version
+		 * @return a platform version in the suitable format
+		 */
+		public Version formatPlatformVersion(Version platformVersion) {
+<span class="nc" id="L734">			Format format = getExpectedVersionFormat(platformVersion);</span>
+<span class="nc" id="L735">			return platformVersion.format(format);</span>
+		}
+
+		private Format getExpectedVersionFormat(Version version) {
+<span class="nc bnc" id="L739" title="All 4 branches missed.">			if (this.v2FormatRange != null &amp;&amp; this.v2FormatRange.match(version)) {</span>
+<span class="nc" id="L740">				return Format.V2;</span>
+			}
+<span class="nc bnc" id="L742" title="All 4 branches missed.">			if (this.v1FormatRange != null &amp;&amp; this.v1FormatRange.match(version)) {</span>
+<span class="nc" id="L743">				return Format.V1;</span>
+			}
+<span class="nc" id="L745">			return version.getFormat();</span>
+		}
+
+		public String getCompatibilityRange() {
+<span class="nc" id="L749">			return this.compatibilityRange;</span>
+		}
+
+		public void setCompatibilityRange(String compatibilityRange) {
+<span class="nc" id="L753">			this.compatibilityRange = compatibilityRange;</span>
+<span class="nc" id="L754">		}</span>
+
+		public String getV1FormatCompatibilityRange() {
+<span class="nc" id="L757">			return this.v1FormatCompatibilityRange;</span>
+		}
+
+		public void setV1FormatCompatibilityRange(String v1FormatCompatibilityRange) {
+<span class="nc" id="L761">			this.v1FormatCompatibilityRange = v1FormatCompatibilityRange;</span>
+<span class="nc" id="L762">		}</span>
+
+		public String getV2FormatCompatibilityRange() {
+<span class="nc" id="L765">			return this.v2FormatCompatibilityRange;</span>
+		}
+
+		public void setV2FormatCompatibilityRange(String v2FormatCompatibilityRange) {
+<span class="nc" id="L769">			this.v2FormatCompatibilityRange = v2FormatCompatibilityRange;</span>
+<span class="nc" id="L770">		}</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleExtension.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleExtension.java</span></div><h1>GradleExtension.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+
+/**
+ * A customization for a Gradle extension.
+ *
+ * @author Moritz Halbritter
+ */
+public class GradleExtension {
+
+	private final String name;
+
+	private final List&lt;Attribute&gt; attributes;
+
+	private final List&lt;Invocation&gt; invocations;
+
+	private final Map&lt;String, GradleExtension&gt; nested;
+
+	private final Set&lt;String&gt; importedTypes;
+
+<span class="fc" id="L47">	protected GradleExtension(Builder builder) {</span>
+<span class="fc" id="L48">		this.name = builder.name;</span>
+<span class="fc" id="L49">		this.attributes = List.copyOf(builder.attributes.values());</span>
+<span class="fc" id="L50">		this.invocations = List.copyOf(builder.invocations);</span>
+<span class="fc" id="L51">		this.nested = Collections.unmodifiableMap(resolve(builder.nested));</span>
+<span class="fc" id="L52">		this.importedTypes = collectImportedTypes(builder);</span>
+<span class="fc" id="L53">	}</span>
+
+	private static Set&lt;String&gt; collectImportedTypes(Builder builder) {
+<span class="fc" id="L56">		Set&lt;String&gt; result = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L57">		addImportedTypes(result, builder);</span>
+<span class="fc" id="L58">		return Collections.unmodifiableSet(result);</span>
+	}
+
+	private static void addImportedTypes(Set&lt;String&gt; importedTypes, Builder builder) {
+<span class="fc" id="L62">		importedTypes.addAll(builder.importedTypes);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		for (Builder nested : builder.nested.values()) {</span>
+<span class="fc" id="L64">			addImportedTypes(importedTypes, nested);</span>
+<span class="fc" id="L65">		}</span>
+<span class="fc" id="L66">	}</span>
+
+	private static Map&lt;String, GradleExtension&gt; resolve(Map&lt;String, Builder&gt; extensions) {
+<span class="fc" id="L69">		Map&lt;String, GradleExtension&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L70">		extensions.forEach((name, builder) -&gt; result.put(name, builder.build()));</span>
+<span class="fc" id="L71">		return result;</span>
+	}
+
+	/**
+	 * Return the name of the extension.
+	 * @return the extension name
+	 */
+	public String getName() {
+<span class="fc" id="L79">		return this.name;</span>
+	}
+
+	/**
+	 * Return the attributes that should be configured for this extension.
+	 * @return extension attributes
+	 */
+	public List&lt;Attribute&gt; getAttributes() {
+<span class="fc" id="L87">		return this.attributes;</span>
+	}
+
+	/**
+	 * Return the {@link Invocation invocations} of this extension.
+	 * @return extension invocations
+	 */
+	public List&lt;Invocation&gt; getInvocations() {
+<span class="fc" id="L95">		return this.invocations;</span>
+	}
+
+	/**
+	 * Return nested {@link GradleExtension extensions}.
+	 * @return nested extensions
+	 */
+	public Map&lt;String, GradleExtension&gt; getNested() {
+<span class="fc" id="L103">		return this.nested;</span>
+	}
+
+	/**
+	 * Return the imported types.
+	 * @return imported types
+	 */
+	public Set&lt;String&gt; getImportedTypes() {
+<span class="fc" id="L111">		return this.importedTypes;</span>
+	}
+
+	/**
+	 * Builder for {@link GradleExtension}.
+	 */
+	public static class Builder {
+
+		private final String name;
+
+<span class="fc" id="L121">		private final Map&lt;String, Attribute&gt; attributes = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L123">		private final List&lt;Invocation&gt; invocations = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L125">		private final Map&lt;String, Builder&gt; nested = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L127">		private final Set&lt;String&gt; importedTypes = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L129">		protected Builder(String name) {</span>
+<span class="fc" id="L130">			this.name = name;</span>
+<span class="fc" id="L131">		}</span>
+
+		/**
+		 * Import a given type.
+		 * @param type the type to import
+		 */
+		public void importType(String type) {
+<span class="fc" id="L138">			this.importedTypes.add(type);</span>
+<span class="fc" id="L139">		}</span>
+
+		/**
+		 * Set a extension attribute.
+		 * @param target the name of the attribute
+		 * @param value the value
+		 */
+		public void attribute(String target, String value) {
+<span class="fc" id="L147">			this.attributes.put(target, Attribute.set(target, value));</span>
+<span class="fc" id="L148">		}</span>
+
+		/**
+		 * Set an extension attribute with a type.
+		 * @param target the name of the attribute
+		 * @param value the value
+		 * @param type the type to import
+		 */
+		public void attributeWithType(String target, String value, String type) {
+<span class="fc" id="L157">			importType(type);</span>
+<span class="fc" id="L158">			attribute(target, value);</span>
+<span class="fc" id="L159">		}</span>
+
+		/**
+		 * Configure an extension attribute by appending the specified value.
+		 * @param target the name of the attribute
+		 * @param value the value to append
+		 */
+		public void append(String target, String value) {
+<span class="fc" id="L167">			this.attributes.put(target, Attribute.append(target, value));</span>
+<span class="fc" id="L168">		}</span>
+
+		/**
+		 * Configure an extension attribute by appending the specified value and type.
+		 * @param target the name of the attribute
+		 * @param value the value to append
+		 * @param type the type to import
+		 */
+		public void appendWithType(String target, String value, String type) {
+<span class="fc" id="L177">			importType(type);</span>
+<span class="fc" id="L178">			append(target, value);</span>
+<span class="fc" id="L179">		}</span>
+
+		/**
+		 * Invoke an extension method.
+		 * @param target the name of the method
+		 * @param arguments the arguments
+		 */
+		public void invoke(String target, String... arguments) {
+<span class="fc" id="L187">			this.invocations.add(new Invocation(target, Arrays.asList(arguments)));</span>
+<span class="fc" id="L188">		}</span>
+
+		/**
+		 * Invoke an extension method.
+		 * @param target the name of the method
+		 * @param arguments the arguments
+		 */
+		public void invoke(String target, Collection&lt;String&gt; arguments) {
+<span class="nc" id="L196">			this.invocations.add(new Invocation(target, List.copyOf(arguments)));</span>
+<span class="nc" id="L197">		}</span>
+
+		/**
+		 * Invoke an extension method.
+		 * @param target the name of the method
+		 * @param type the type to import
+		 * @param arguments the arguments
+		 */
+		public void invokeWithType(String target, String type, String... arguments) {
+<span class="fc" id="L206">			importType(type);</span>
+<span class="fc" id="L207">			invoke(target, arguments);</span>
+<span class="fc" id="L208">		}</span>
+
+		/**
+		 * Invoke an extension method.
+		 * @param target the name of the method
+		 * @param type the type to import
+		 * @param arguments the arguments
+		 */
+		public void invokeWithType(String target, String type, Collection&lt;String&gt; arguments) {
+<span class="nc" id="L217">			importType(type);</span>
+<span class="nc" id="L218">			invoke(target, arguments);</span>
+<span class="nc" id="L219">		}</span>
+
+		/**
+		 * Customize a nested extension for the specified name. If such nested extension
+		 * has already been added, the consumer can be used to further tune the existing
+		 * extension configuration.
+		 * @param name a extension name
+		 * @param customizer a {@link Consumer} to customize the nested extension
+		 */
+		public void nested(String name, Consumer&lt;Builder&gt; customizer) {
+<span class="fc" id="L229">			customizer.accept(this.nested.computeIfAbsent(name, (ignored) -&gt; new Builder(name)));</span>
+<span class="fc" id="L230">		}</span>
+
+		/**
+		 * Build a {@link GradleExtension} with the current state of this builder.
+		 * @return a {@link GradleExtension}
+		 */
+		public GradleExtension build() {
+<span class="fc" id="L237">			return new GradleExtension(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

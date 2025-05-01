@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractJvmModuleAssert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.project</a> &gt; <span class="el_source">AbstractJvmModuleAssert.java</span></div><h1>AbstractJvmModuleAssert.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.project;
+
+import java.nio.file.Path;
+
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.language.SourceStructure;
+import io.spring.initializr.generator.test.io.TextAssert;
+import org.assertj.core.api.PathAssert;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * Base class for JVM module assertions.
+ *
+ * @param &lt;SELF&gt; the type of the concrete assert implementations
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractJvmModuleAssert&lt;SELF extends AbstractJvmModuleAssert&lt;SELF&gt;&gt;
+		extends AbstractProjectAssert&lt;SELF&gt; {
+
+	private final SourceStructure mainDirectory;
+
+	private final SourceStructure testDirectory;
+
+	private final String sourceFileExtension;
+
+	protected AbstractJvmModuleAssert(Path projectDirectory, Language language, Class&lt;?&gt; selfType) {
+<span class="fc" id="L44">		super(projectDirectory, selfType);</span>
+<span class="fc" id="L45">		this.mainDirectory = new SourceStructure(projectDirectory.resolve(&quot;src/main/&quot;), language);</span>
+<span class="fc" id="L46">		this.testDirectory = new SourceStructure(projectDirectory.resolve(&quot;src/test/&quot;), language);</span>
+<span class="fc" id="L47">		this.sourceFileExtension = language.sourceFileExtension();</span>
+<span class="fc" id="L48">	}</span>
+
+	/**
+	 * Assert that the main source defines the specified package.
+	 * @param packageName the name of the package
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasMainPackage(String packageName) {
+<span class="fc" id="L56">		return hasPackage(this.mainDirectory.getSourcesDirectory(), packageName);</span>
+	}
+
+	/**
+	 * Assert that the main source defines the specified type.
+	 * @param packageName the name of a package
+	 * @param name the name of the type
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasMainSource(String packageName, String name) {
+<span class="fc" id="L66">		validateAndGetAsset(this.mainDirectory.getSourcesDirectory(), packageName, name);</span>
+<span class="fc" id="L67">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert that the main source defines the specified type and return an
+	 * {@link TextAssert assert} for it, to allow chaining of text-specific assertions
+	 * from this call.
+	 * @param packageName the name of a package
+	 * @param name the name of the type
+	 * @return a {@link TextAssert} for the specified source
+	 */
+	public TextAssert mainSource(String packageName, String name) {
+<span class="fc" id="L79">		return new TextAssert(validateAndGetAsset(this.mainDirectory.getSourcesDirectory(), packageName, name));</span>
+	}
+
+	/**
+	 * Assert that the main resources defines the specified resource.
+	 * @param resourcePath the path of a resource relative to the {@code resources}
+	 * directory
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasMainResource(String resourcePath) {
+<span class="fc" id="L89">		return hasResource(this.mainDirectory.getRootDirectory().resolve(&quot;resources&quot;), resourcePath);</span>
+	}
+
+	/**
+	 * Assert that the test source defines the specified package.
+	 * @param packageName the name of the package
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasTestPackage(String packageName) {
+<span class="fc" id="L98">		return hasPackage(this.testDirectory.getSourcesDirectory(), packageName);</span>
+	}
+
+	/**
+	 * Assert that the test source defines the specified type.
+	 * @param packageName the name of a package
+	 * @param name the name of the type
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasTestSource(String packageName, String name) {
+<span class="fc" id="L108">		validateAndGetAsset(this.testDirectory.getSourcesDirectory(), packageName, name);</span>
+<span class="fc" id="L109">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert that the test source defines the specified type and return an
+	 * {@link TextAssert assert} for it, to allow chaining of text-specific assertions
+	 * from this call.
+	 * @param packageName the name of a package
+	 * @param name the name of the type
+	 * @return a {@link TextAssert} for the specified source
+	 */
+	public TextAssert testSource(String packageName, String name) {
+<span class="fc" id="L121">		return new TextAssert(validateAndGetAsset(this.testDirectory.getSourcesDirectory(), packageName, name));</span>
+	}
+
+	private SELF hasPackage(Path baseDir, String packageName) {
+<span class="fc" id="L125">		Path expected = baseDir.resolve(packageToPath(packageName));</span>
+<span class="fc" id="L126">		new PathAssert(expected).exists().isDirectory();</span>
+<span class="fc" id="L127">		return this.myself;</span>
+	}
+
+	private Path validateAndGetAsset(Path baseDir, String packageName, String name) {
+<span class="fc" id="L131">		Path source = resolveSource(baseDir, packageName, name);</span>
+<span class="fc" id="L132">		new PathAssert(source)</span>
+<span class="fc" id="L133">			.as(&quot;Source '%s.%s' not found in package '%s'&quot;, name, this.sourceFileExtension, packageName)</span>
+<span class="fc" id="L134">			.exists()</span>
+<span class="fc" id="L135">			.isRegularFile();</span>
+<span class="fc" id="L136">		return source;</span>
+	}
+
+	private SELF hasResource(Path baseDir, String relativePath) {
+<span class="fc" id="L140">		Path path = baseDir.resolve(relativePath);</span>
+<span class="fc" id="L141">		new PathAssert(path).as(&quot;Resource '%s' not found&quot;, relativePath).exists().isRegularFile();</span>
+<span class="fc" id="L142">		return this.myself;</span>
+	}
+
+	private Path resolveSource(Path baseDir, String packageName, String name) {
+<span class="fc" id="L146">		return baseDir.resolve(createSourceRelativePath(packageName, name));</span>
+	}
+
+	private String createSourceRelativePath(String packageName, String name) {
+<span class="fc" id="L150">		return packageToPath(packageName) + &quot;/&quot; + name + &quot;.&quot; + this.sourceFileExtension;</span>
+	}
+
+	private static String packageToPath(String packageName) {
+<span class="fc" id="L154">		String packagePath = packageName.replace(&quot;.&quot;, &quot;/&quot;);</span>
+<span class="fc" id="L155">		return StringUtils.trimTrailingCharacter(packagePath, '/');</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
