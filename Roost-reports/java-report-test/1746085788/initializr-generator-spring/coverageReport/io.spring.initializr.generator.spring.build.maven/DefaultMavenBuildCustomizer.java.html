@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultMavenBuildCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.build.maven</a> &gt; <span class="el_source">DefaultMavenBuildCustomizer.java</span></div><h1>DefaultMavenBuildCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.build.maven;
+
+import io.spring.initializr.generator.buildsystem.BillOfMaterials;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuild;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.spring.build.BuildCustomizer;
+import io.spring.initializr.generator.version.VersionProperty;
+import io.spring.initializr.metadata.InitializrConfiguration.Env.Maven;
+import io.spring.initializr.metadata.InitializrConfiguration.Env.Maven.ParentPom;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.support.MetadataBuildItemMapper;
+
+/**
+ * The default {@link Maven} {@link BuildCustomizer}.
+ *
+ * @author Stephane Nicoll
+ */
+public class DefaultMavenBuildCustomizer implements BuildCustomizer&lt;MavenBuild&gt; {
+
+	private final ProjectDescription description;
+
+	private final InitializrMetadata metadata;
+
+<span class="fc" id="L40">	public DefaultMavenBuildCustomizer(ProjectDescription description, InitializrMetadata metadata) {</span>
+<span class="fc" id="L41">		this.description = description;</span>
+<span class="fc" id="L42">		this.metadata = metadata;</span>
+<span class="fc" id="L43">	}</span>
+
+	@Override
+	public void customize(MavenBuild build) {
+<span class="fc" id="L47">		build.settings().addOverrideIfEmpty(true);</span>
+<span class="fc" id="L48">		build.settings().name(this.description.getName()).description(this.description.getDescription());</span>
+<span class="fc" id="L49">		build.properties().property(&quot;java.version&quot;, this.description.getLanguage().jvmVersion());</span>
+<span class="fc" id="L50">		build.plugins().add(&quot;org.springframework.boot&quot;, &quot;spring-boot-maven-plugin&quot;);</span>
+
+<span class="fc" id="L52">		Maven maven = this.metadata.getConfiguration().getEnv().getMaven();</span>
+<span class="fc" id="L53">		String springBootVersion = this.description.getPlatformVersion().toString();</span>
+<span class="fc" id="L54">		ParentPom parentPom = maven.resolveParentPom(springBootVersion);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		if (parentPom.isIncludeSpringBootBom()) {</span>
+<span class="fc" id="L56">			String versionProperty = &quot;spring-boot.version&quot;;</span>
+<span class="fc" id="L57">			BillOfMaterials springBootBom = MetadataBuildItemMapper</span>
+<span class="fc" id="L58">				.toBom(this.metadata.createSpringBootBom(springBootVersion, versionProperty));</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			if (!hasBom(build, springBootBom)) {</span>
+<span class="fc" id="L60">				build.properties().version(VersionProperty.of(versionProperty, true), springBootVersion);</span>
+<span class="fc" id="L61">				build.boms().add(&quot;spring-boot&quot;, springBootBom);</span>
+			}
+		}
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (!maven.isSpringBootStarterParent(parentPom)) {</span>
+<span class="fc" id="L65">			build.properties()</span>
+<span class="fc" id="L66">				.property(&quot;project.build.sourceEncoding&quot;, &quot;UTF-8&quot;)</span>
+<span class="fc" id="L67">				.property(&quot;project.reporting.outputEncoding&quot;, &quot;UTF-8&quot;);</span>
+		}
+<span class="fc" id="L69">		build.settings()</span>
+<span class="fc" id="L70">			.parent(parentPom.getGroupId(), parentPom.getArtifactId(), parentPom.getVersion(),</span>
+<span class="fc" id="L71">					parentPom.getRelativePath());</span>
+<span class="fc" id="L72">	}</span>
+
+	private boolean hasBom(MavenBuild build, BillOfMaterials bom) {
+<span class="fc" id="L75">		return build.boms()</span>
+<span class="fc" id="L76">			.items()</span>
+<span class="pc bnc" id="L77" title="All 2 branches missed.">			.anyMatch((candidate) -&gt; candidate.getGroupId().equals(bom.getGroupId())</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">					&amp;&amp; candidate.getArtifactId().equals(bom.getArtifactId()));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

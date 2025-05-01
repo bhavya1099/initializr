@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BuildSettings.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem</a> &gt; <span class="el_source">BuildSettings.java</span></div><h1>BuildSettings.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem;
+
+/**
+ * General build settings.
+ *
+ * @author Stephane Nicoll
+ */
+public class BuildSettings {
+
+	private final String group;
+
+	private final String artifact;
+
+	private final String version;
+
+<span class="fc" id="L32">	protected BuildSettings(Builder&lt;?&gt; builder) {</span>
+<span class="fc" id="L33">		this.group = builder.group;</span>
+<span class="fc" id="L34">		this.artifact = builder.artifact;</span>
+<span class="fc" id="L35">		this.version = builder.version;</span>
+<span class="fc" id="L36">	}</span>
+
+	/**
+	 * Return the identifier of the group for the project.
+	 * @return the group identifier or {@code null}
+	 */
+	public String getGroup() {
+<span class="fc" id="L43">		return this.group;</span>
+	}
+
+	/**
+	 * Return the identifier of the project.
+	 * @return the project identifier or {@code null}
+	 */
+	public String getArtifact() {
+<span class="fc" id="L51">		return this.artifact;</span>
+	}
+
+	/**
+	 * Return the version of the project.
+	 * @return the project version or {@code null}
+	 */
+	public String getVersion() {
+<span class="fc" id="L59">		return this.version;</span>
+	}
+
+	/**
+	 * Builder for build settings.
+	 *
+	 * @param &lt;B&gt; builder type
+	 */
+	public abstract static class Builder&lt;B extends Builder&lt;B&gt;&gt; {
+
+		private String group;
+
+		private String artifact;
+
+<span class="fc" id="L73">		private String version = &quot;0.0.1-SNAPSHOT&quot;;</span>
+
+<span class="fc" id="L75">		protected Builder() {</span>
+<span class="fc" id="L76">		}</span>
+
+		/**
+		 * Set the group ID of the project.
+		 * @param group the group ID
+		 * @return this for method chaining
+		 */
+		public B group(String group) {
+<span class="fc" id="L84">			this.group = group;</span>
+<span class="fc" id="L85">			return self();</span>
+		}
+
+		/**
+		 * Set the artifact ID of the project.
+		 * @param artifact the artifact ID
+		 * @return this for method chaining
+		 */
+		public B artifact(String artifact) {
+<span class="fc" id="L94">			this.artifact = artifact;</span>
+<span class="fc" id="L95">			return self();</span>
+		}
+
+		/**
+		 * Set the version of the project.
+		 * @param version the version
+		 * @return this for method chaining
+		 */
+		public B version(String version) {
+<span class="fc" id="L104">			this.version = version;</span>
+<span class="fc" id="L105">			return self();</span>
+		}
+
+		@SuppressWarnings(&quot;unchecked&quot;)
+		protected B self() {
+<span class="fc" id="L110">			return (B) this;</span>
+		}
+
+		/**
+		 * Build a {@link BuildSettings} with the current state of this builder.
+		 * @return a {@link BuildSettings}
+		 */
+		public BuildSettings build() {
+<span class="nc" id="L118">			return new BuildSettings(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

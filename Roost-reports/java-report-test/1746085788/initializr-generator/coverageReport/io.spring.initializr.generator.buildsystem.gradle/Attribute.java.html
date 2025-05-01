@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Attribute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">Attribute.java</span></div><h1>Attribute.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.Objects;
+
+/**
+ * An attribute.
+ *
+ * @author Moritz Halbritter
+ * @author Stephane Nicoll
+ */
+public class Attribute {
+
+	private final String name;
+
+	private final String value;
+
+	private final Type type;
+
+<span class="fc" id="L35">	protected Attribute(String name, String value, Type type) {</span>
+<span class="fc" id="L36">		this.name = name;</span>
+<span class="fc" id="L37">		this.value = value;</span>
+<span class="fc" id="L38">		this.type = type;</span>
+<span class="fc" id="L39">	}</span>
+
+	/**
+	 * Create an attribute that {@linkplain Type#SET sets} the specified value.
+	 * @param name the name of the attribute
+	 * @param value the value to set
+	 * @return an attribute
+	 */
+	public static Attribute set(String name, String value) {
+<span class="fc" id="L48">		return new Attribute(name, value, Type.SET);</span>
+	}
+
+	/**
+	 * Create an attribute that {@linkplain Type#APPEND appends} the specified value.
+	 * @param name the name of the attribute
+	 * @param value the value to append
+	 * @return an attribute
+	 */
+	public static Attribute append(String name, String value) {
+<span class="fc" id="L58">		return new Attribute(name, value, Type.APPEND);</span>
+	}
+
+	/**
+	 * Return the name of the attribute.
+	 * @return the name
+	 */
+	public String getName() {
+<span class="fc" id="L66">		return this.name;</span>
+	}
+
+	/**
+	 * Return the value of the attribute to set or to append.
+	 * @return the value
+	 */
+	public String getValue() {
+<span class="fc" id="L74">		return this.value;</span>
+	}
+
+	/**
+	 * Return the {@link Type} of the attribute.
+	 * @return the type
+	 */
+	public Type getType() {
+<span class="fc" id="L82">		return this.type;</span>
+	}
+
+	@Override
+	public boolean equals(Object o) {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">		if (this == o) {</span>
+<span class="fc" id="L88">			return true;</span>
+		}
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">		if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L91">			return false;</span>
+		}
+<span class="fc" id="L93">		Attribute attribute = (Attribute) o;</span>
+<span class="pc bpc" id="L94" title="2 of 6 branches missed.">		return Objects.equals(this.name, attribute.name) &amp;&amp; Objects.equals(this.value, attribute.value)</span>
+				&amp;&amp; this.type == attribute.type;
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L100">		return Objects.hash(this.name, this.value, this.type);</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		return this.name + ((this.type == Type.SET) ? &quot; = &quot; : &quot; += &quot;) + this.value;</span>
+	}
+
+<span class="fc" id="L108">	public enum Type {</span>
+
+		/**
+		 * Set the value of the attribute.
+		 */
+<span class="fc" id="L113">		SET,</span>
+
+		/**
+		 * Append the value to the attribute.
+		 */
+<span class="fc" id="L118">		APPEND</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

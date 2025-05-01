@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRequestDocument.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Actuator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.actuate.stat</a> &gt; <span class="el_source">ProjectRequestDocument.java</span></div><h1>ProjectRequestDocument.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.actuate.stat;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringJoiner;
+
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.web.support.Agent;
+
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
+
+/**
+ * Define the statistics of a project generation.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L35">public class ProjectRequestDocument {</span>
+
+	private long generationTimestamp;
+
+	private String type;
+
+	private String buildSystem;
+
+	private String groupId;
+
+	private String artifactId;
+
+	private String javaVersion;
+
+	private String language;
+
+	private String packaging;
+
+	private String packageName;
+
+	private VersionInformation version;
+
+	private ClientInformation client;
+
+	private DependencyInformation dependencies;
+
+	private ErrorStateInformation errorState;
+
+	public long getGenerationTimestamp() {
+<span class="fc" id="L64">		return this.generationTimestamp;</span>
+	}
+
+	public void setGenerationTimestamp(long generationTimestamp) {
+<span class="fc" id="L68">		this.generationTimestamp = generationTimestamp;</span>
+<span class="fc" id="L69">	}</span>
+
+	public String getType() {
+<span class="fc" id="L72">		return this.type;</span>
+	}
+
+	public void setType(String type) {
+<span class="fc" id="L76">		this.type = type;</span>
+<span class="fc" id="L77">	}</span>
+
+	public String getBuildSystem() {
+<span class="fc" id="L80">		return this.buildSystem;</span>
+	}
+
+	public void setBuildSystem(String buildSystem) {
+<span class="fc" id="L84">		this.buildSystem = buildSystem;</span>
+<span class="fc" id="L85">	}</span>
+
+	public String getGroupId() {
+<span class="fc" id="L88">		return this.groupId;</span>
+	}
+
+	public void setGroupId(String groupId) {
+<span class="fc" id="L92">		this.groupId = groupId;</span>
+<span class="fc" id="L93">	}</span>
+
+	public String getArtifactId() {
+<span class="fc" id="L96">		return this.artifactId;</span>
+	}
+
+	public void setArtifactId(String artifactId) {
+<span class="fc" id="L100">		this.artifactId = artifactId;</span>
+<span class="fc" id="L101">	}</span>
+
+	public String getJavaVersion() {
+<span class="fc" id="L104">		return this.javaVersion;</span>
+	}
+
+	public void setJavaVersion(String javaVersion) {
+<span class="fc" id="L108">		this.javaVersion = javaVersion;</span>
+<span class="fc" id="L109">	}</span>
+
+	public String getLanguage() {
+<span class="fc" id="L112">		return this.language;</span>
+	}
+
+	public void setLanguage(String language) {
+<span class="fc" id="L116">		this.language = language;</span>
+<span class="fc" id="L117">	}</span>
+
+	public String getPackaging() {
+<span class="fc" id="L120">		return this.packaging;</span>
+	}
+
+	public void setPackaging(String packaging) {
+<span class="fc" id="L124">		this.packaging = packaging;</span>
+<span class="fc" id="L125">	}</span>
+
+	public String getPackageName() {
+<span class="fc" id="L128">		return this.packageName;</span>
+	}
+
+	public void setPackageName(String packageName) {
+<span class="fc" id="L132">		this.packageName = packageName;</span>
+<span class="fc" id="L133">	}</span>
+
+	public VersionInformation getVersion() {
+<span class="fc" id="L136">		return this.version;</span>
+	}
+
+	public void setVersion(VersionInformation version) {
+<span class="fc" id="L140">		this.version = version;</span>
+<span class="fc" id="L141">	}</span>
+
+	public ClientInformation getClient() {
+<span class="fc" id="L144">		return this.client;</span>
+	}
+
+	public void setClient(ClientInformation client) {
+<span class="fc" id="L148">		this.client = client;</span>
+<span class="fc" id="L149">	}</span>
+
+	public DependencyInformation getDependencies() {
+<span class="fc" id="L152">		return this.dependencies;</span>
+	}
+
+	public void setDependencies(DependencyInformation dependencies) {
+<span class="fc" id="L156">		this.dependencies = dependencies;</span>
+<span class="fc" id="L157">	}</span>
+
+	public ErrorStateInformation getErrorState() {
+<span class="fc" id="L160">		return this.errorState;</span>
+	}
+
+	public ErrorStateInformation triggerError() {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (this.errorState == null) {</span>
+<span class="fc" id="L165">			this.errorState = new ErrorStateInformation();</span>
+		}
+<span class="fc" id="L167">		return this.errorState;</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L172">		return new StringJoiner(&quot;, &quot;, ProjectRequestDocument.class.getSimpleName() + &quot;[&quot;, &quot;]&quot;)</span>
+<span class="nc" id="L173">			.add(&quot;generationTimestamp=&quot; + this.generationTimestamp)</span>
+<span class="nc" id="L174">			.add(&quot;type='&quot; + this.type + &quot;'&quot;)</span>
+<span class="nc" id="L175">			.add(&quot;buildSystem='&quot; + this.buildSystem + &quot;'&quot;)</span>
+<span class="nc" id="L176">			.add(&quot;groupId='&quot; + this.groupId + &quot;'&quot;)</span>
+<span class="nc" id="L177">			.add(&quot;artifactId='&quot; + this.artifactId + &quot;'&quot;)</span>
+<span class="nc" id="L178">			.add(&quot;javaVersion='&quot; + this.javaVersion + &quot;'&quot;)</span>
+<span class="nc" id="L179">			.add(&quot;language='&quot; + this.language + &quot;'&quot;)</span>
+<span class="nc" id="L180">			.add(&quot;packaging='&quot; + this.packaging + &quot;'&quot;)</span>
+<span class="nc" id="L181">			.add(&quot;packageName='&quot; + this.packageName + &quot;'&quot;)</span>
+<span class="nc" id="L182">			.add(&quot;version=&quot; + this.version)</span>
+<span class="nc" id="L183">			.add(&quot;client=&quot; + this.client)</span>
+<span class="nc" id="L184">			.add(&quot;dependencies=&quot; + this.dependencies)</span>
+<span class="nc" id="L185">			.add(&quot;errorState=&quot; + this.errorState)</span>
+<span class="nc" id="L186">			.toString();</span>
+	}
+
+	/**
+	 * Spring Boot version information.
+	 */
+	public static class VersionInformation {
+
+		private final String id;
+
+		private final String major;
+
+		private final String minor;
+
+<span class="fc" id="L200">		public VersionInformation(Version version) {</span>
+<span class="fc" id="L201">			this.id = version.toString();</span>
+<span class="fc" id="L202">			this.major = String.format(&quot;%s&quot;, version.getMajor());</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">			this.minor = (version.getMinor() != null) ? String.format(&quot;%s.%s&quot;, version.getMajor(), version.getMinor())</span>
+<span class="pc" id="L204">					: null;</span>
+<span class="fc" id="L205">		}</span>
+
+		public String getId() {
+<span class="fc" id="L208">			return this.id;</span>
+		}
+
+		public String getMajor() {
+<span class="fc" id="L212">			return this.major;</span>
+		}
+
+		public String getMinor() {
+<span class="fc" id="L216">			return this.minor;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L221">			return new StringJoiner(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;).add(&quot;id='&quot; + this.id + &quot;'&quot;)</span>
+<span class="nc" id="L222">				.add(&quot;major='&quot; + this.major + &quot;'&quot;)</span>
+<span class="nc" id="L223">				.add(&quot;minor='&quot; + this.minor + &quot;'&quot;)</span>
+<span class="nc" id="L224">				.toString();</span>
+		}
+
+	}
+
+	/**
+	 * Dependencies information.
+	 */
+	public static class DependencyInformation {
+
+		private final String id;
+
+		private final List&lt;String&gt; values;
+
+		private final int count;
+
+<span class="fc" id="L240">		public DependencyInformation(List&lt;String&gt; values) {</span>
+<span class="fc" id="L241">			this.id = computeDependenciesId(new ArrayList&lt;&gt;(values));</span>
+<span class="fc" id="L242">			this.values = values;</span>
+<span class="fc" id="L243">			this.count = values.size();</span>
+<span class="fc" id="L244">		}</span>
+
+		public String getId() {
+<span class="fc" id="L247">			return this.id;</span>
+		}
+
+		public List&lt;String&gt; getValues() {
+<span class="fc" id="L251">			return this.values;</span>
+		}
+
+		public int getCount() {
+<span class="fc" id="L255">			return this.count;</span>
+		}
+
+		private static String computeDependenciesId(List&lt;String&gt; dependencies) {
+<span class="fc bfc" id="L259" title="All 2 branches covered.">			if (ObjectUtils.isEmpty(dependencies)) {</span>
+<span class="fc" id="L260">				return &quot;_none&quot;;</span>
+			}
+<span class="fc" id="L262">			Collections.sort(dependencies);</span>
+<span class="fc" id="L263">			return StringUtils.collectionToDelimitedString(dependencies, &quot; &quot;);</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L268">			return new StringJoiner(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;).add(&quot;id='&quot; + this.id + &quot;'&quot;)</span>
+<span class="nc" id="L269">				.add(&quot;values=&quot; + this.values)</span>
+<span class="nc" id="L270">				.add(&quot;count=&quot; + this.count)</span>
+<span class="nc" id="L271">				.toString();</span>
+		}
+
+	}
+
+	/**
+	 * Client information.
+	 */
+	public static class ClientInformation {
+
+		private final String id;
+
+		private final String version;
+
+		private final String ip;
+
+		private final String country;
+
+<span class="fc" id="L289">		public ClientInformation(Agent agent, String ip, String country) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">			this.id = (agent != null) ? agent.getId().getId() : null;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">			this.version = (agent != null) ? agent.getVersion() : null;</span>
+<span class="fc" id="L292">			this.ip = ip;</span>
+<span class="fc" id="L293">			this.country = country;</span>
+<span class="fc" id="L294">		}</span>
+
+		public String getId() {
+<span class="fc" id="L297">			return this.id;</span>
+		}
+
+		public String getVersion() {
+<span class="fc" id="L301">			return this.version;</span>
+		}
+
+		public String getIp() {
+<span class="fc" id="L305">			return this.ip;</span>
+		}
+
+		public String getCountry() {
+<span class="fc" id="L309">			return this.country;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L314">			return new StringJoiner(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;).add(&quot;id='&quot; + this.id + &quot;'&quot;)</span>
+<span class="nc" id="L315">				.add(&quot;version='&quot; + this.version + &quot;'&quot;)</span>
+<span class="nc" id="L316">				.add(&quot;ip='&quot; + this.ip + &quot;'&quot;)</span>
+<span class="nc" id="L317">				.add(&quot;country='&quot; + this.country + &quot;'&quot;)</span>
+<span class="nc" id="L318">				.toString();</span>
+		}
+
+	}
+
+	/**
+	 * Additional information about what part of the request is invalid.
+	 */
+<span class="fc" id="L326">	public static class ErrorStateInformation {</span>
+
+<span class="fc" id="L328">		private boolean invalid = true;</span>
+
+		private Boolean javaVersion;
+
+		private Boolean language;
+
+		private Boolean packaging;
+
+		private Boolean type;
+
+		private InvalidDependencyInformation dependencies;
+
+		private String message;
+
+		public boolean isInvalid() {
+<span class="fc" id="L343">			return this.invalid;</span>
+		}
+
+		public Boolean getJavaVersion() {
+<span class="fc" id="L347">			return this.javaVersion;</span>
+		}
+
+		public void setJavaVersion(Boolean javaVersion) {
+<span class="fc" id="L351">			this.javaVersion = javaVersion;</span>
+<span class="fc" id="L352">		}</span>
+
+		public Boolean getLanguage() {
+<span class="fc" id="L355">			return this.language;</span>
+		}
+
+		public void setLanguage(Boolean language) {
+<span class="fc" id="L359">			this.language = language;</span>
+<span class="fc" id="L360">		}</span>
+
+		public Boolean getPackaging() {
+<span class="fc" id="L363">			return this.packaging;</span>
+		}
+
+		public void setPackaging(Boolean packaging) {
+<span class="fc" id="L367">			this.packaging = packaging;</span>
+<span class="fc" id="L368">		}</span>
+
+		public Boolean getType() {
+<span class="fc" id="L371">			return this.type;</span>
+		}
+
+		public void setType(Boolean type) {
+<span class="fc" id="L375">			this.type = type;</span>
+<span class="fc" id="L376">		}</span>
+
+		public InvalidDependencyInformation getDependencies() {
+<span class="fc" id="L379">			return this.dependencies;</span>
+		}
+
+		public void triggerInvalidDependencies(List&lt;String&gt; dependencies) {
+<span class="fc" id="L383">			this.dependencies = new InvalidDependencyInformation(dependencies);</span>
+<span class="fc" id="L384">		}</span>
+
+		public String getMessage() {
+<span class="fc" id="L387">			return this.message;</span>
+		}
+
+		public void setMessage(String message) {
+<span class="fc" id="L391">			this.message = message;</span>
+<span class="fc" id="L392">		}</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L396">			return new StringJoiner(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;).add(&quot;invalid=&quot; + this.invalid)</span>
+<span class="nc" id="L397">				.add(&quot;javaVersion=&quot; + this.javaVersion)</span>
+<span class="nc" id="L398">				.add(&quot;language=&quot; + this.language)</span>
+<span class="nc" id="L399">				.add(&quot;packaging=&quot; + this.packaging)</span>
+<span class="nc" id="L400">				.add(&quot;type=&quot; + this.type)</span>
+<span class="nc" id="L401">				.add(&quot;dependencies=&quot; + this.dependencies)</span>
+<span class="nc" id="L402">				.add(&quot;message='&quot; + this.message + &quot;'&quot;)</span>
+<span class="nc" id="L403">				.toString();</span>
+		}
+
+	}
+
+	/**
+	 * Invalid dependencies information.
+	 */
+	public static class InvalidDependencyInformation {
+
+<span class="fc" id="L413">		private boolean invalid = true;</span>
+
+		private final List&lt;String&gt; values;
+
+<span class="fc" id="L417">		public InvalidDependencyInformation(List&lt;String&gt; values) {</span>
+<span class="fc" id="L418">			this.values = values;</span>
+<span class="fc" id="L419">		}</span>
+
+		public boolean isInvalid() {
+<span class="fc" id="L422">			return this.invalid;</span>
+		}
+
+		public List&lt;String&gt; getValues() {
+<span class="fc" id="L426">			return this.values;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L431">			return new StringJoiner(&quot;, &quot;, &quot;{&quot;, &quot;}&quot;).add(String.join(&quot;, &quot;, this.values)).toString();</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

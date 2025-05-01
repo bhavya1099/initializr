@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractProjectGenerationTester.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.project</a> &gt; <span class="el_source">AbstractProjectGenerationTester.java</span></div><h1>AbstractProjectGenerationTester.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.project;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import io.spring.initializr.generator.io.IndentingWriterFactory;
+import io.spring.initializr.generator.io.SimpleIndentStrategy;
+import io.spring.initializr.generator.project.MutableProjectDescription;
+import io.spring.initializr.generator.project.ProjectDirectoryFactory;
+import io.spring.initializr.generator.project.ProjectGenerationContext;
+import io.spring.initializr.generator.project.ProjectGenerationException;
+
+/**
+ * Base tester for project generation.
+ *
+ * @param &lt;SELF&gt; concrete type of the tester
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractProjectGenerationTester&lt;SELF extends AbstractProjectGenerationTester&lt;SELF&gt;&gt; {
+
+	private final Map&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beanDefinitions;
+
+	private final Consumer&lt;ProjectGenerationContext&gt; contextInitializer;
+
+	private final Consumer&lt;MutableProjectDescription&gt; descriptionCustomizer;
+
+	protected AbstractProjectGenerationTester(Map&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beanDefinitions,
+			Consumer&lt;ProjectGenerationContext&gt; contextInitializer,
+<span class="fc" id="L51">			Consumer&lt;MutableProjectDescription&gt; descriptionCustomizer) {</span>
+<span class="fc" id="L52">		this.beanDefinitions = new LinkedHashMap&lt;&gt;(beanDefinitions);</span>
+<span class="fc" id="L53">		this.descriptionCustomizer = descriptionCustomizer;</span>
+<span class="fc" id="L54">		this.contextInitializer = contextInitializer;</span>
+<span class="fc" id="L55">	}</span>
+
+	protected AbstractProjectGenerationTester() {
+<span class="fc" id="L58">		this(Collections.emptyMap(), emptyContextInitializer(), defaultDescriptionCustomizer());</span>
+<span class="fc" id="L59">	}</span>
+
+	private static Consumer&lt;ProjectGenerationContext&gt; emptyContextInitializer() {
+<span class="fc" id="L62">		return (context) -&gt; {</span>
+<span class="fc" id="L63">		};</span>
+	}
+
+	private static Consumer&lt;MutableProjectDescription&gt; defaultDescriptionCustomizer() {
+<span class="fc" id="L67">		return (projectDescription) -&gt; {</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			if (projectDescription.getGroupId() == null) {</span>
+<span class="fc" id="L69">				projectDescription.setGroupId(&quot;com.example&quot;);</span>
+			}
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (projectDescription.getArtifactId() == null) {</span>
+<span class="fc" id="L72">				projectDescription.setArtifactId(&quot;demo&quot;);</span>
+			}
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">			if (projectDescription.getVersion() == null) {</span>
+<span class="fc" id="L75">				projectDescription.setVersion(&quot;0.0.1-SNAPSHOT&quot;);</span>
+			}
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			if (projectDescription.getApplicationName() == null) {</span>
+<span class="fc" id="L78">				projectDescription.setApplicationName(&quot;DemoApplication&quot;);</span>
+			}
+<span class="fc" id="L80">		};</span>
+	}
+
+	protected abstract SELF newInstance(Map&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beanDefinitions,
+			Consumer&lt;ProjectGenerationContext&gt; contextInitializer,
+			Consumer&lt;MutableProjectDescription&gt; descriptionCustomizer);
+
+	public &lt;T&gt; SELF withBean(Class&lt;T&gt; beanType, Supplier&lt;T&gt; beanDefinition) {
+<span class="fc" id="L88">		LinkedHashMap&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beans = new LinkedHashMap&lt;&gt;(this.beanDefinitions);</span>
+<span class="fc" id="L89">		beans.put(beanType, beanDefinition);</span>
+<span class="fc" id="L90">		return newInstance(beans, this.contextInitializer, this.descriptionCustomizer);</span>
+	}
+
+	public SELF withDirectory(Path directory) {
+<span class="fc" id="L94">		return withBean(ProjectDirectoryFactory.class,</span>
+<span class="fc" id="L95">				() -&gt; (description) -&gt; Files.createTempDirectory(directory, &quot;project-&quot;));</span>
+	}
+
+	public SELF withIndentingWriterFactory() {
+<span class="fc" id="L99">		return withBean(IndentingWriterFactory.class,</span>
+<span class="fc" id="L100">				() -&gt; IndentingWriterFactory.create(new SimpleIndentStrategy(&quot;    &quot;)));</span>
+	}
+
+	public SELF withConfiguration(Class&lt;?&gt;... configurationClasses) {
+<span class="fc" id="L104">		return withContextInitializer((context) -&gt; context.register(configurationClasses));</span>
+	}
+
+	public SELF withContextInitializer(Consumer&lt;ProjectGenerationContext&gt; context) {
+<span class="fc" id="L108">		return newInstance(this.beanDefinitions, this.contextInitializer.andThen(context), this.descriptionCustomizer);</span>
+	}
+
+	public SELF withDescriptionCustomizer(Consumer&lt;MutableProjectDescription&gt; description) {
+<span class="fc" id="L112">		return newInstance(this.beanDefinitions, this.contextInitializer,</span>
+<span class="fc" id="L113">				this.descriptionCustomizer.andThen(description));</span>
+	}
+
+	protected &lt;T&gt; T invokeProjectGeneration(MutableProjectDescription description,
+			ProjectGenerationInvoker&lt;T&gt; invoker) {
+<span class="fc" id="L118">		this.descriptionCustomizer.accept(description);</span>
+		try {
+<span class="fc" id="L120">			return invoker.generate(beansConfigurer().andThen(this.contextInitializer));</span>
+		}
+<span class="nc" id="L122">		catch (IOException ex) {</span>
+<span class="nc" id="L123">			throw new ProjectGenerationException(&quot;Failed to generated project&quot;, ex);</span>
+		}
+	}
+
+	private Consumer&lt;ProjectGenerationContext&gt; beansConfigurer() {
+<span class="fc" id="L128">		return (context) -&gt; this.beanDefinitions</span>
+<span class="fc" id="L129">			.forEach((type, definition) -&gt; register(context, type, definition.get()));</span>
+	}
+
+	// Restore proper generic signature to make sure the context resolve the bean properly
+	private &lt;T&gt; void register(ProjectGenerationContext context, Class&lt;T&gt; type, Object instance) {
+<span class="fc" id="L134">		T bean = type.cast(instance);</span>
+<span class="fc" id="L135">		context.registerBean(type, () -&gt; bean);</span>
+<span class="fc" id="L136">	}</span>
+
+	protected interface ProjectGenerationInvoker&lt;T&gt; {
+
+		T generate(Consumer&lt;ProjectGenerationContext&gt; contextInitializer) throws IOException;
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

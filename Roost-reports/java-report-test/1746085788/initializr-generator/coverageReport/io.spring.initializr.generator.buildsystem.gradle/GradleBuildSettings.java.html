@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleBuildSettings.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleBuildSettings.java</span></div><h1>GradleBuildSettings.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.spring.initializr.generator.buildsystem.BuildSettings;
+import io.spring.initializr.generator.buildsystem.Dependency;
+
+/**
+ * Gradle-specific {@linkplain BuildSettings build settings}.
+ *
+ * @author Stephane Nicoll
+ */
+public class GradleBuildSettings extends BuildSettings {
+
+	private final String sourceCompatibility;
+
+	private final List&lt;PluginMapping&gt; pluginMappings;
+
+	protected GradleBuildSettings(Builder builder) {
+<span class="fc" id="L37">		super(builder);</span>
+<span class="fc" id="L38">		this.sourceCompatibility = builder.sourceCompatibility;</span>
+<span class="fc" id="L39">		this.pluginMappings = new ArrayList&lt;&gt;(builder.pluginMappings);</span>
+<span class="fc" id="L40">	}</span>
+
+	/**
+	 * Return the java version compatibility to use when compiling Java source.
+	 * @return the java version to use for source.
+	 */
+	public String getSourceCompatibility() {
+<span class="fc" id="L47">		return this.sourceCompatibility;</span>
+	}
+
+	/**
+	 * Return the {@link PluginMapping plugin mappings}, if any.
+	 * @return the plugin mappings
+	 */
+	public List&lt;PluginMapping&gt; getPluginMappings() {
+<span class="fc" id="L55">		return this.pluginMappings;</span>
+	}
+
+	/**
+	 * Builder for {@link GradleBuildSettings}.
+	 */
+<span class="fc" id="L61">	public static class Builder extends BuildSettings.Builder&lt;Builder&gt; {</span>
+
+		private String sourceCompatibility;
+
+<span class="fc" id="L65">		private final List&lt;PluginMapping&gt; pluginMappings = new ArrayList&lt;&gt;();</span>
+
+		/**
+		 * Set the java version compatibility to use when compiling Java source.
+		 * @param sourceCompatibility java version compatibility
+		 * @return this for method chaining
+		 */
+		public Builder sourceCompatibility(String sourceCompatibility) {
+<span class="fc" id="L73">			this.sourceCompatibility = sourceCompatibility;</span>
+<span class="fc" id="L74">			return self();</span>
+		}
+
+		/**
+		 * Map the plugin with the specified id to the specified {@link Dependency}. This
+		 * is mandatory when a plugin does not have an appropriate plugin marker artifact.
+		 * @param id the id of a plugin
+		 * @param pluginDependency the dependency for that plugin
+		 * @return this for method chaining
+		 */
+		public Builder mapPlugin(String id, Dependency pluginDependency) {
+<span class="fc bfc" id="L85" title="All 4 branches covered.">			if (pluginDependency.getVersion() == null || pluginDependency.getVersion().isProperty()) {</span>
+<span class="fc" id="L86">				throw new IllegalArgumentException(&quot;Mapping for plugin '&quot; + id + &quot;' must have a version&quot;);</span>
+			}
+<span class="fc" id="L88">			this.pluginMappings.add(new PluginMapping(id, pluginDependency));</span>
+<span class="fc" id="L89">			return this;</span>
+		}
+
+		/**
+		 * Build a {@link GradleBuildSettings} with the current state of this builder.
+		 * @return a {@link GradleBuildSettings}
+		 */
+		public GradleBuildSettings build() {
+<span class="fc" id="L97">			return new GradleBuildSettings(this);</span>
+		}
+
+	}
+
+	/**
+	 * Map a plugin identifier to a plugin implementation artifact.
+	 */
+	public static class PluginMapping {
+
+		private final String id;
+
+		private final Dependency dependency;
+
+<span class="fc" id="L111">		PluginMapping(String id, Dependency dependency) {</span>
+<span class="fc" id="L112">			this.id = id;</span>
+<span class="fc" id="L113">			this.dependency = dependency;</span>
+<span class="fc" id="L114">		}</span>
+
+		/**
+		 * Return the id of the plugin.
+		 * @return the plugin id
+		 */
+		public String getId() {
+<span class="fc" id="L121">			return this.id;</span>
+		}
+
+		/**
+		 * Return the plugin implementation dependency.
+		 * @return the plugin implementation
+		 */
+		public Dependency getDependency() {
+<span class="fc" id="L129">			return this.dependency;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

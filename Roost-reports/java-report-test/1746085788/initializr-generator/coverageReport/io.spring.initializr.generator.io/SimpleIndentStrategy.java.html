@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SimpleIndentStrategy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.io</a> &gt; <span class="el_source">SimpleIndentStrategy.java</span></div><h1>SimpleIndentStrategy.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.io;
+
+import java.util.function.Function;
+
+import org.springframework.util.Assert;
+
+/**
+ * A simple indenting strategy that uses a configurable {@code indent} value.
+ *
+ * @author Stephane Nicoll
+ */
+public class SimpleIndentStrategy implements Function&lt;Integer, String&gt; {
+
+	private final String indent;
+
+	/**
+	 * Create a new instance with the indent style to apply.
+	 * @param indent the indent to apply for each indent level
+	 */
+<span class="fc" id="L36">	public SimpleIndentStrategy(String indent) {</span>
+<span class="fc" id="L37">		Assert.notNull(indent, &quot;Indent must be provided&quot;);</span>
+<span class="fc" id="L38">		this.indent = indent;</span>
+<span class="fc" id="L39">	}</span>
+
+	@Override
+	public String apply(Integer level) {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		if (level &lt; 0) {</span>
+<span class="fc" id="L44">			throw new IllegalArgumentException(&quot;Indent level must not be negative, got&quot; + level);</span>
+		}
+<span class="fc" id="L46">		return String.valueOf(this.indent).repeat(level);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

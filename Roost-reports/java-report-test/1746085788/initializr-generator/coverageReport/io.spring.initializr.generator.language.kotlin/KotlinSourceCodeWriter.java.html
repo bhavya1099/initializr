@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KotlinSourceCodeWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language.kotlin</a> &gt; <span class="el_source">KotlinSourceCodeWriter.java</span></div><h1>KotlinSourceCodeWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language.kotlin;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.io.IndentingWriterFactory;
+import io.spring.initializr.generator.language.Annotatable;
+import io.spring.initializr.generator.language.Annotation;
+import io.spring.initializr.generator.language.ClassName;
+import io.spring.initializr.generator.language.CodeBlock;
+import io.spring.initializr.generator.language.CodeBlock.FormattingOptions;
+import io.spring.initializr.generator.language.CompilationUnit;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.language.Parameter;
+import io.spring.initializr.generator.language.SourceCode;
+import io.spring.initializr.generator.language.SourceCodeWriter;
+import io.spring.initializr.generator.language.SourceStructure;
+
+import org.springframework.util.CollectionUtils;
+
+/**
+ * A {@link SourceCodeWriter} that writes {@link SourceCode} in Kotlin.
+ *
+ * @author Stephane Nicoll
+ * @author Matt Berteaux
+ */
+public class KotlinSourceCodeWriter implements SourceCodeWriter&lt;KotlinSourceCode&gt; {
+
+<span class="fc" id="L59">	private static final FormattingOptions FORMATTING_OPTIONS = new KotlinFormattingOptions();</span>
+
+	private final Language language;
+
+	private final IndentingWriterFactory indentingWriterFactory;
+
+	/**
+	 * Creates a new instance.
+	 * @param language the language
+	 * @param indentingWriterFactory the {@link IndentingWriterFactory}
+	 */
+<span class="fc" id="L70">	public KotlinSourceCodeWriter(Language language, IndentingWriterFactory indentingWriterFactory) {</span>
+<span class="fc" id="L71">		this.language = language;</span>
+<span class="fc" id="L72">		this.indentingWriterFactory = indentingWriterFactory;</span>
+<span class="fc" id="L73">	}</span>
+
+	@Override
+	public void writeTo(SourceStructure structure, KotlinSourceCode sourceCode) throws IOException {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (KotlinCompilationUnit compilationUnit : sourceCode.getCompilationUnits()) {</span>
+<span class="fc" id="L78">			writeTo(structure, compilationUnit);</span>
+<span class="fc" id="L79">		}</span>
+<span class="fc" id="L80">	}</span>
+
+	private void writeTo(SourceStructure structure, KotlinCompilationUnit compilationUnit) throws IOException {
+<span class="fc" id="L83">		Path output = structure.createSourceFile(compilationUnit.getPackageName(), compilationUnit.getName());</span>
+<span class="fc" id="L84">		Files.createDirectories(output.getParent());</span>
+<span class="fc" id="L85">		try (IndentingWriter writer = this.indentingWriterFactory.createIndentingWriter(&quot;kotlin&quot;,</span>
+<span class="fc" id="L86">				Files.newBufferedWriter(output))) {</span>
+<span class="fc" id="L87">			writer.println(&quot;package &quot; + escapeKotlinKeywords(compilationUnit.getPackageName()));</span>
+<span class="fc" id="L88">			writer.println();</span>
+<span class="fc" id="L89">			Set&lt;String&gt; imports = determineImports(compilationUnit);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			if (!imports.isEmpty()) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">				for (String importedType : imports) {</span>
+<span class="fc" id="L92">					writer.println(&quot;import &quot; + importedType);</span>
+<span class="fc" id="L93">				}</span>
+<span class="fc" id="L94">				writer.println();</span>
+			}
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			for (KotlinTypeDeclaration type : compilationUnit.getTypeDeclarations()) {</span>
+<span class="fc" id="L97">				writeAnnotations(writer, type);</span>
+<span class="fc" id="L98">				writeModifiers(writer, type.getModifiers());</span>
+<span class="fc" id="L99">				writer.print(&quot;class &quot; + type.getName());</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">				boolean hasExtends = type.getExtends() != null;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">				if (hasExtends) {</span>
+<span class="fc" id="L102">					writer.print(&quot; : &quot; + getUnqualifiedName(type.getExtends()) + &quot;()&quot;);</span>
+				}
+<span class="fc bfc" id="L104" title="All 2 branches covered.">				if (!CollectionUtils.isEmpty(type.getImplements())) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">					writer.print(hasExtends ? &quot;, &quot; : &quot; : &quot;);</span>
+<span class="fc" id="L106">					writeImplements(type, writer);</span>
+				}
+<span class="fc" id="L108">				List&lt;KotlinPropertyDeclaration&gt; propertyDeclarations = type.getPropertyDeclarations();</span>
+<span class="fc" id="L109">				List&lt;KotlinFunctionDeclaration&gt; functionDeclarations = type.getFunctionDeclarations();</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">				boolean hasDeclarations = !propertyDeclarations.isEmpty() || !functionDeclarations.isEmpty();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				if (hasDeclarations) {</span>
+<span class="fc" id="L112">					writer.println(&quot; {&quot;);</span>
+				}
+<span class="fc bfc" id="L114" title="All 2 branches covered.">				if (!propertyDeclarations.isEmpty()) {</span>
+<span class="fc" id="L115">					writer.indented(() -&gt; {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">						for (KotlinPropertyDeclaration propertyDeclaration : propertyDeclarations) {</span>
+<span class="fc" id="L117">							writeProperty(writer, propertyDeclaration);</span>
+<span class="fc" id="L118">						}</span>
+<span class="fc" id="L119">					});</span>
+				}
+<span class="fc bfc" id="L121" title="All 2 branches covered.">				if (!functionDeclarations.isEmpty()) {</span>
+<span class="fc" id="L122">					writer.indented(() -&gt; {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">						for (KotlinFunctionDeclaration functionDeclaration : functionDeclarations) {</span>
+<span class="fc" id="L124">							writeFunction(writer, functionDeclaration);</span>
+<span class="fc" id="L125">						}</span>
+<span class="fc" id="L126">					});</span>
+<span class="fc" id="L127">					writer.println();</span>
+				}
+				else {
+<span class="fc" id="L130">					writer.println(&quot;&quot;);</span>
+				}
+<span class="fc bfc" id="L132" title="All 2 branches covered.">				if (hasDeclarations) {</span>
+<span class="fc" id="L133">					writer.println(&quot;}&quot;);</span>
+				}
+<span class="fc" id="L135">			}</span>
+<span class="fc" id="L136">			List&lt;KotlinFunctionDeclaration&gt; topLevelFunctions = compilationUnit.getTopLevelFunctions();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">			if (!topLevelFunctions.isEmpty()) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				for (KotlinFunctionDeclaration topLevelFunction : topLevelFunctions) {</span>
+<span class="fc" id="L139">					writeFunction(writer, topLevelFunction);</span>
+<span class="fc" id="L140">				}</span>
+			}
+
+		}
+<span class="fc" id="L144">	}</span>
+
+	private void writeImplements(KotlinTypeDeclaration type, IndentingWriter writer) {
+<span class="fc" id="L147">		Iterator&lt;String&gt; iterator = type.getImplements().iterator();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		while (iterator.hasNext()) {</span>
+<span class="fc" id="L149">			String name = iterator.next();</span>
+<span class="fc" id="L150">			writer.print(getUnqualifiedName(name));</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			if (iterator.hasNext()) {</span>
+<span class="fc" id="L152">				writer.print(&quot;, &quot;);</span>
+			}
+<span class="fc" id="L154">		}</span>
+<span class="fc" id="L155">	}</span>
+
+	private String escapeKotlinKeywords(String packageName) {
+<span class="fc" id="L158">		return Arrays.stream(packageName.split(&quot;\\.&quot;))</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			.map((segment) -&gt; this.language.isKeyword(segment) ? &quot;`&quot; + segment + &quot;`&quot; : segment)</span>
+<span class="fc" id="L160">			.collect(Collectors.joining(&quot;.&quot;));</span>
+	}
+
+	private void writeProperty(IndentingWriter writer, KotlinPropertyDeclaration propertyDeclaration) {
+<span class="fc" id="L164">		writer.println();</span>
+<span class="fc" id="L165">		writeModifiers(writer, propertyDeclaration.getModifiers());</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (propertyDeclaration.isVal()) {</span>
+<span class="fc" id="L167">			writer.print(&quot;val &quot;);</span>
+		}
+		else {
+<span class="fc" id="L170">			writer.print(&quot;var &quot;);</span>
+		}
+<span class="fc" id="L172">		writer.print(propertyDeclaration.getName());</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (propertyDeclaration.getReturnType() != null) {</span>
+<span class="fc" id="L174">			writer.print(&quot;: &quot; + getUnqualifiedName(propertyDeclaration.getReturnType()));</span>
+		}
+<span class="fc" id="L176">		CodeBlock valueCode = propertyDeclaration.getValueCode();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">		if (valueCode != null) {</span>
+<span class="fc" id="L178">			writer.print(&quot; = &quot;);</span>
+<span class="fc" id="L179">			valueCode.write(writer, FORMATTING_OPTIONS);</span>
+		}
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (propertyDeclaration.getGetter() != null) {</span>
+<span class="fc" id="L182">			writer.println();</span>
+<span class="fc" id="L183">			writer.indented(() -&gt; writeAccessor(writer, &quot;get&quot;, propertyDeclaration.getGetter()));</span>
+		}
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		if (propertyDeclaration.getSetter() != null) {</span>
+<span class="fc" id="L186">			writer.println();</span>
+<span class="fc" id="L187">			writer.indented(() -&gt; writeAccessor(writer, &quot;set&quot;, propertyDeclaration.getSetter()));</span>
+		}
+<span class="fc" id="L189">		writer.println();</span>
+<span class="fc" id="L190">	}</span>
+
+	private void writeAccessor(IndentingWriter writer, String accessorName,
+			KotlinPropertyDeclaration.Accessor accessor) {
+<span class="fc" id="L194">		writeAnnotations(writer, accessor, () -&gt; writer.print(&quot; &quot;));</span>
+<span class="fc" id="L195">		writer.print(accessorName);</span>
+<span class="fc" id="L196">		CodeBlock initCode = accessor.getCode();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (initCode != null) {</span>
+<span class="fc" id="L198">			writer.print(&quot;() = &quot;);</span>
+<span class="fc" id="L199">			initCode.write(writer, FORMATTING_OPTIONS);</span>
+		}
+<span class="fc" id="L201">	}</span>
+
+	private void writeFunction(IndentingWriter writer, KotlinFunctionDeclaration functionDeclaration) {
+<span class="fc" id="L204">		writer.println();</span>
+<span class="fc" id="L205">		writeAnnotations(writer, functionDeclaration);</span>
+<span class="fc" id="L206">		writeModifiers(writer, functionDeclaration.getModifiers());</span>
+<span class="fc" id="L207">		writer.print(&quot;fun &quot;);</span>
+<span class="fc" id="L208">		writer.print(functionDeclaration.getName() + &quot;(&quot;);</span>
+<span class="fc" id="L209">		writeParameters(writer, functionDeclaration.getParameters());</span>
+<span class="fc" id="L210">		writer.print(&quot;)&quot;);</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		if (functionDeclaration.getReturnType() != null) {</span>
+<span class="fc" id="L212">			writer.print(&quot;: &quot; + getUnqualifiedName(functionDeclaration.getReturnType()));</span>
+		}
+<span class="fc" id="L214">		writer.println(&quot; {&quot;);</span>
+<span class="fc" id="L215">		writer.indented(() -&gt; functionDeclaration.getCode().write(writer, FORMATTING_OPTIONS));</span>
+<span class="fc" id="L216">		writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L217">	}</span>
+
+	private void writeParameters(IndentingWriter writer, List&lt;Parameter&gt; parameters) {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (parameters.isEmpty()) {</span>
+<span class="fc" id="L221">			return;</span>
+		}
+<span class="fc" id="L223">		Iterator&lt;Parameter&gt; it = parameters.iterator();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		while (it.hasNext()) {</span>
+<span class="fc" id="L225">			Parameter parameter = it.next();</span>
+<span class="fc" id="L226">			writeAnnotations(writer, parameter, () -&gt; writer.print(&quot; &quot;));</span>
+<span class="fc" id="L227">			writer.print(parameter.getName() + &quot;: &quot; + getUnqualifiedName(parameter.getType()));</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">			if (it.hasNext()) {</span>
+<span class="nc" id="L229">				writer.print(&quot;, &quot;);</span>
+			}
+<span class="fc" id="L231">		}</span>
+<span class="fc" id="L232">	}</span>
+
+	private void writeAnnotations(IndentingWriter writer, Annotatable annotatable, Runnable separator) {
+<span class="fc" id="L235">		annotatable.annotations().values().forEach((annotation) -&gt; {</span>
+<span class="fc" id="L236">			annotation.write(writer, FORMATTING_OPTIONS);</span>
+<span class="fc" id="L237">			separator.run();</span>
+<span class="fc" id="L238">		});</span>
+<span class="fc" id="L239">	}</span>
+
+	private void writeAnnotations(IndentingWriter writer, Annotatable annotatable) {
+<span class="fc" id="L242">		writeAnnotations(writer, annotatable, writer::println);</span>
+<span class="fc" id="L243">	}</span>
+
+	private void writeModifiers(IndentingWriter writer, List&lt;KotlinModifier&gt; declaredModifiers) {
+<span class="fc" id="L246">		String modifiers = declaredModifiers.stream()</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">			.filter((entry) -&gt; !entry.equals(KotlinModifier.PUBLIC))</span>
+<span class="fc" id="L248">			.sorted()</span>
+<span class="fc" id="L249">			.map((entry) -&gt; entry.toString().toLowerCase(Locale.ENGLISH))</span>
+<span class="fc" id="L250">			.collect(Collectors.joining(&quot; &quot;));</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		if (!modifiers.isEmpty()) {</span>
+<span class="fc" id="L252">			writer.print(modifiers);</span>
+<span class="fc" id="L253">			writer.print(&quot; &quot;);</span>
+		}
+<span class="fc" id="L255">	}</span>
+
+	private Set&lt;String&gt; determineImports(KotlinCompilationUnit compilationUnit) {
+<span class="fc" id="L258">		List&lt;String&gt; imports = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">		for (KotlinTypeDeclaration typeDeclaration : compilationUnit.getTypeDeclarations()) {</span>
+<span class="fc" id="L260">			imports.add(typeDeclaration.getExtends());</span>
+<span class="fc" id="L261">			imports.addAll(typeDeclaration.getImplements());</span>
+<span class="fc" id="L262">			imports.addAll(appendImports(typeDeclaration.annotations().values(), Annotation::getImports));</span>
+<span class="fc" id="L263">			typeDeclaration.getPropertyDeclarations()</span>
+<span class="fc" id="L264">				.forEach(((propertyDeclaration) -&gt; imports.addAll(determinePropertyImports(propertyDeclaration))));</span>
+<span class="fc" id="L265">			typeDeclaration.getFunctionDeclarations()</span>
+<span class="fc" id="L266">				.forEach((functionDeclaration) -&gt; imports.addAll(determineFunctionImports(functionDeclaration)));</span>
+<span class="fc" id="L267">		}</span>
+<span class="fc" id="L268">		compilationUnit.getTopLevelFunctions()</span>
+<span class="fc" id="L269">			.forEach((functionDeclaration) -&gt; imports.addAll(determineFunctionImports(functionDeclaration)));</span>
+<span class="fc" id="L270">		return imports.stream()</span>
+<span class="fc" id="L271">			.filter((candidate) -&gt; isImportCandidate(compilationUnit, candidate))</span>
+<span class="fc" id="L272">			.sorted()</span>
+<span class="fc" id="L273">			.collect(Collectors.toCollection(LinkedHashSet::new));</span>
+	}
+
+	private Set&lt;String&gt; determinePropertyImports(KotlinPropertyDeclaration propertyDeclaration) {
+<span class="fc bfc" id="L277" title="All 2 branches covered.">		return (propertyDeclaration.getReturnType() != null) ? Set.of(propertyDeclaration.getReturnType())</span>
+<span class="fc" id="L278">				: Collections.emptySet();</span>
+	}
+
+	private Set&lt;String&gt; determineFunctionImports(KotlinFunctionDeclaration functionDeclaration) {
+<span class="fc" id="L282">		Set&lt;String&gt; imports = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L283">		imports.add(functionDeclaration.getReturnType());</span>
+<span class="fc" id="L284">		imports.addAll(appendImports(functionDeclaration.annotations().values(), Annotation::getImports));</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">		for (Parameter parameter : functionDeclaration.getParameters()) {</span>
+<span class="fc" id="L286">			imports.add(parameter.getType());</span>
+<span class="fc" id="L287">			imports.addAll(appendImports(parameter.annotations().values(), Annotation::getImports));</span>
+<span class="fc" id="L288">		}</span>
+<span class="fc" id="L289">		imports.addAll(functionDeclaration.getCode().getImports());</span>
+<span class="fc" id="L290">		return imports;</span>
+	}
+
+	private &lt;T&gt; List&lt;String&gt; appendImports(Stream&lt;T&gt; candidates, Function&lt;T, Collection&lt;String&gt;&gt; mapping) {
+<span class="fc" id="L294">		return candidates.map(mapping).flatMap(Collection::stream).collect(Collectors.toList());</span>
+	}
+
+	private String getUnqualifiedName(String name) {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">		if (!name.contains(&quot;.&quot;)) {</span>
+<span class="fc" id="L299">			return name;</span>
+		}
+<span class="fc" id="L301">		return name.substring(name.lastIndexOf(&quot;.&quot;) + 1);</span>
+	}
+
+	private boolean isImportCandidate(CompilationUnit&lt;?&gt; compilationUnit, String name) {
+<span class="fc bfc" id="L305" title="All 4 branches covered.">		if (name == null || !name.contains(&quot;.&quot;)) {</span>
+<span class="fc" id="L306">			return false;</span>
+		}
+<span class="fc" id="L308">		String packageName = name.substring(0, name.lastIndexOf('.'));</span>
+<span class="fc bfc" id="L309" title="All 4 branches covered.">		return !&quot;java.lang&quot;.equals(packageName) &amp;&amp; !compilationUnit.getPackageName().equals(packageName);</span>
+	}
+
+<span class="fc" id="L312">	static class KotlinFormattingOptions implements FormattingOptions {</span>
+
+		@Override
+		public String statementSeparator() {
+<span class="fc" id="L316">			return &quot;&quot;;</span>
+		}
+
+		@Override
+		public CodeBlock arrayOf(CodeBlock... values) {
+<span class="fc" id="L321">			return CodeBlock.of(&quot;[$L]&quot;, CodeBlock.join(Arrays.asList(values), &quot;, &quot;));</span>
+		}
+
+		@Override
+		public CodeBlock classReference(ClassName className) {
+<span class="fc" id="L326">			return CodeBlock.of(&quot;$T::class&quot;, className);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRequestDocumentFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Actuator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.actuate.stat</a> &gt; <span class="el_source">ProjectRequestDocumentFactory.java</span></div><h1>ProjectRequestDocumentFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.actuate.stat;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.actuate.stat.ProjectRequestDocument.ClientInformation;
+import io.spring.initializr.actuate.stat.ProjectRequestDocument.DependencyInformation;
+import io.spring.initializr.actuate.stat.ProjectRequestDocument.ErrorStateInformation;
+import io.spring.initializr.actuate.stat.ProjectRequestDocument.VersionInformation;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.web.project.ProjectFailedEvent;
+import io.spring.initializr.web.project.ProjectRequest;
+import io.spring.initializr.web.project.ProjectRequestEvent;
+import io.spring.initializr.web.project.WebProjectRequest;
+import io.spring.initializr.web.support.Agent;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * Create {@link ProjectRequestDocument} instances.
+ *
+ * @author Stephane Nicoll
+ * @author Brian Clozel
+ */
+<span class="fc" id="L45">public class ProjectRequestDocumentFactory {</span>
+
+<span class="fc" id="L47">	private static final Pattern PROJECT_TYPE_PATTERN = Pattern.compile(&quot;([a-z]*)-[a-z-]*&quot;);</span>
+
+	public ProjectRequestDocument createDocument(ProjectRequestEvent event) {
+<span class="fc" id="L50">		InitializrMetadata metadata = event.getMetadata();</span>
+<span class="fc" id="L51">		ProjectRequest request = event.getProjectRequest();</span>
+<span class="fc" id="L52">		ProjectRequestDocument document = new ProjectRequestDocument();</span>
+<span class="fc" id="L53">		document.setGenerationTimestamp(event.getTimestamp());</span>
+<span class="fc" id="L54">		document.setGroupId(request.getGroupId());</span>
+<span class="fc" id="L55">		document.setArtifactId(request.getArtifactId());</span>
+<span class="fc" id="L56">		document.setPackageName(request.getPackageName());</span>
+<span class="fc" id="L57">		document.setVersion(determineVersionInformation(request));</span>
+<span class="fc" id="L58">		document.setClient(determineClientInformation(request));</span>
+
+<span class="fc" id="L60">		document.setJavaVersion(request.getJavaVersion());</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (StringUtils.hasText(request.getJavaVersion())</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">				&amp;&amp; metadata.getJavaVersions().get(request.getJavaVersion()) == null) {</span>
+<span class="fc" id="L63">			document.triggerError().setJavaVersion(true);</span>
+		}
+
+<span class="fc" id="L66">		document.setLanguage(request.getLanguage());</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">		if (StringUtils.hasText(request.getLanguage()) &amp;&amp; metadata.getLanguages().get(request.getLanguage()) == null) {</span>
+<span class="fc" id="L68">			document.triggerError().setLanguage(true);</span>
+		}
+
+<span class="fc" id="L71">		document.setPackaging(request.getPackaging());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (StringUtils.hasText(request.getPackaging())</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">				&amp;&amp; metadata.getPackagings().get(request.getPackaging()) == null) {</span>
+<span class="fc" id="L74">			document.triggerError().setPackaging(true);</span>
+		}
+
+<span class="fc" id="L77">		document.setType(request.getType());</span>
+<span class="fc" id="L78">		document.setBuildSystem(determineBuildSystem(request));</span>
+<span class="pc bpc" id="L79" title="1 of 4 branches missed.">		if (StringUtils.hasText(request.getType()) &amp;&amp; metadata.getTypes().get(request.getType()) == null) {</span>
+<span class="fc" id="L80">			document.triggerError().setType(true);</span>
+		}
+
+		// Let's not rely on the resolved dependencies here
+<span class="fc" id="L84">		List&lt;String&gt; dependencies = new ArrayList&lt;&gt;(request.getDependencies());</span>
+<span class="fc" id="L85">		List&lt;String&gt; validDependencies = dependencies.stream()</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			.filter((id) -&gt; metadata.getDependencies().get(id) != null)</span>
+<span class="fc" id="L87">			.collect(Collectors.toList());</span>
+<span class="fc" id="L88">		document.setDependencies(new DependencyInformation(validDependencies));</span>
+<span class="fc" id="L89">		List&lt;String&gt; invalidDependencies = dependencies.stream()</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			.filter((id) -&gt; (!validDependencies.contains(id)))</span>
+<span class="fc" id="L91">			.collect(Collectors.toList());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!invalidDependencies.isEmpty()) {</span>
+<span class="fc" id="L93">			document.triggerError().triggerInvalidDependencies(invalidDependencies);</span>
+		}
+
+		// Let's make sure that the document is flagged as invalid no matter what
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (event instanceof ProjectFailedEvent failed) {</span>
+<span class="fc" id="L98">			ErrorStateInformation errorState = document.triggerError();</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">			if (failed.getCause() != null) {</span>
+<span class="fc" id="L100">				errorState.setMessage(failed.getCause().getMessage());</span>
+			}
+		}
+<span class="fc" id="L103">		return document;</span>
+	}
+
+	private String determineBuildSystem(ProjectRequest request) {
+<span class="fc" id="L107">		Matcher typeMatcher = PROJECT_TYPE_PATTERN.matcher(request.getType());</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		if (typeMatcher.matches()) {</span>
+<span class="fc" id="L109">			return typeMatcher.group(1);</span>
+		}
+<span class="fc" id="L111">		return null;</span>
+	}
+
+	private VersionInformation determineVersionInformation(ProjectRequest request) {
+<span class="fc" id="L115">		Version version = Version.safeParse(request.getBootVersion());</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">		if (version != null &amp;&amp; version.getMajor() != null) {</span>
+<span class="fc" id="L117">			return new VersionInformation(version);</span>
+		}
+<span class="nc" id="L119">		return null;</span>
+	}
+
+	private ClientInformation determineClientInformation(ProjectRequest request) {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (request instanceof WebProjectRequest webProjectRequest) {</span>
+<span class="fc" id="L124">			Agent agent = determineAgent(webProjectRequest);</span>
+<span class="fc" id="L125">			String ip = determineIp(webProjectRequest);</span>
+<span class="fc" id="L126">			String country = determineCountry(webProjectRequest);</span>
+<span class="pc bpc" id="L127" title="1 of 6 branches missed.">			if (agent != null || ip != null || country != null) {</span>
+<span class="fc" id="L128">				return new ClientInformation(agent, ip, country);</span>
+			}
+		}
+<span class="fc" id="L131">		return null;</span>
+	}
+
+	private Agent determineAgent(WebProjectRequest request) {
+<span class="fc" id="L135">		String userAgent = (String) request.getParameters().get(&quot;user-agent&quot;);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (StringUtils.hasText(userAgent)) {</span>
+<span class="fc" id="L137">			return Agent.fromUserAgent(userAgent);</span>
+		}
+<span class="fc" id="L139">		return null;</span>
+	}
+
+	private String determineIp(WebProjectRequest request) {
+<span class="fc" id="L143">		String candidate = (String) request.getParameters().get(&quot;cf-connecting-ip&quot;);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		return (StringUtils.hasText(candidate)) ? candidate : (String) request.getParameters().get(&quot;x-forwarded-for&quot;);</span>
+	}
+
+	private String determineCountry(WebProjectRequest request) {
+<span class="fc" id="L148">		String candidate = (String) request.getParameters().get(&quot;cf-ipcountry&quot;);</span>
+<span class="fc bfc" id="L149" title="All 4 branches covered.">		if (StringUtils.hasText(candidate) &amp;&amp; !&quot;xx&quot;.equalsIgnoreCase(candidate)) {</span>
+<span class="fc" id="L150">			return candidate;</span>
+		}
+<span class="fc" id="L152">		return null;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MetadataBuildItemMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata.support</a> &gt; <span class="el_source">MetadataBuildItemMapper.java</span></div><h1>MetadataBuildItemMapper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata.support;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.buildsystem.DependencyScope;
+import io.spring.initializr.generator.version.VersionReference;
+import io.spring.initializr.metadata.BillOfMaterials;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.Repository;
+
+/**
+ * An internal class used to easily translate metadata information to {@link Build} items.
+ *
+ * @author Stephane Nicoll
+ */
+public final class MetadataBuildItemMapper {
+
+	private MetadataBuildItemMapper() {
+	}
+
+	/**
+	 * Return an {@link Build} dependency from a {@link Dependency dependency metadata}.
+	 * @param dependency a dependency metadata
+	 * @return an equivalent build dependency
+	 */
+	public static io.spring.initializr.generator.buildsystem.Dependency toDependency(Dependency dependency) {
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">		if (dependency == null) {</span>
+<span class="nc" id="L43">			return null;</span>
+		}
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		VersionReference versionReference = (dependency.getVersion() != null)</span>
+<span class="fc" id="L46">				? VersionReference.ofValue(dependency.getVersion()) : null;</span>
+<span class="fc" id="L47">		return io.spring.initializr.generator.buildsystem.Dependency</span>
+<span class="fc" id="L48">			.withCoordinates(dependency.getGroupId(), dependency.getArtifactId())</span>
+<span class="fc" id="L49">			.version(versionReference)</span>
+<span class="fc" id="L50">			.scope(toDependencyScope(dependency.getScope()))</span>
+<span class="fc" id="L51">			.classifier(dependency.getClassifier())</span>
+<span class="fc" id="L52">			.type(dependency.getType())</span>
+<span class="fc" id="L53">			.build();</span>
+	}
+
+	private static DependencyScope toDependencyScope(String scope) {
+<span class="pc bpc" id="L57" title="5 of 7 branches missed.">		return switch (scope) {</span>
+<span class="nc" id="L58">			case Dependency.SCOPE_ANNOTATION_PROCESSOR -&gt; DependencyScope.ANNOTATION_PROCESSOR;</span>
+<span class="fc" id="L59">			case Dependency.SCOPE_COMPILE -&gt; DependencyScope.COMPILE;</span>
+<span class="fc" id="L60">			case Dependency.SCOPE_RUNTIME -&gt; DependencyScope.RUNTIME;</span>
+<span class="nc" id="L61">			case Dependency.SCOPE_COMPILE_ONLY -&gt; DependencyScope.COMPILE_ONLY;</span>
+<span class="nc" id="L62">			case Dependency.SCOPE_PROVIDED -&gt; DependencyScope.PROVIDED_RUNTIME;</span>
+<span class="nc" id="L63">			case Dependency.SCOPE_TEST -&gt; DependencyScope.TEST_COMPILE;</span>
+<span class="nc" id="L64">			default -&gt; null;</span>
+		};
+	}
+
+	/**
+	 * Return a {@link Build} bom from a {@link BillOfMaterials bom metadata}.
+	 * @param bom a metadata bom
+	 * @return an equivalent build bom
+	 */
+	public static io.spring.initializr.generator.buildsystem.BillOfMaterials toBom(BillOfMaterials bom) {
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (bom == null) {</span>
+<span class="nc" id="L75">			return null;</span>
+		}
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		VersionReference version = (bom.getVersionProperty() != null)</span>
+<span class="pc" id="L78">				? VersionReference.ofProperty(bom.getVersionProperty()) : VersionReference.ofValue(bom.getVersion());</span>
+<span class="fc" id="L79">		return io.spring.initializr.generator.buildsystem.BillOfMaterials</span>
+<span class="fc" id="L80">			.withCoordinates(bom.getGroupId(), bom.getArtifactId())</span>
+<span class="fc" id="L81">			.version(version)</span>
+<span class="fc" id="L82">			.order(bom.getOrder())</span>
+<span class="fc" id="L83">			.build();</span>
+	}
+
+	/**
+	 * Return a {@link Build} repository from a {@link Repository repository metadata}.
+	 * @param id the repository id
+	 * @param repository a repository metadata
+	 * @return an equivalent build repository
+	 */
+	public static io.spring.initializr.generator.buildsystem.MavenRepository toRepository(String id,
+			Repository repository) {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (repository == null) {</span>
+<span class="fc" id="L95">			return null;</span>
+		}
+<span class="fc" id="L97">		return io.spring.initializr.generator.buildsystem.MavenRepository</span>
+<span class="fc" id="L98">			.withIdAndUrl(id, repository.getUrl().toExternalForm())</span>
+<span class="fc" id="L99">			.name(repository.getName())</span>
+<span class="fc" id="L100">			.releasesEnabled(repository.isReleasesEnabled())</span>
+<span class="fc" id="L101">			.snapshotsEnabled(repository.isSnapshotsEnabled())</span>
+<span class="fc" id="L102">			.build();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

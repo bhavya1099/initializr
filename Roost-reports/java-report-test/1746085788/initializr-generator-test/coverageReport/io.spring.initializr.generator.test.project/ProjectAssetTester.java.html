@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectAssetTester.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.project</a> &gt; <span class="el_source">ProjectAssetTester.java</span></div><h1>ProjectAssetTester.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.project;
+
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.project.MutableProjectDescription;
+import io.spring.initializr.generator.project.ProjectAssetGenerator;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.project.ProjectDirectoryFactory;
+import io.spring.initializr.generator.project.ProjectGenerationContext;
+import io.spring.initializr.generator.project.contributor.ProjectContributor;
+
+import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.ContextConsumer;
+
+/**
+ * A tester for project asset that does not detect available {@link ProjectContributor
+ * contributors} and does not register any bean to the context. Contributors can be added
+ * using {@linkplain #withBean(Class, Supplier) bean registration}, a
+ * {@linkplain #withConfiguration(Class[]) configuration class} or via the
+ * {@linkplain #withContextInitializer(Consumer) customization of the project generation
+ * context}.
+ * &lt;p&gt;
+ * Alternatively, the context can be queried the same way {@link ApplicationContextRunner}
+ * works by {@linkplain #configure(MutableProjectDescription, ContextConsumer)
+ * configuring} the context.
+ *
+ * @author Stephane Nicoll
+ */
+public class ProjectAssetTester extends AbstractProjectGenerationTester&lt;ProjectAssetTester&gt; {
+
+	public ProjectAssetTester() {
+<span class="fc" id="L54">		super();</span>
+<span class="fc" id="L55">	}</span>
+
+	private ProjectAssetTester(Map&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beanDefinitions,
+			Consumer&lt;ProjectGenerationContext&gt; contextInitializer,
+			Consumer&lt;MutableProjectDescription&gt; descriptionCustomizer) {
+<span class="fc" id="L60">		super(beanDefinitions, contextInitializer, descriptionCustomizer);</span>
+<span class="fc" id="L61">	}</span>
+
+	@Override
+	protected ProjectAssetTester newInstance(Map&lt;Class&lt;?&gt;, Supplier&lt;?&gt;&gt; beanDefinitions,
+			Consumer&lt;ProjectGenerationContext&gt; contextInitializer,
+			Consumer&lt;MutableProjectDescription&gt; descriptionCustomizer) {
+<span class="fc" id="L67">		return new ProjectAssetTester(beanDefinitions, contextInitializer, descriptionCustomizer);</span>
+	}
+
+	/**
+	 * Configure a {@link ProjectGenerationContext} using the specified
+	 * {@code description} and use the {@link ContextConsumer} to assert the context.
+	 * @param description the description of the project to configure
+	 * @param consumer the consumer of the created {@link ProjectGenerationContext}
+	 * @see ApplicationContextRunner#run(ContextConsumer)
+	 */
+	public void configure(MutableProjectDescription description,
+			ContextConsumer&lt;AssertableApplicationContext&gt; consumer) {
+<span class="fc" id="L79">		invokeProjectGeneration(description, (contextInitializer) -&gt; {</span>
+<span class="fc" id="L80">			new ApplicationContextRunner(ProjectGenerationContext::new).withInitializer((ctx) -&gt; {</span>
+<span class="fc" id="L81">				ProjectGenerationContext projectGenerationContext = (ProjectGenerationContext) ctx;</span>
+<span class="fc" id="L82">				projectGenerationContext.registerBean(ProjectDescription.class, () -&gt; description);</span>
+<span class="fc" id="L83">				contextInitializer.accept(projectGenerationContext);</span>
+<span class="fc" id="L84">			}).run(consumer);</span>
+<span class="fc" id="L85">			return null;</span>
+		});
+<span class="fc" id="L87">	}</span>
+
+	/**
+	 * Generate a project asset using the specified {@link ProjectAssetGenerator}.
+	 * @param description the description of the project to generate
+	 * @param projectAssetGenerator the {@link ProjectAssetGenerator} to invoke
+	 * @param &lt;T&gt; the project asset type
+	 * @return the project asset
+	 * @see #withConfiguration(Class[])
+	 */
+	public &lt;T&gt; T generate(MutableProjectDescription description, ProjectAssetGenerator&lt;T&gt; projectAssetGenerator) {
+<span class="fc" id="L98">		return invokeProjectGeneration(description, (contextInitializer) -&gt; {</span>
+<span class="fc" id="L99">			try (ProjectGenerationContext context = new ProjectGenerationContext()) {</span>
+<span class="fc" id="L100">				context.registerBean(ProjectDescription.class, () -&gt; description);</span>
+<span class="fc" id="L101">				contextInitializer.accept(context);</span>
+<span class="fc" id="L102">				context.refresh();</span>
+<span class="fc" id="L103">				return projectAssetGenerator.generate(context);</span>
+			}
+		});
+	}
+
+	/**
+	 * Generate a project structure using only explicitly configured
+	 * {@link ProjectContributor contributors}.
+	 * @param description the description of the project to generateProject
+	 * @return the {@link ProjectStructure} of the generated project
+	 * @see #withConfiguration(Class[])
+	 */
+	public ProjectStructure generate(MutableProjectDescription description) {
+<span class="fc" id="L116">		return generate(description, runAllAvailableContributors());</span>
+	}
+
+	private ProjectAssetGenerator&lt;ProjectStructure&gt; runAllAvailableContributors() {
+<span class="fc" id="L120">		return (context) -&gt; {</span>
+<span class="fc" id="L121">			Path projectDirectory = context.getBean(ProjectDirectoryFactory.class)</span>
+<span class="fc" id="L122">				.createProjectDirectory(context.getBean(ProjectDescription.class));</span>
+<span class="fc" id="L123">			List&lt;ProjectContributor&gt; projectContributors = context.getBeanProvider(ProjectContributor.class)</span>
+<span class="fc" id="L124">				.orderedStream()</span>
+<span class="fc" id="L125">				.collect(Collectors.toList());</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			for (ProjectContributor projectContributor : projectContributors) {</span>
+<span class="fc" id="L127">				projectContributor.contribute(projectDirectory);</span>
+<span class="fc" id="L128">			}</span>
+<span class="fc" id="L129">			return new ProjectStructure(projectDirectory);</span>
+		};
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

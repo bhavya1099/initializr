@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenDependency.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenDependency.java</span></div><h1>MavenDependency.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import io.spring.initializr.generator.buildsystem.Dependency;
+
+/**
+ * Maven-specific {@link Dependency}.
+ *
+ * @author Stephane Nicoll
+ */
+public class MavenDependency extends Dependency {
+
+	/**
+	 * Whether this dependency is optional.
+	 */
+	protected final boolean optional;
+
+	/**
+	 * Creates a new instance.
+	 * @param builder the builder to use
+	 */
+	protected MavenDependency(Builder builder) {
+<span class="fc" id="L38">		super(builder);</span>
+<span class="fc" id="L39">		this.optional = builder.optional;</span>
+<span class="fc" id="L40">	}</span>
+
+	/**
+	 * Initialize a new dependency {@link Builder} with the specified coordinates.
+	 * @param groupId the group ID of the dependency
+	 * @param artifactId the artifact ID of the dependency
+	 * @return a new builder
+	 */
+	public static Builder withCoordinates(String groupId, String artifactId) {
+<span class="fc" id="L49">		return new Builder(groupId, artifactId);</span>
+	}
+
+	/**
+	 * Initialize a new dependency {@link Builder} with the state of the specified
+	 * {@link Dependency}.
+	 * @param dependency the dependency to use to initialize the builder
+	 * @return a new builder initialized with the same state as the {@code dependency}
+	 */
+	public static Builder from(Dependency dependency) {
+<span class="fc" id="L59">		return new Builder(dependency.getGroupId(), dependency.getArtifactId()).initialize(dependency);</span>
+	}
+
+	/**
+	 * Return whether this dependency is {@code optional}.
+	 * @return {@code true} if the dependency is optional
+	 */
+	public boolean isOptional() {
+<span class="fc" id="L67">		return this.optional;</span>
+	}
+
+	/**
+	 * Builder for a Maven dependency.
+	 *
+	 * @see MavenDependency#withCoordinates(String, String)
+	 */
+	public static class Builder extends Dependency.Builder&lt;Builder&gt; {
+
+		private boolean optional;
+
+		/**
+		 * Creates a new instance.
+		 * @param groupId the group id
+		 * @param artifactId the artifact id
+		 */
+		protected Builder(String groupId, String artifactId) {
+<span class="fc" id="L85">			super(groupId, artifactId);</span>
+<span class="fc" id="L86">		}</span>
+
+		/**
+		 * Specify if the dependency is {@code optional}.
+		 * @param optional whether the dependency is optional
+		 * @return this for method chaining
+		 */
+		public Builder optional(boolean optional) {
+<span class="fc" id="L94">			this.optional = optional;</span>
+<span class="fc" id="L95">			return self();</span>
+		}
+
+		@Override
+		protected Builder initialize(Dependency dependency) {
+<span class="fc" id="L100">			super.initialize(dependency);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (dependency instanceof MavenDependency) {</span>
+<span class="fc" id="L102">				optional(((MavenDependency) dependency).isOptional());</span>
+			}
+<span class="fc" id="L104">			return self();</span>
+		}
+
+		@Override
+		public MavenDependency build() {
+<span class="fc" id="L109">			return new MavenDependency(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrMetadataBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">InitializrMetadataBuilder.java</span></div><h1>InitializrMetadataBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
+
+/**
+ * Builder for {@link InitializrMetadata}. Allows to read metadata from any arbitrary
+ * resource, including remote URLs.
+ *
+ * @author Stephane Nicoll
+ * @see InitializrMetadataCustomizer
+ */
+public class InitializrMetadataBuilder {
+
+<span class="fc" id="L42">	private final List&lt;InitializrMetadataCustomizer&gt; customizers = new ArrayList&lt;&gt;();</span>
+
+	private final InitializrConfiguration configuration;
+
+	/**
+	 * Create a new instance with the given configuration.
+	 * @param configuration the configuration to use
+	 */
+<span class="fc" id="L50">	protected InitializrMetadataBuilder(InitializrConfiguration configuration) {</span>
+<span class="fc" id="L51">		this.configuration = configuration;</span>
+<span class="fc" id="L52">	}</span>
+
+	/**
+	 * Add a {@link InitializrProperties} to be merged with other content. Merges the
+	 * settings only and not the configuration.
+	 * @param properties the properties to use
+	 * @return this instance
+	 * @see #withInitializrProperties(InitializrProperties, boolean)
+	 */
+	public InitializrMetadataBuilder withInitializrProperties(InitializrProperties properties) {
+<span class="fc" id="L62">		return withInitializrProperties(properties, false);</span>
+	}
+
+	/**
+	 * Add a {@link InitializrProperties} to be merged with other content.
+	 * @param properties the settings to merge onto this instance
+	 * @param mergeConfiguration specify if service configuration should be merged as well
+	 * @return this instance
+	 */
+	public InitializrMetadataBuilder withInitializrProperties(InitializrProperties properties,
+			boolean mergeConfiguration) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (mergeConfiguration) {</span>
+<span class="fc" id="L74">			this.configuration.merge(properties);</span>
+		}
+<span class="fc" id="L76">		return withCustomizer(new InitializerPropertiesCustomizer(properties));</span>
+	}
+
+	/**
+	 * Add a {@link InitializrMetadata} to be merged with other content.
+	 * @param resource a resource to a json document describing the metadata to include
+	 * @return this instance
+	 */
+	public InitializrMetadataBuilder withInitializrMetadata(Resource resource) {
+<span class="fc" id="L85">		return withCustomizer(new ResourceInitializrMetadataCustomizer(resource));</span>
+	}
+
+	/**
+	 * Add a {@link InitializrMetadataCustomizer}. customizers are invoked in their order
+	 * of addition.
+	 * @param customizer the customizer to add
+	 * @return this instance
+	 * @see InitializrMetadataCustomizer
+	 */
+	public InitializrMetadataBuilder withCustomizer(InitializrMetadataCustomizer customizer) {
+<span class="fc" id="L96">		this.customizers.add(customizer);</span>
+<span class="fc" id="L97">		return this;</span>
+	}
+
+	/**
+	 * Build a {@link InitializrMetadata} based on the state of this builder.
+	 * @return a new {@link InitializrMetadata} instance
+	 */
+	public InitializrMetadata build() {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		InitializrConfiguration config = (this.configuration != null) ? this.configuration</span>
+<span class="pc" id="L106">				: new InitializrConfiguration();</span>
+<span class="fc" id="L107">		InitializrMetadata metadata = createInstance(config);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (InitializrMetadataCustomizer customizer : this.customizers) {</span>
+<span class="fc" id="L109">			customizer.customize(metadata);</span>
+<span class="fc" id="L110">		}</span>
+<span class="fc" id="L111">		applyDefaults(metadata);</span>
+<span class="fc" id="L112">		metadata.validate();</span>
+<span class="fc" id="L113">		return metadata;</span>
+	}
+
+	/**
+	 * Creates an empty instance based on the specified {@link InitializrConfiguration}.
+	 * @param configuration the configuration
+	 * @return a new {@link InitializrMetadata} instance
+	 */
+	protected InitializrMetadata createInstance(InitializrConfiguration configuration) {
+<span class="fc" id="L122">		return new InitializrMetadata(configuration);</span>
+	}
+
+	/**
+	 * Apply defaults to capabilities that have no value.
+	 * @param metadata the initializr metadata
+	 */
+	protected void applyDefaults(InitializrMetadata metadata) {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (!StringUtils.hasText(metadata.getName().getContent())) {</span>
+<span class="fc" id="L131">			metadata.getName().setContent(&quot;demo&quot;);</span>
+		}
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (!StringUtils.hasText(metadata.getDescription().getContent())) {</span>
+<span class="fc" id="L134">			metadata.getDescription().setContent(&quot;Demo project for Spring Boot&quot;);</span>
+		}
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (!StringUtils.hasText(metadata.getGroupId().getContent())) {</span>
+<span class="fc" id="L137">			metadata.getGroupId().setContent(&quot;com.example&quot;);</span>
+		}
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (!StringUtils.hasText(metadata.getVersion().getContent())) {</span>
+<span class="fc" id="L140">			metadata.getVersion().setContent(&quot;0.0.1-SNAPSHOT&quot;);</span>
+		}
+<span class="fc" id="L142">	}</span>
+
+	/**
+	 * Create a builder instance from the specified {@link InitializrProperties}.
+	 * Initialize the configuration to use.
+	 * @param configuration the configuration to use
+	 * @return a new {@link InitializrMetadataBuilder} instance
+	 * @see #withInitializrProperties(InitializrProperties)
+	 */
+	public static InitializrMetadataBuilder fromInitializrProperties(InitializrProperties configuration) {
+<span class="fc" id="L152">		return new InitializrMetadataBuilder(configuration).withInitializrProperties(configuration);</span>
+	}
+
+	/**
+	 * Create an empty builder instance with a default {@link InitializrConfiguration}.
+	 * @return a new {@link InitializrMetadataBuilder} instance
+	 */
+	public static InitializrMetadataBuilder create() {
+<span class="fc" id="L160">		return new InitializrMetadataBuilder(new InitializrConfiguration());</span>
+	}
+
+	private static class InitializerPropertiesCustomizer implements InitializrMetadataCustomizer {
+
+		private final InitializrProperties properties;
+
+<span class="fc" id="L167">		InitializerPropertiesCustomizer(InitializrProperties properties) {</span>
+<span class="fc" id="L168">			this.properties = properties;</span>
+<span class="fc" id="L169">		}</span>
+
+		@Override
+		public void customize(InitializrMetadata metadata) {
+<span class="fc" id="L173">			metadata.getDependencies().merge(this.properties.getDependencies());</span>
+<span class="fc" id="L174">			metadata.getTypes().merge(this.properties.getTypes());</span>
+<span class="fc" id="L175">			metadata.getBootVersions().merge(this.properties.getBootVersions());</span>
+<span class="fc" id="L176">			metadata.getPackagings().merge(this.properties.getPackagings());</span>
+<span class="fc" id="L177">			metadata.getJavaVersions().merge(this.properties.getJavaVersions());</span>
+<span class="fc" id="L178">			metadata.getLanguages().merge(this.properties.getLanguages());</span>
+<span class="fc" id="L179">			this.properties.getGroupId().apply(metadata.getGroupId());</span>
+<span class="fc" id="L180">			this.properties.getArtifactId().apply(metadata.getArtifactId());</span>
+<span class="fc" id="L181">			this.properties.getVersion().apply(metadata.getVersion());</span>
+<span class="fc" id="L182">			this.properties.getName().apply(metadata.getName());</span>
+<span class="fc" id="L183">			this.properties.getDescription().apply(metadata.getDescription());</span>
+<span class="fc" id="L184">			this.properties.getPackageName().apply(metadata.getPackageName());</span>
+<span class="fc" id="L185">		}</span>
+
+	}
+
+	private static class ResourceInitializrMetadataCustomizer implements InitializrMetadataCustomizer {
+
+<span class="fc" id="L191">		private static final Log logger = LogFactory.getLog(ResourceInitializrMetadataCustomizer.class);</span>
+
+<span class="fc" id="L193">		private static final Charset UTF_8 = StandardCharsets.UTF_8;</span>
+
+		private final Resource resource;
+
+<span class="fc" id="L197">		ResourceInitializrMetadataCustomizer(Resource resource) {</span>
+<span class="fc" id="L198">			this.resource = resource;</span>
+<span class="fc" id="L199">		}</span>
+
+		@Override
+		public void customize(InitializrMetadata metadata) {
+<span class="fc" id="L203">			logger.info(&quot;Loading initializr metadata from &quot; + this.resource);</span>
+<span class="fc" id="L204">			try (InputStream in = this.resource.getInputStream()) {</span>
+<span class="fc" id="L205">				String content = StreamUtils.copyToString(in, UTF_8);</span>
+<span class="fc" id="L206">				ObjectMapper objectMapper = new ObjectMapper();</span>
+<span class="fc" id="L207">				InitializrMetadata anotherMetadata = objectMapper.readValue(content, InitializrMetadata.class);</span>
+<span class="fc" id="L208">				metadata.merge(anotherMetadata);</span>
+			}
+<span class="nc" id="L210">			catch (Exception ex) {</span>
+<span class="nc" id="L211">				throw new IllegalStateException(&quot;Cannot merge&quot;, ex);</span>
+<span class="fc" id="L212">			}</span>
+<span class="fc" id="L213">		}</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

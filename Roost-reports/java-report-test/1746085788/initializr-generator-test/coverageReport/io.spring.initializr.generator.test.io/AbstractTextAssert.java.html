@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractTextAssert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.io</a> &gt; <span class="el_source">AbstractTextAssert.java</span></div><h1>AbstractTextAssert.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.io;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.function.Consumer;
+
+import org.assertj.core.api.AbstractStringAssert;
+import org.assertj.core.api.ListAssert;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.StreamUtils;
+
+/**
+ * Base class for text assertions.
+ *
+ * @param &lt;SELF&gt; the type of the concrete assert implementations
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractTextAssert&lt;SELF extends AbstractStringAssert&lt;SELF&gt;&gt; extends AbstractStringAssert&lt;SELF&gt; {
+
+	protected AbstractTextAssert(String actual, Class&lt;?&gt; selfType) {
+<span class="fc" id="L40">		super(actual, selfType);</span>
+<span class="fc" id="L41">	}</span>
+
+	protected AbstractTextAssert(Path textFile, Class&lt;?&gt; selfType) {
+<span class="fc" id="L44">		this(TextTestUtils.readContent(textFile), selfType);</span>
+<span class="fc" id="L45">		this.info.description(&quot;Content at &quot; + textFile);</span>
+<span class="fc" id="L46">	}</span>
+
+	/**
+	 * Assert this text has the same content as the content defined by the specified
+	 * {@link Resource}. Differences in newlines are ignored
+	 * @param expected a resource with the expected content
+	 * @return {@code this} assertion object
+	 * @see #isEqualToIgnoringNewLines(CharSequence)
+	 */
+	public SELF hasSameContentAs(Resource expected) {
+<span class="fc" id="L56">		return doWithResource(expected, this::isEqualToIgnoringNewLines);</span>
+	}
+
+	/**
+	 * Assert this text contains the content defined by the specified {@link Resource}.
+	 * Differences in newlines are ignored
+	 * @param content a resource with the partial expected content
+	 * @return {@code this} assertion object
+	 * @see #containsIgnoringNewLines(CharSequence...)
+	 */
+	public SELF contains(Resource content) {
+<span class="fc" id="L67">		return doWithResource(content, this::containsIgnoringNewLines);</span>
+	}
+
+	private SELF doWithResource(Resource resource, Consumer&lt;String&gt; resourceAssertions) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (!resource.isReadable()) {</span>
+<span class="nc" id="L72">			failWithMessage(&quot;Resource does not exist: &quot; + resource);</span>
+		}
+<span class="fc" id="L74">		try (InputStream in = resource.getInputStream()) {</span>
+<span class="fc" id="L75">			String expectedContent = StreamUtils.copyToString(in, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L76">			resourceAssertions.accept(expectedContent);</span>
+		}
+<span class="fc" id="L78">		catch (IOException ex) {</span>
+<span class="nc" id="L79">			failWithMessage(&quot;Cannot read content &quot; + resource);</span>
+<span class="fc" id="L80">		}</span>
+<span class="fc" id="L81">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert this text contains exactly the specified lines.
+	 * @param lines the lines that constitute the content of this text
+	 * @return {@code this} assertion object
+	 */
+	public SELF containsExactly(String... lines) {
+<span class="nc" id="L90">		lines().containsExactly(lines);</span>
+<span class="nc" id="L91">		return this.myself;</span>
+	}
+
+	/**
+	 * Return an {@link ListAssert assert} for the lines that constitute this text, to
+	 * allow chaining of lines-specific assertions from this call.
+	 * @return a {@link ListAssert} for the lines that constitutes this text
+	 */
+	public ListAssert&lt;String&gt; lines() {
+<span class="nc" id="L100">		return new ListAssert&lt;&gt;(TextTestUtils.readAllLines(this.actual));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
