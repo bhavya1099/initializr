@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IndentingWriterFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.io</a> &gt; <span class="el_source">IndentingWriterFactory.java</span></div><h1>IndentingWriterFactory.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.io;
+
+import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+/**
+ * A factory for {@link IndentingWriter} that provides customizations according to the
+ * chosen content.
+ *
+ * @author Stephane Nicoll
+ * @see SimpleIndentStrategy
+ */
+public final class IndentingWriterFactory {
+
+	private final Function&lt;Integer, String&gt; defaultIndentingStrategy;
+
+	private final Map&lt;String, Function&lt;Integer, String&gt;&gt; indentingStrategies;
+
+<span class="fc" id="L38">	private IndentingWriterFactory(Builder builder) {</span>
+<span class="fc" id="L39">		this.defaultIndentingStrategy = builder.defaultIndentingStrategy;</span>
+<span class="fc" id="L40">		this.indentingStrategies = new HashMap&lt;&gt;(builder.indentingStrategies);</span>
+<span class="fc" id="L41">	}</span>
+
+	/**
+	 * Create an {@link IndentingWriter} for the specified content and output.
+	 * @param contentId the identifier of the content
+	 * @param out the output to use
+	 * @return a configured {@link IndentingWriter}
+	 */
+	public IndentingWriter createIndentingWriter(String contentId, Writer out) {
+<span class="fc" id="L50">		Function&lt;Integer, String&gt; indentingStrategy = this.indentingStrategies.getOrDefault(contentId,</span>
+				this.defaultIndentingStrategy);
+<span class="fc" id="L52">		return new IndentingWriter(out, indentingStrategy);</span>
+	}
+
+	/**
+	 * Create an {@link IndentingWriterFactory} with a default indentation strategy of 4
+	 * spaces.
+	 * @return an {@link IndentingWriterFactory} with default settings
+	 */
+	public static IndentingWriterFactory withDefaultSettings() {
+<span class="fc" id="L61">		return create(new SimpleIndentStrategy(&quot;    &quot;));</span>
+	}
+
+	/**
+	 * Create a {@link IndentingWriterFactory} with a single indenting strategy.
+	 * @param defaultIndentingStrategy the default indenting strategy to use
+	 * @return an {@link IndentingWriterFactory}
+	 */
+	public static IndentingWriterFactory create(Function&lt;Integer, String&gt; defaultIndentingStrategy) {
+<span class="fc" id="L70">		return new IndentingWriterFactory(new Builder(defaultIndentingStrategy));</span>
+	}
+
+	/**
+	 * Create a {@link IndentingWriterFactory}.
+	 * @param defaultIndentingStrategy the default indenting strategy to use
+	 * @param factory a consumer of the builder to apply further customizations
+	 * @return an {@link IndentingWriterFactory}
+	 */
+	public static IndentingWriterFactory create(Function&lt;Integer, String&gt; defaultIndentingStrategy,
+			Consumer&lt;Builder&gt; factory) {
+<span class="fc" id="L81">		Builder factoryBuilder = new Builder(defaultIndentingStrategy);</span>
+<span class="fc" id="L82">		factory.accept(factoryBuilder);</span>
+<span class="fc" id="L83">		return new IndentingWriterFactory(factoryBuilder);</span>
+	}
+
+	/**
+	 * Settings customizer for {@link IndentingWriterFactory}.
+	 */
+	public static final class Builder {
+
+		private final Function&lt;Integer, String&gt; defaultIndentingStrategy;
+
+<span class="fc" id="L93">		private final Map&lt;String, Function&lt;Integer, String&gt;&gt; indentingStrategies = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L95">		private Builder(Function&lt;Integer, String&gt; defaultIndentingStrategy) {</span>
+<span class="fc" id="L96">			this.defaultIndentingStrategy = defaultIndentingStrategy;</span>
+<span class="fc" id="L97">		}</span>
+
+		/**
+		 * Register an indenting strategy for the specified content.
+		 * @param contentId the identifier of the content to configure
+		 * @param indentingStrategy the indent strategy for that particular content
+		 * @return this for method chaining
+		 * @see #createIndentingWriter(String, Writer)
+		 */
+		public Builder indentingStrategy(String contentId, Function&lt;Integer, String&gt; indentingStrategy) {
+<span class="fc" id="L107">			this.indentingStrategies.put(contentId, indentingStrategy);</span>
+<span class="fc" id="L108">			return this;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KotlinDslGradleBuildWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">KotlinDslGradleBuildWriter.java</span></div><h1>KotlinDslGradleBuildWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.buildsystem.BillOfMaterials;
+import io.spring.initializr.generator.buildsystem.Dependency;
+import io.spring.initializr.generator.buildsystem.Dependency.Exclusion;
+import io.spring.initializr.generator.buildsystem.MavenRepository;
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.version.VersionProperty;
+import io.spring.initializr.generator.version.VersionReference;
+
+/**
+ * A {@link GradleBuild} writer for {@code build.gradle.kts}.
+ *
+ * @author Jean-Baptiste Nizet
+ * @author Moritz Halbritter
+ */
+<span class="fc" id="L38">public class KotlinDslGradleBuildWriter extends GradleBuildWriter {</span>
+
+	@Override
+	protected void writeBuildscript(IndentingWriter writer, GradleBuild build) {
+<span class="fc bfc" id="L42" title="All 4 branches covered.">		if (!(build.getBuildscript().getDependencies().isEmpty() &amp;&amp; build.getBuildscript().getExt().isEmpty())) {</span>
+<span class="fc" id="L43">			throw new IllegalStateException(&quot;build.gradle.kts scripts shouldn't need a buildscript&quot;);</span>
+		}
+<span class="fc" id="L45">	}</span>
+
+	@Override
+	protected void writePlugins(IndentingWriter writer, GradleBuild build) {
+<span class="fc" id="L49">		writeNestedCollection(writer, &quot;plugins&quot;, extractStandardPlugin(build), this::pluginAsString, null);</span>
+<span class="fc" id="L50">		writer.println();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		if (build.plugins().values().anyMatch(GradlePlugin::isApply)) {</span>
+<span class="fc" id="L52">			throw new IllegalStateException(</span>
+					&quot;build.gradle.kts scripts shouldn't apply plugins. They should use the plugins block instead.&quot;);
+		}
+<span class="fc" id="L55">	}</span>
+
+	private String pluginAsString(StandardGradlePlugin plugin) {
+<span class="fc" id="L58">		String result = shortPluginNotation(plugin.getId());</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (result == null) {</span>
+<span class="fc" id="L60">			result = &quot;id(\&quot;&quot; + plugin.getId() + &quot;\&quot;)&quot;;</span>
+		}
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (plugin.getVersion() != null) {</span>
+<span class="fc" id="L63">			result += &quot; version \&quot;&quot; + plugin.getVersion() + &quot;\&quot;&quot;;</span>
+		}
+<span class="fc" id="L65">		return result;</span>
+	}
+
+	private String shortPluginNotation(String pluginId) {
+<span class="pc bpc" id="L69" title="1 of 6 branches missed.">		if (pluginId.equals(&quot;java&quot;) || pluginId.equals(&quot;war&quot;) || pluginId.equals(&quot;groovy&quot;)) {</span>
+<span class="fc" id="L70">			return pluginId;</span>
+		}
+
+<span class="fc" id="L73">		String kotlinPluginPrefix = &quot;org.jetbrains.kotlin.&quot;;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		if (pluginId.startsWith(kotlinPluginPrefix)) {</span>
+<span class="fc" id="L75">			return &quot;kotlin(\&quot;&quot; + pluginId.substring(kotlinPluginPrefix.length()) + &quot;\&quot;)&quot;;</span>
+		}
+
+<span class="fc" id="L78">		return null;</span>
+	}
+
+	private String configurationReference(String configurationName, Collection&lt;String&gt; customConfigurations) {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		if (customConfigurations.contains(configurationName)) {</span>
+<span class="fc" id="L83">			return configurationName;</span>
+		}
+<span class="fc" id="L85">		return &quot;configurations.&quot; + configurationName + &quot;.get()&quot;;</span>
+	}
+
+	@Override
+	protected String repositoryAsString(MavenRepository repository) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (MavenRepository.MAVEN_CENTRAL.equals(repository)) {</span>
+<span class="fc" id="L91">			return &quot;mavenCentral()&quot;;</span>
+		}
+<span class="fc" id="L93">		return &quot;maven { url = uri(\&quot;&quot; + repository.getUrl() + &quot;\&quot;) }&quot;;</span>
+	}
+
+	@Override
+	protected void writeConfigurations(IndentingWriter writer, GradleConfigurationContainer configurations) {
+<span class="fc" id="L98">		configurations.names()</span>
+<span class="fc" id="L99">			.forEach((configuration) -&gt; writer.println(&quot;val &quot; + configuration + &quot; by configurations.creating&quot;));</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (configurations.customizations().findFirst().isEmpty()) {</span>
+<span class="fc" id="L101">			return;</span>
+		}
+<span class="fc" id="L103">		writer.println(&quot;configurations {&quot;);</span>
+<span class="fc" id="L104">		List&lt;String&gt; customConfigurations = configurations.names().collect(Collectors.toList());</span>
+<span class="fc" id="L105">		writer.indented(() -&gt; configurations.customizations()</span>
+<span class="fc" id="L106">			.forEach((configuration) -&gt; writeConfiguration(writer, configuration, customConfigurations)));</span>
+<span class="fc" id="L107">		writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L108">		writer.println(&quot;&quot;);</span>
+<span class="fc" id="L109">	}</span>
+
+	protected void writeConfiguration(IndentingWriter writer, GradleConfiguration configuration,
+			List&lt;String&gt; customConfigurations) {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (configuration.getExtendsFrom().isEmpty()) {</span>
+<span class="nc" id="L114">			writer.println(configuration.getName());</span>
+		}
+		else {
+<span class="fc" id="L117">			writer.println(configuration.getName() + &quot; {&quot;);</span>
+<span class="fc" id="L118">			writer.indented(() -&gt; writer.println(String.format(&quot;extendsFrom(%s)&quot;,</span>
+<span class="fc" id="L119">					configuration.getExtendsFrom()</span>
+<span class="fc" id="L120">						.stream()</span>
+<span class="fc" id="L121">						.map((name) -&gt; configurationReference(name, customConfigurations))</span>
+<span class="fc" id="L122">						.collect(Collectors.joining(&quot;, &quot;)))));</span>
+<span class="fc" id="L123">			writer.println(&quot;}&quot;);</span>
+		}
+<span class="fc" id="L125">	}</span>
+
+	@Override
+	protected void writeDependency(IndentingWriter writer, Dependency dependency) {
+<span class="fc" id="L129">		String version = determineVersion(dependency.getVersion());</span>
+<span class="fc" id="L130">		String classifier = dependency.getClassifier();</span>
+<span class="fc" id="L131">		String type = dependency.getType();</span>
+<span class="fc" id="L132">		writer.print(configurationForDependency(dependency) + &quot;(\&quot;&quot; + dependency.getGroupId() + &quot;:&quot;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				+ dependency.getArtifactId() + ((version != null) ? &quot;:&quot; + version : &quot;&quot;)</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">				+ ((classifier != null) ? &quot;:&quot; + classifier : &quot;&quot;) + ((type != null) ? &quot;@&quot; + type : &quot;&quot;) + &quot;\&quot;)&quot;);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		if (!dependency.getExclusions().isEmpty()) {</span>
+<span class="fc" id="L136">			writer.println(&quot; {&quot;);</span>
+<span class="fc" id="L137">			writer</span>
+<span class="fc" id="L138">				.indented(() -&gt; writeCollection(writer, dependency.getExclusions(), this::dependencyExclusionAsString));</span>
+<span class="fc" id="L139">			writer.println(&quot;}&quot;);</span>
+		}
+		else {
+<span class="fc" id="L142">			writer.println();</span>
+		}
+<span class="fc" id="L144">	}</span>
+
+	private String dependencyExclusionAsString(Exclusion exclusion) {
+<span class="fc" id="L147">		return &quot;exclude(group = \&quot;&quot; + exclusion.getGroupId() + &quot;\&quot;, module = \&quot;&quot; + exclusion.getArtifactId() + &quot;\&quot;)&quot;;</span>
+	}
+
+	@Override
+	protected void writeExtraProperties(IndentingWriter writer, Map&lt;String, String&gt; allProperties) {
+<span class="fc" id="L152">		writeCollection(writer, allProperties.entrySet(), (e) -&gt; getFormattedExtraProperty(e.getKey(), e.getValue()),</span>
+<span class="fc" id="L153">				writer::println);</span>
+<span class="fc" id="L154">	}</span>
+
+	private String getFormattedExtraProperty(String key, String value) {
+<span class="fc" id="L157">		return String.format(&quot;extra[\&quot;%s\&quot;] = %s&quot;, key, value);</span>
+	}
+
+	@Override
+	protected String bomAsString(BillOfMaterials bom) {
+<span class="fc" id="L162">		return &quot;mavenBom(\&quot;&quot; + bom.getGroupId() + &quot;:&quot; + bom.getArtifactId() + &quot;:&quot; + determineVersion(bom.getVersion())</span>
+				+ &quot;\&quot;)&quot;;
+	}
+
+	private String determineVersion(VersionReference versionReference) {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (versionReference != null) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (versionReference.isProperty()) {</span>
+<span class="fc" id="L169">				VersionProperty property = versionReference.getProperty();</span>
+<span class="fc" id="L170">				return &quot;${property(\&quot;&quot;</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">						+ (property.isInternal() ? property.toCamelCaseFormat() : property.toStandardFormat()) + &quot;\&quot;)}&quot;;</span>
+			}
+<span class="fc" id="L173">			return versionReference.getValue();</span>
+		}
+<span class="fc" id="L175">		return null;</span>
+	}
+
+	@Override
+	protected void writeTasks(IndentingWriter writer, GradleTaskContainer tasks) {
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		tasks.values().filter((candidate) -&gt; candidate.getType() != null).forEach((task) -&gt; {</span>
+<span class="fc" id="L181">			writer.println();</span>
+<span class="fc" id="L182">			writer.println(&quot;tasks.withType&lt;&quot; + task.getName() + &quot;&gt; {&quot;);</span>
+<span class="fc" id="L183">			writer.indented(() -&gt; writeTaskCustomization(writer, task));</span>
+<span class="fc" id="L184">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L185">		});</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		tasks.values().filter((candidate) -&gt; candidate.getType() == null).forEach((task) -&gt; {</span>
+<span class="fc" id="L187">			writer.println();</span>
+<span class="fc" id="L188">			writer.println(&quot;tasks.&quot; + task.getName() + &quot; {&quot;);</span>
+<span class="fc" id="L189">			writer.indented(() -&gt; writeTaskCustomization(writer, task));</span>
+<span class="fc" id="L190">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L191">		});</span>
+<span class="fc" id="L192">	}</span>
+
+	@Override
+	protected String invocationAsString(Invocation invocation) {
+<span class="fc" id="L196">		return invocation.getTarget() + &quot;(&quot; + String.join(&quot;, &quot;, invocation.getArguments()) + &quot;)&quot;;</span>
+	}
+
+	@Override
+	protected void writeProperty(IndentingWriter writer, String name, String value) {
+<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (value != null) {</span>
+<span class="fc" id="L202">			writer.println(String.format(&quot;%s = \&quot;%s\&quot;&quot;, name, value));</span>
+		}
+<span class="fc" id="L204">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

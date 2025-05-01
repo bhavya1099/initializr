@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IndentingWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.io</a> &gt; <span class="el_source">IndentingWriter.java</span></div><h1>IndentingWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.io;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.function.Function;
+
+/**
+ * A {@link Writer} with support for indenting.
+ *
+ * @author Andy Wilkinson
+ */
+public class IndentingWriter extends Writer {
+
+	private final Writer out;
+
+	private final Function&lt;Integer, String&gt; indentStrategy;
+
+<span class="fc" id="L34">	private int level = 0;</span>
+
+<span class="fc" id="L36">	private String indent = &quot;&quot;;</span>
+
+<span class="fc" id="L38">	private boolean prependIndent = false;</span>
+
+	/**
+	 * Create a new instance with the specified {@linkplain Writer writer} using a default
+	 * indent strategy of 4 spaces.
+	 * @param out the writer to use
+	 */
+	public IndentingWriter(Writer out) {
+<span class="fc" id="L46">		this(out, new SimpleIndentStrategy(&quot;    &quot;));</span>
+<span class="fc" id="L47">	}</span>
+
+	/**
+	 * Create a new instance with the specified {@linkplain Writer writer} and indent
+	 * strategy.
+	 * @param out the writer to use
+	 * @param indentStrategy a function that provides the ident to use based on a
+	 * indentation level
+	 */
+<span class="fc" id="L56">	public IndentingWriter(Writer out, Function&lt;Integer, String&gt; indentStrategy) {</span>
+<span class="fc" id="L57">		this.out = out;</span>
+<span class="fc" id="L58">		this.indentStrategy = indentStrategy;</span>
+<span class="fc" id="L59">	}</span>
+
+	/**
+	 * Write the specified text.
+	 * @param string the content to write
+	 */
+	public void print(String string) {
+<span class="fc" id="L66">		write(string.toCharArray(), 0, string.length());</span>
+<span class="fc" id="L67">	}</span>
+
+	/**
+	 * Write the specified text and append a new line.
+	 * @param string the content to write
+	 */
+	public void println(String string) {
+<span class="fc" id="L74">		write(string.toCharArray(), 0, string.length());</span>
+<span class="fc" id="L75">		println();</span>
+<span class="fc" id="L76">	}</span>
+
+	/**
+	 * Write a new line.
+	 */
+	public void println() {
+<span class="fc" id="L82">		String separator = System.lineSeparator();</span>
+		try {
+<span class="fc" id="L84">			this.out.write(separator.toCharArray(), 0, separator.length());</span>
+		}
+<span class="nc" id="L86">		catch (IOException ex) {</span>
+<span class="nc" id="L87">			throw new IllegalStateException(ex);</span>
+<span class="fc" id="L88">		}</span>
+<span class="fc" id="L89">		this.prependIndent = true;</span>
+<span class="fc" id="L90">	}</span>
+
+	/**
+	 * Increase the indentation level and execute the {@link Runnable}. Decrease the
+	 * indentation level on completion.
+	 * @param runnable the code to execute withing an extra indentation level
+	 */
+	public void indented(Runnable runnable) {
+<span class="fc" id="L98">		indent();</span>
+<span class="fc" id="L99">		runnable.run();</span>
+<span class="fc" id="L100">		outdent();</span>
+<span class="fc" id="L101">	}</span>
+
+	/**
+	 * Increase the indentation level.
+	 */
+	private void indent() {
+<span class="fc" id="L107">		this.level++;</span>
+<span class="fc" id="L108">		refreshIndent();</span>
+<span class="fc" id="L109">	}</span>
+
+	/**
+	 * Decrease the indentation level.
+	 */
+	private void outdent() {
+<span class="fc" id="L115">		this.level--;</span>
+<span class="fc" id="L116">		refreshIndent();</span>
+<span class="fc" id="L117">	}</span>
+
+	private void refreshIndent() {
+<span class="fc" id="L120">		this.indent = this.indentStrategy.apply(this.level);</span>
+<span class="fc" id="L121">	}</span>
+
+	@Override
+	public void write(char[] chars, int offset, int length) {
+		try {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			if (this.prependIndent) {</span>
+<span class="fc" id="L127">				this.out.write(this.indent.toCharArray(), 0, this.indent.length());</span>
+<span class="fc" id="L128">				this.prependIndent = false;</span>
+			}
+<span class="fc" id="L130">			this.out.write(chars, offset, length);</span>
+		}
+<span class="nc" id="L132">		catch (IOException ex) {</span>
+<span class="nc" id="L133">			throw new IllegalStateException(ex);</span>
+<span class="fc" id="L134">		}</span>
+<span class="fc" id="L135">	}</span>
+
+	@Override
+	public void flush() throws IOException {
+<span class="nc" id="L139">		this.out.flush();</span>
+<span class="nc" id="L140">	}</span>
+
+	@Override
+	public void close() throws IOException {
+<span class="fc" id="L144">		this.out.close();</span>
+<span class="fc" id="L145">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

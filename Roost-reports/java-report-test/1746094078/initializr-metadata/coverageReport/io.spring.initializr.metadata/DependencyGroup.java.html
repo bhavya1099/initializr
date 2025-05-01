@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DependencyGroup.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">DependencyGroup.java</span></div><h1>DependencyGroup.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+/**
+ * A group of {@link Dependency} instances identified by a name.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L29">public class DependencyGroup {</span>
+
+	private String name;
+
+	@JsonIgnore
+	private String compatibilityRange;
+
+	@JsonIgnore
+	private String bom;
+
+	@JsonIgnore
+	private String repository;
+
+<span class="fc" id="L42">	final List&lt;Dependency&gt; content = new ArrayList&lt;&gt;();</span>
+
+	/**
+	 * Return the name of this group.
+	 * @return the name of the group
+	 */
+	public String getName() {
+<span class="fc" id="L49">		return this.name;</span>
+	}
+
+	public void setName(String name) {
+<span class="fc" id="L53">		this.name = name;</span>
+<span class="fc" id="L54">	}</span>
+
+	/**
+	 * Return the default compatibility range to apply to all dependencies of this group
+	 * unless specified otherwise.
+	 * @return the compatibility range
+	 */
+	public String getCompatibilityRange() {
+<span class="fc" id="L62">		return this.compatibilityRange;</span>
+	}
+
+	public void setCompatibilityRange(String compatibilityRange) {
+<span class="fc" id="L66">		this.compatibilityRange = compatibilityRange;</span>
+<span class="fc" id="L67">	}</span>
+
+	/**
+	 * Return the default bom to associate to all dependencies of this group unless
+	 * specified otherwise.
+	 * @return the BOM
+	 */
+	public String getBom() {
+<span class="fc" id="L75">		return this.bom;</span>
+	}
+
+	public void setBom(String bom) {
+<span class="fc" id="L79">		this.bom = bom;</span>
+<span class="fc" id="L80">	}</span>
+
+	/**
+	 * Return the default repository to associate to all dependencies of this group unless
+	 * specified otherwise.
+	 * @return the repository
+	 */
+	public String getRepository() {
+<span class="fc" id="L88">		return this.repository;</span>
+	}
+
+	public void setRepository(String repository) {
+<span class="fc" id="L92">		this.repository = repository;</span>
+<span class="fc" id="L93">	}</span>
+
+	/**
+	 * Return the {@link Dependency dependencies} of this group.
+	 * @return the content
+	 */
+	public List&lt;Dependency&gt; getContent() {
+<span class="fc" id="L100">		return this.content;</span>
+	}
+
+	/**
+	 * Create a new {@link DependencyGroup} instance with the given name.
+	 * @param name the name of the group
+	 * @return a new {@link DependencyGroup} instance
+	 */
+	public static DependencyGroup create(String name) {
+<span class="fc" id="L109">		DependencyGroup group = new DependencyGroup();</span>
+<span class="fc" id="L110">		group.setName(name);</span>
+<span class="fc" id="L111">		return group;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

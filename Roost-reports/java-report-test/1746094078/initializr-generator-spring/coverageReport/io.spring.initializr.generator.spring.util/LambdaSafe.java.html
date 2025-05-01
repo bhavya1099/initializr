@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LambdaSafe.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.util</a> &gt; <span class="el_source">LambdaSafe.java</span></div><h1>LambdaSafe.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.util;
+
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.core.ResolvableType;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
+
+/**
+ * Utility that can be used to invoke lambdas in a safe way. Primarily designed to help
+ * support generically typed callbacks where {@link ClassCastException class cast
+ * exceptions} need to be dealt with due to class erasure.
+ *
+ * @author Phillip Webb
+ * @since 2.0.0
+ */
+public final class LambdaSafe {
+
+	private static final Method CLASS_GET_MODULE;
+
+	private static final Method MODULE_GET_NAME;
+
+	static {
+<span class="fc" id="L51">		CLASS_GET_MODULE = ReflectionUtils.findMethod(Class.class, &quot;getModule&quot;);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		MODULE_GET_NAME = (CLASS_GET_MODULE != null)</span>
+<span class="pc" id="L53">				? ReflectionUtils.findMethod(CLASS_GET_MODULE.getReturnType(), &quot;getName&quot;) : null;</span>
+<span class="fc" id="L54">	}</span>
+
+	private LambdaSafe() {
+	}
+
+	/**
+	 * Start a call to a single callback instance, dealing with common generic type
+	 * concerns and exceptions.
+	 * @param callbackType the callback type (a {@link FunctionalInterface functional
+	 * interface})
+	 * @param callbackInstance the callback instance (may be a lambda)
+	 * @param argument the primary argument passed to the callback
+	 * @param additionalArguments any additional arguments passed to the callback
+	 * @param &lt;C&gt; the callback type
+	 * @param &lt;A&gt; the primary argument type
+	 * @return a {@link Callback} instance that can be invoked.
+	 */
+	public static &lt;C, A&gt; Callback&lt;C, A&gt; callback(Class&lt;C&gt; callbackType, C callbackInstance, A argument,
+			Object... additionalArguments) {
+<span class="nc" id="L73">		Assert.notNull(callbackType, &quot;CallbackType must not be null&quot;);</span>
+<span class="nc" id="L74">		Assert.notNull(callbackInstance, &quot;CallbackInstance must not be null&quot;);</span>
+<span class="nc" id="L75">		return new Callback&lt;&gt;(callbackType, callbackInstance, argument, additionalArguments);</span>
+	}
+
+	/**
+	 * Start a call to callback instances, dealing with common generic type concerns and
+	 * exceptions.
+	 * @param callbackType the callback type (a {@link FunctionalInterface functional
+	 * interface})
+	 * @param callbackInstances the callback instances (elements may be lambdas)
+	 * @param argument the primary argument passed to the callbacks
+	 * @param additionalArguments any additional arguments passed to the callbacks
+	 * @param &lt;C&gt; the callback type
+	 * @param &lt;A&gt; the primary argument type
+	 * @return a {@link Callbacks} instance that can be invoked.
+	 */
+	public static &lt;C, A&gt; Callbacks&lt;C, A&gt; callbacks(Class&lt;C&gt; callbackType, Collection&lt;? extends C&gt; callbackInstances,
+			A argument, Object... additionalArguments) {
+<span class="fc" id="L92">		Assert.notNull(callbackType, &quot;CallbackType must not be null&quot;);</span>
+<span class="fc" id="L93">		Assert.notNull(callbackInstances, &quot;CallbackInstances must not be null&quot;);</span>
+<span class="fc" id="L94">		return new Callbacks&lt;&gt;(callbackType, callbackInstances, argument, additionalArguments);</span>
+	}
+
+	/**
+	 * Abstract base class for lambda safe callbacks.
+	 */
+	private abstract static class LambdaSafeCallback&lt;C, A, SELF extends LambdaSafeCallback&lt;C, A, SELF&gt;&gt; {
+
+		private final Class&lt;C&gt; callbackType;
+
+		private final A argument;
+
+		private final Object[] additionalArguments;
+
+		private Log logger;
+
+<span class="fc" id="L110">		private Filter&lt;C, A&gt; filter = new GenericTypeFilter&lt;&gt;();</span>
+
+<span class="fc" id="L112">		protected LambdaSafeCallback(Class&lt;C&gt; callbackType, A argument, Object[] additionalArguments) {</span>
+<span class="fc" id="L113">			this.callbackType = callbackType;</span>
+<span class="fc" id="L114">			this.argument = argument;</span>
+<span class="fc" id="L115">			this.additionalArguments = additionalArguments;</span>
+<span class="fc" id="L116">			this.logger = LogFactory.getLog(callbackType);</span>
+<span class="fc" id="L117">		}</span>
+
+		/**
+		 * Use the specified logger source to report any lambda failures.
+		 * @param loggerSource the logger source to use
+		 * @return this instance
+		 */
+		SELF withLogger(Class&lt;?&gt; loggerSource) {
+<span class="nc" id="L125">			return withLogger(LogFactory.getLog(loggerSource));</span>
+		}
+
+		/**
+		 * Use the specified logger to report any lambda failures.
+		 * @param logger the logger to use
+		 * @return this instance
+		 */
+		SELF withLogger(Log logger) {
+<span class="nc" id="L134">			Assert.notNull(logger, &quot;Logger must not be null&quot;);</span>
+<span class="nc" id="L135">			this.logger = logger;</span>
+<span class="nc" id="L136">			return self();</span>
+		}
+
+		/**
+		 * Use a specific filter to determine when a callback should apply. If no explicit
+		 * filter is set filter will be attempted using the generic type on the callback
+		 * type.
+		 * @param filter the filter to use
+		 * @return this instance
+		 */
+		SELF withFilter(Filter&lt;C, A&gt; filter) {
+<span class="nc" id="L147">			Assert.notNull(filter, &quot;Filter must not be null&quot;);</span>
+<span class="nc" id="L148">			this.filter = filter;</span>
+<span class="nc" id="L149">			return self();</span>
+		}
+
+		protected final &lt;R&gt; InvocationResult&lt;R&gt; invoke(C callbackInstance, Supplier&lt;R&gt; supplier) {
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">			if (this.filter.match(this.callbackType, callbackInstance, this.argument, this.additionalArguments)) {</span>
+				try {
+<span class="fc" id="L155">					return InvocationResult.of(supplier.get());</span>
+				}
+<span class="nc" id="L157">				catch (ClassCastException ex) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">					if (!isLambdaGenericProblem(ex)) {</span>
+<span class="nc" id="L159">						throw ex;</span>
+					}
+<span class="nc" id="L161">					logNonMatchingType(callbackInstance, ex);</span>
+				}
+			}
+<span class="nc" id="L164">			return InvocationResult.noResult();</span>
+		}
+
+		private boolean isLambdaGenericProblem(ClassCastException ex) {
+<span class="nc bnc" id="L168" title="All 4 branches missed.">			return (ex.getMessage() == null || startsWithArgumentClassName(ex.getMessage()));</span>
+		}
+
+		private boolean startsWithArgumentClassName(String message) {
+<span class="nc" id="L172">			Predicate&lt;Object&gt; startsWith = (argument) -&gt; startsWithArgumentClassName(message, argument);</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">			return startsWith.test(this.argument) || Stream.of(this.additionalArguments).anyMatch(startsWith);</span>
+		}
+
+		private boolean startsWithArgumentClassName(String message, Object argument) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">			if (argument == null) {</span>
+<span class="nc" id="L178">				return false;</span>
+			}
+<span class="nc" id="L180">			Class&lt;?&gt; argumentType = argument.getClass();</span>
+			// On Java 8, the message starts with the class name: &quot;java.lang.String cannot
+			// be cast...&quot;
+<span class="nc bnc" id="L183" title="All 2 branches missed.">			if (message.startsWith(argumentType.getName())) {</span>
+<span class="nc" id="L184">				return true;</span>
+			}
+			// On Java 11, the message starts with &quot;class ...&quot; a.k.a. Class.toString()
+<span class="nc bnc" id="L187" title="All 2 branches missed.">			if (message.startsWith(argumentType.toString())) {</span>
+<span class="nc" id="L188">				return true;</span>
+			}
+			// On Java 9, the message used to contain the module name:
+			// &quot;java.base/java.lang.String cannot be cast...&quot;
+<span class="nc" id="L192">			int moduleSeparatorIndex = message.indexOf('/');</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">			if (moduleSeparatorIndex != -1 &amp;&amp; message.startsWith(argumentType.getName(), moduleSeparatorIndex + 1)) {</span>
+<span class="nc" id="L194">				return true;</span>
+			}
+<span class="nc bnc" id="L196" title="All 2 branches missed.">			if (CLASS_GET_MODULE != null) {</span>
+<span class="nc" id="L197">				Object module = ReflectionUtils.invokeMethod(CLASS_GET_MODULE, argumentType);</span>
+<span class="nc" id="L198">				Object moduleName = ReflectionUtils.invokeMethod(MODULE_GET_NAME, module);</span>
+<span class="nc" id="L199">				return message.startsWith(moduleName + &quot;/&quot; + argumentType.getName());</span>
+			}
+<span class="nc" id="L201">			return false;</span>
+		}
+
+		private void logNonMatchingType(C callback, ClassCastException ex) {
+<span class="nc bnc" id="L205" title="All 2 branches missed.">			if (this.logger.isDebugEnabled()) {</span>
+<span class="nc" id="L206">				Class&lt;?&gt; expectedType = ResolvableType.forClass(this.callbackType).resolveGeneric();</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">				String expectedTypeName = (expectedType != null) ? ClassUtils.getShortName(expectedType) + &quot; type&quot;</span>
+<span class="nc" id="L208">						: &quot;type&quot;;</span>
+<span class="nc" id="L209">				String message = &quot;Non-matching &quot; + expectedTypeName + &quot; for callback &quot;</span>
+<span class="nc" id="L210">						+ ClassUtils.getShortName(this.callbackType) + &quot;: &quot; + callback;</span>
+<span class="nc" id="L211">				this.logger.debug(message, ex);</span>
+			}
+<span class="nc" id="L213">		}</span>
+
+		@SuppressWarnings(&quot;unchecked&quot;)
+		private SELF self() {
+<span class="nc" id="L217">			return (SELF) this;</span>
+		}
+
+	}
+
+	/**
+	 * Represents a single callback that can be invoked in a lambda safe way.
+	 *
+	 * @param &lt;C&gt; the callback type
+	 * @param &lt;A&gt; the primary argument type
+	 */
+	public static final class Callback&lt;C, A&gt; extends LambdaSafeCallback&lt;C, A, Callback&lt;C, A&gt;&gt; {
+
+		private final C callbackInstance;
+
+		private Callback(Class&lt;C&gt; callbackType, C callbackInstance, A argument, Object[] additionalArguments) {
+<span class="nc" id="L233">			super(callbackType, argument, additionalArguments);</span>
+<span class="nc" id="L234">			this.callbackInstance = callbackInstance;</span>
+<span class="nc" id="L235">		}</span>
+
+		/**
+		 * Invoke the callback instance where the callback method returns void.
+		 * @param invoker the invoker used to invoke the callback
+		 */
+		public void invoke(Consumer&lt;C&gt; invoker) {
+<span class="nc" id="L242">			invoke(this.callbackInstance, () -&gt; {</span>
+<span class="nc" id="L243">				invoker.accept(this.callbackInstance);</span>
+<span class="nc" id="L244">				return null;</span>
+			});
+<span class="nc" id="L246">		}</span>
+
+		/**
+		 * Invoke the callback instance where the callback method returns a result.
+		 * @param invoker the invoker used to invoke the callback
+		 * @param &lt;R&gt; the result type
+		 * @return the result of the invocation (may be {@link InvocationResult#noResult}
+		 * if the callback was not invoked)
+		 */
+		public &lt;R&gt; InvocationResult&lt;R&gt; invokeAnd(Function&lt;C, R&gt; invoker) {
+<span class="nc" id="L256">			return invoke(this.callbackInstance, () -&gt; invoker.apply(this.callbackInstance));</span>
+		}
+
+	}
+
+	/**
+	 * Represents a collection of callbacks that can be invoked in a lambda safe way.
+	 *
+	 * @param &lt;C&gt; the callback type
+	 * @param &lt;A&gt; the primary argument type
+	 */
+	public static final class Callbacks&lt;C, A&gt; extends LambdaSafeCallback&lt;C, A, Callbacks&lt;C, A&gt;&gt; {
+
+		private final Collection&lt;? extends C&gt; callbackInstances;
+
+		private Callbacks(Class&lt;C&gt; callbackType, Collection&lt;? extends C&gt; callbackInstances, A argument,
+				Object[] additionalArguments) {
+<span class="fc" id="L273">			super(callbackType, argument, additionalArguments);</span>
+<span class="fc" id="L274">			this.callbackInstances = callbackInstances;</span>
+<span class="fc" id="L275">		}</span>
+
+		/**
+		 * Invoke the callback instances where the callback method returns void.
+		 * @param invoker the invoker used to invoke the callback
+		 */
+		public void invoke(Consumer&lt;C&gt; invoker) {
+<span class="fc" id="L282">			this.callbackInstances.forEach((callbackInstance) -&gt; invoke(callbackInstance, () -&gt; {</span>
+<span class="fc" id="L283">				invoker.accept(callbackInstance);</span>
+<span class="fc" id="L284">				return null;</span>
+			}));
+<span class="fc" id="L286">		}</span>
+
+		/**
+		 * Invoke the callback instances where the callback method returns a result.
+		 * @param invoker the invoker used to invoke the callback
+		 * @param &lt;R&gt; the result type
+		 * @return the results of the invocation (may be an empty stream if no callbacks
+		 * could be called)
+		 */
+		public &lt;R&gt; Stream&lt;R&gt; invokeAnd(Function&lt;C, R&gt; invoker) {
+<span class="nc" id="L296">			Function&lt;C, InvocationResult&lt;R&gt;&gt; mapper = (callbackInstance) -&gt; invoke(callbackInstance,</span>
+<span class="nc" id="L297">					() -&gt; invoker.apply(callbackInstance));</span>
+<span class="nc" id="L298">			return this.callbackInstances.stream()</span>
+<span class="nc" id="L299">				.map(mapper)</span>
+<span class="nc" id="L300">				.filter(InvocationResult::hasResult)</span>
+<span class="nc" id="L301">				.map(InvocationResult::get);</span>
+		}
+
+	}
+
+	/**
+	 * A filter that can be used to restrict when a callback is used.
+	 *
+	 * @param &lt;C&gt; the callback type
+	 * @param &lt;A&gt; the primary argument type
+	 */
+	@FunctionalInterface
+	interface Filter&lt;C, A&gt; {
+
+		/**
+		 * Determine if the given callback matches and should be invoked.
+		 * @param callbackType the callback type (the functional interface)
+		 * @param callbackInstance the callback instance (the implementation)
+		 * @param argument the primary argument
+		 * @param additionalArguments any additional arguments
+		 * @return if the callback matches and should be invoked
+		 */
+		boolean match(Class&lt;C&gt; callbackType, C callbackInstance, A argument, Object[] additionalArguments);
+
+		/**
+		 * Return a {@link Filter} that allows all callbacks to be invoked.
+		 * @param &lt;C&gt; the callback type
+		 * @param &lt;A&gt; the primary argument type
+		 * @return an &quot;allow all&quot; filter
+		 */
+		static &lt;C, A&gt; Filter&lt;C, A&gt; allowAll() {
+<span class="nc" id="L332">			return (callbackType, callbackInstance, argument, additionalArguments) -&gt; true;</span>
+		}
+
+	}
+
+	/**
+	 * {@link Filter} that matches when the callback has a single generic and primary
+	 * argument is an instance of it.
+	 */
+	private static final class GenericTypeFilter&lt;C, A&gt; implements Filter&lt;C, A&gt; {
+
+		@Override
+		public boolean match(Class&lt;C&gt; callbackType, C callbackInstance, A argument, Object[] additionalArguments) {
+<span class="fc" id="L345">			ResolvableType type = ResolvableType.forClass(callbackType, callbackInstance.getClass());</span>
+<span class="pc bpc" id="L346" title="1 of 4 branches missed.">			if (type.getGenerics().length == 1 &amp;&amp; type.resolveGeneric() != null) {</span>
+<span class="fc" id="L347">				return type.resolveGeneric().isInstance(argument);</span>
+			}
+
+<span class="fc" id="L350">			return true;</span>
+		}
+
+	}
+
+	/**
+	 * The result of a callback which may be a value, {@code null} or absent entirely if
+	 * the callback wasn't suitable. Similar in design to {@link Optional} but allows for
+	 * {@code null} as a valid value.
+	 *
+	 * @param &lt;R&gt; the result type
+	 */
+	public static final class InvocationResult&lt;R&gt; {
+
+<span class="fc" id="L364">		private static final InvocationResult&lt;?&gt; NONE = new InvocationResult&lt;&gt;(null);</span>
+
+		private final R value;
+
+<span class="fc" id="L368">		private InvocationResult(R value) {</span>
+<span class="fc" id="L369">			this.value = value;</span>
+<span class="fc" id="L370">		}</span>
+
+		/**
+		 * Return true if a result in present.
+		 * @return if a result is present
+		 */
+		public boolean hasResult() {
+<span class="nc bnc" id="L377" title="All 2 branches missed.">			return this != NONE;</span>
+		}
+
+		/**
+		 * Return the result of the invocation or {@code null} if the callback wasn't
+		 * suitable.
+		 * @return the result of the invocation or {@code null}
+		 */
+		public R get() {
+<span class="nc" id="L386">			return this.value;</span>
+		}
+
+		/**
+		 * Return the result of the invocation or the given fallback if the callback
+		 * wasn't suitable.
+		 * @param fallback the fallback to use when there is no result
+		 * @return the result of the invocation or the fallback
+		 */
+		public R get(R fallback) {
+<span class="nc bnc" id="L396" title="All 2 branches missed.">			return (this != NONE) ? this.value : fallback;</span>
+		}
+
+		/**
+		 * Create a new {@link InvocationResult} instance with the specified value.
+		 * @param value the value (may be {@code null})
+		 * @param &lt;R&gt; the result type
+		 * @return an {@link InvocationResult}
+		 */
+		public static &lt;R&gt; InvocationResult&lt;R&gt; of(R value) {
+<span class="fc" id="L406">			return new InvocationResult&lt;&gt;(value);</span>
+		}
+
+		/**
+		 * Return an {@link InvocationResult} instance representing no result.
+		 * @param &lt;R&gt; the result type
+		 * @return an {@link InvocationResult}
+		 */
+		@SuppressWarnings(&quot;unchecked&quot;)
+		public static &lt;R&gt; InvocationResult&lt;R&gt; noResult() {
+<span class="nc" id="L416">			return (InvocationResult&lt;R&gt;) NONE;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

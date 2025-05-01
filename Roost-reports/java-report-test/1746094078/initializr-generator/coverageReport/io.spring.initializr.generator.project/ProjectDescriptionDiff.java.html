@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectDescriptionDiff.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.project</a> &gt; <span class="el_source">ProjectDescriptionDiff.java</span></div><h1>ProjectDescriptionDiff.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.project;
+
+import java.util.Objects;
+import java.util.function.BiConsumer;
+
+import io.spring.initializr.generator.buildsystem.BuildSystem;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.packaging.Packaging;
+import io.spring.initializr.generator.version.Version;
+
+/**
+ * Provides a convenient API for determining if certain fields on a
+ * {@link ProjectDescription} were modified.
+ *
+ * @author Chris Bono
+ * @author Stephane Nicoll
+ */
+public class ProjectDescriptionDiff {
+
+	private final ProjectDescription original;
+
+	/**
+	 * Create a {@link ProjectDescriptionDiff} that uses a copy of the specified
+	 * description as its source.
+	 * @param original the description to copy as the source
+	 */
+<span class="fc" id="L43">	public ProjectDescriptionDiff(ProjectDescription original) {</span>
+<span class="fc" id="L44">		this.original = original.createCopy();</span>
+<span class="fc" id="L45">	}</span>
+
+	/**
+	 * Return the original {@link ProjectDescription} that is being tracked.
+	 * @return the original description
+	 */
+	public ProjectDescription getOriginal() {
+<span class="fc" id="L52">		return this.original;</span>
+	}
+
+	/**
+	 * Calls the specified consumer if the {@code platformVersion} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the project description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifPlatformVersionChanged(ProjectDescription current, BiConsumer&lt;Version, Version&gt; consumer) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (!Objects.equals(this.original.getPlatformVersion(), current.getPlatformVersion())) {</span>
+<span class="fc" id="L63">			consumer.accept(this.original.getPlatformVersion(), current.getPlatformVersion());</span>
+		}
+<span class="fc" id="L65">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code buildSystem} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifBuildSystemChanged(ProjectDescription current, BiConsumer&lt;BuildSystem, BuildSystem&gt; consumer) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		if (!Objects.equals(this.original.getBuildSystem(), current.getBuildSystem())) {</span>
+<span class="fc" id="L75">			consumer.accept(this.original.getBuildSystem(), current.getBuildSystem());</span>
+		}
+<span class="fc" id="L77">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code packaging} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifPackagingChanged(ProjectDescription current, BiConsumer&lt;Packaging, Packaging&gt; consumer) {
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (!Objects.equals(this.original.getPackaging(), current.getPackaging())) {</span>
+<span class="fc" id="L87">			consumer.accept(this.original.getPackaging(), current.getPackaging());</span>
+		}
+<span class="fc" id="L89">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code language} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifLanguageChanged(ProjectDescription current, BiConsumer&lt;Language, Language&gt; consumer) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (!Objects.equals(this.original.getLanguage(), current.getLanguage())) {</span>
+<span class="fc" id="L99">			consumer.accept(this.original.getLanguage(), current.getLanguage());</span>
+		}
+<span class="fc" id="L101">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code groupId} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifGroupIdChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (!Objects.equals(this.original.getGroupId(), current.getGroupId())) {</span>
+<span class="fc" id="L111">			consumer.accept(this.original.getGroupId(), current.getGroupId());</span>
+		}
+<span class="fc" id="L113">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code artifactId} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifArtifactIdChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (!Objects.equals(this.original.getArtifactId(), current.getArtifactId())) {</span>
+<span class="fc" id="L123">			consumer.accept(this.original.getArtifactId(), current.getArtifactId());</span>
+		}
+<span class="fc" id="L125">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code version} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifVersionChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (!Objects.equals(this.original.getVersion(), current.getVersion())) {</span>
+<span class="fc" id="L135">			consumer.accept(this.original.getVersion(), current.getVersion());</span>
+		}
+<span class="fc" id="L137">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code name} is different on the original
+	 * source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifNameChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (!Objects.equals(this.original.getName(), current.getName())) {</span>
+<span class="fc" id="L147">			consumer.accept(this.original.getName(), current.getName());</span>
+		}
+<span class="fc" id="L149">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code description} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifDescriptionChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L158" title="All 2 branches covered.">		if (!Objects.equals(this.original.getDescription(), current.getDescription())) {</span>
+<span class="fc" id="L159">			consumer.accept(this.original.getDescription(), current.getDescription());</span>
+		}
+<span class="fc" id="L161">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code applicationName} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifApplicationNameChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (!Objects.equals(this.original.getApplicationName(), current.getApplicationName())) {</span>
+<span class="fc" id="L171">			consumer.accept(this.original.getApplicationName(), current.getApplicationName());</span>
+		}
+<span class="fc" id="L173">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code packageName} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifPackageNameChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (!Objects.equals(this.original.getPackageName(), current.getPackageName())) {</span>
+<span class="fc" id="L183">			consumer.accept(this.original.getPackageName(), current.getPackageName());</span>
+		}
+<span class="fc" id="L185">	}</span>
+
+	/**
+	 * Calls the specified consumer if the {@code baseDirectory} is different on the
+	 * original source project description than the specified project description.
+	 * @param current the description to test against
+	 * @param consumer to call if the property has changed
+	 */
+	public void ifBaseDirectoryChanged(ProjectDescription current, BiConsumer&lt;String, String&gt; consumer) {
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (!Objects.equals(this.original.getBaseDirectory(), current.getBaseDirectory())) {</span>
+<span class="fc" id="L195">			consumer.accept(this.original.getBaseDirectory(), current.getBaseDirectory());</span>
+		}
+<span class="fc" id="L197">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

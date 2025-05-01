@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleTaskContainer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleTaskContainer.java</span></div><h1>GradleTaskContainer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.gradle.GradleTask.Builder;
+
+import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
+
+/**
+ * A container for {@linkplain GradleTask Gradle tasks}.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L36">public class GradleTaskContainer {</span>
+
+<span class="fc" id="L38">	private final Map&lt;String, Builder&gt; tasks = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L40">	private final Set&lt;String&gt; importedTypes = new HashSet&lt;&gt;();</span>
+
+	/**
+	 * Specify if this container is empty.
+	 * @return {@code true} if no task is registered
+	 */
+	public boolean isEmpty() {
+<span class="fc" id="L47">		return this.tasks.isEmpty();</span>
+	}
+
+	/**
+	 * Specify if this container has a task customization with the specified {@code name}.
+	 * @param name the name of a task
+	 * @return {@code true} if a customization for a task with the specified {@code name}
+	 * exists
+	 */
+	public boolean has(String name) {
+<span class="fc" id="L57">		return this.tasks.containsKey(name);</span>
+	}
+
+	/**
+	 * Return the {@link GradleTask Gradle tasks} to customize.
+	 * @return the gradle tasks
+	 */
+	public Stream&lt;GradleTask&gt; values() {
+<span class="fc" id="L65">		return this.tasks.values().stream().map(Builder::build);</span>
+	}
+
+	/**
+	 * Get a {@link GradleTask} with the specified task name.
+	 * @param task the name or type
+	 * @return the matching gradle task or {@code null}
+	 */
+	public GradleTask get(String task) {
+<span class="nc" id="L74">		Builder builder = this.tasks.get(task);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		return (builder != null) ? builder.build() : null;</span>
+	}
+
+	/**
+	 * Return the fully qualified name of types to import.
+	 * @return the imported types
+	 */
+	public Stream&lt;String&gt; importedTypes() {
+<span class="fc" id="L83">		return this.importedTypes.stream();</span>
+	}
+
+	/**
+	 * Customize a task with the specified name. If the task has already been customized,
+	 * the consumer can be used to further tune the existing task.
+	 * @param name the name of a task
+	 * @param task a callback to customize the task
+	 */
+	public void customize(String name, Consumer&lt;Builder&gt; task) {
+<span class="fc" id="L93">		task.accept(this.tasks.computeIfAbsent(name, Builder::new));</span>
+<span class="fc" id="L94">	}</span>
+
+	/**
+	 * Customize a task matching a given type. If the task has already been customized,
+	 * the consumer can be used to further tune the existing task.
+	 * @param type the name of type. Can use the short form for well-known types such as
+	 * {@code JavaCompile}, use a fully qualified name if an import is required
+	 * @param task a callback to customize the task
+	 */
+	public void customizeWithType(String type, Consumer&lt;Builder&gt; task) {
+<span class="fc" id="L104">		String packageName = ClassUtils.getPackageName(type);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (StringUtils.hasLength(packageName)) {</span>
+<span class="fc" id="L106">			this.importedTypes.add(type);</span>
+		}
+<span class="fc" id="L108">		String shortName = ClassUtils.getShortName(type);</span>
+<span class="fc" id="L109">		task.accept(this.tasks.computeIfAbsent(shortName, (name) -&gt; new Builder(name, type)));</span>
+<span class="fc" id="L110">	}</span>
+
+	/**
+	 * Remove the task with the specified {@code name}.
+	 * @param name the name of the task
+	 * @return {@code true} if such a task was registered, {@code false} otherwise
+	 */
+	public boolean remove(String name) {
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		return this.tasks.remove(name) != null;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

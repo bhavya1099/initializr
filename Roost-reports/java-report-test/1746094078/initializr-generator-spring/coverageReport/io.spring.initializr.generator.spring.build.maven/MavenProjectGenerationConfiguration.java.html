@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenProjectGenerationConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.build.maven</a> &gt; <span class="el_source">MavenProjectGenerationConfiguration.java</span></div><h1>MavenProjectGenerationConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.build.maven;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.buildsystem.BuildItemResolver;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuild;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuildSystem;
+import io.spring.initializr.generator.condition.ConditionalOnBuildSystem;
+import io.spring.initializr.generator.condition.ConditionalOnPackaging;
+import io.spring.initializr.generator.io.IndentingWriterFactory;
+import io.spring.initializr.generator.packaging.war.WarPackaging;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.project.ProjectGenerationConfiguration;
+import io.spring.initializr.generator.spring.build.BuildCustomizer;
+import io.spring.initializr.generator.spring.util.LambdaSafe;
+import io.spring.initializr.metadata.InitializrMetadata;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Bean;
+
+/**
+ * Configuration for contributions specific to the generation of a project that will use
+ * Maven as its build system.
+ *
+ * @author Andy Wilkinson
+ */
+@ProjectGenerationConfiguration
+@ConditionalOnBuildSystem(MavenBuildSystem.ID)
+<span class="fc" id="L46">public class MavenProjectGenerationConfiguration {</span>
+
+	@Bean
+	DefaultMavenBuildCustomizer initializrMetadataMavenBuildCustomizer(ProjectDescription description,
+			InitializrMetadata metadata) {
+<span class="fc" id="L51">		return new DefaultMavenBuildCustomizer(description, metadata);</span>
+	}
+
+	@Bean
+	MavenWrapperContributor mavenWrapperContributor() {
+<span class="fc" id="L56">		return new MavenWrapperContributor(&quot;3&quot;);</span>
+	}
+
+	@Bean
+	public MavenBuild mavenBuild(ObjectProvider&lt;BuildItemResolver&gt; buildItemResolver,
+			ObjectProvider&lt;BuildCustomizer&lt;?&gt;&gt; buildCustomizers) {
+<span class="fc" id="L62">		return createBuild(buildItemResolver.getIfAvailable(),</span>
+<span class="fc" id="L63">				buildCustomizers.orderedStream().collect(Collectors.toList()));</span>
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private MavenBuild createBuild(BuildItemResolver buildItemResolver, List&lt;BuildCustomizer&lt;?&gt;&gt; buildCustomizers) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		MavenBuild build = (buildItemResolver != null) ? new MavenBuild(buildItemResolver) : new MavenBuild();</span>
+<span class="fc" id="L69">		LambdaSafe.callbacks(BuildCustomizer.class, buildCustomizers, build)</span>
+<span class="fc" id="L70">			.invoke((customizer) -&gt; customizer.customize(build));</span>
+<span class="fc" id="L71">		return build;</span>
+	}
+
+	@Bean
+	public MavenBuildProjectContributor mavenBuildProjectContributor(MavenBuild build,
+			IndentingWriterFactory indentingWriterFactory) {
+<span class="fc" id="L77">		return new MavenBuildProjectContributor(build, indentingWriterFactory);</span>
+	}
+
+	@Bean
+	ParentOverridesHelpDocumentCustomizer parentOverridesHelpDocumentCustomizer(MavenBuild build) {
+<span class="fc" id="L82">		return new ParentOverridesHelpDocumentCustomizer(build.getSettings());</span>
+	}
+
+	@Bean
+	@ConditionalOnPackaging(WarPackaging.ID)
+	public BuildCustomizer&lt;MavenBuild&gt; mavenWarPackagingConfigurer() {
+<span class="fc" id="L88">		return (build) -&gt; build.settings().packaging(&quot;war&quot;);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

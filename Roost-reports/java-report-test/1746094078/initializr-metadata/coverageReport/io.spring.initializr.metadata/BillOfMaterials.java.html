@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BillOfMaterials.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">BillOfMaterials.java</span></div><h1>BillOfMaterials.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.spring.initializr.generator.version.InvalidVersionException;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.generator.version.VersionProperty;
+import io.spring.initializr.generator.version.VersionRange;
+
+import org.springframework.util.Assert;
+
+/**
+ * Define a Bill Of Materials to be represented in the generated project if a dependency
+ * refers to it.
+ *
+ * @author Stephane Nicoll
+ */
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+public class BillOfMaterials {
+
+	private String groupId;
+
+	private String artifactId;
+
+	private String version;
+
+	private VersionProperty versionProperty;
+
+<span class="fc" id="L50">	private Integer order = Integer.MAX_VALUE;</span>
+
+<span class="fc" id="L52">	private List&lt;String&gt; additionalBoms = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L54">	private List&lt;String&gt; repositories = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L56">	private final List&lt;Mapping&gt; mappings = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L58">	public BillOfMaterials() {</span>
+<span class="fc" id="L59">	}</span>
+
+	private BillOfMaterials(String groupId, String artifactId) {
+<span class="fc" id="L62">		this(groupId, artifactId, null);</span>
+<span class="fc" id="L63">	}</span>
+
+<span class="fc" id="L65">	private BillOfMaterials(String groupId, String artifactId, String version) {</span>
+<span class="fc" id="L66">		this.groupId = groupId;</span>
+<span class="fc" id="L67">		this.artifactId = artifactId;</span>
+<span class="fc" id="L68">		this.version = version;</span>
+<span class="fc" id="L69">	}</span>
+
+	public String getGroupId() {
+<span class="fc" id="L72">		return this.groupId;</span>
+	}
+
+	public void setGroupId(String groupId) {
+<span class="fc" id="L76">		this.groupId = groupId;</span>
+<span class="fc" id="L77">	}</span>
+
+	public String getArtifactId() {
+<span class="fc" id="L80">		return this.artifactId;</span>
+	}
+
+	public void setArtifactId(String artifactId) {
+<span class="fc" id="L84">		this.artifactId = artifactId;</span>
+<span class="fc" id="L85">	}</span>
+
+	/**
+	 * Return the version of the BOM. Can be {@code null} if it is provided via a mapping.
+	 * @return the version of the BOM or {@code null}
+	 */
+	public String getVersion() {
+<span class="fc" id="L92">		return this.version;</span>
+	}
+
+	public void setVersion(String version) {
+<span class="fc" id="L96">		this.version = version;</span>
+<span class="fc" id="L97">	}</span>
+
+	/**
+	 * Return the {@link VersionProperty} to use to externalize the version of the BOM.
+	 * When this is set, a version property is automatically added rather than setting the
+	 * version in the BOM declaration itself.
+	 * @return the version property
+	 */
+	public VersionProperty getVersionProperty() {
+<span class="fc" id="L106">		return this.versionProperty;</span>
+	}
+
+	public void setVersionProperty(VersionProperty versionProperty) {
+<span class="fc" id="L110">		this.versionProperty = versionProperty;</span>
+<span class="fc" id="L111">	}</span>
+
+	public void setVersionProperty(String versionPropertyName) {
+<span class="fc" id="L114">		setVersionProperty(VersionProperty.of(versionPropertyName));</span>
+<span class="fc" id="L115">	}</span>
+
+	/**
+	 * Return the relative order of this BOM where lower values have higher priority. The
+	 * default value is {@code Integer.MAX_VALUE}, indicating lowest priority. The Spring
+	 * Boot dependencies BOM has an order of 100.
+	 * @return the relative order of this BOM
+	 */
+	public Integer getOrder() {
+<span class="fc" id="L124">		return this.order;</span>
+	}
+
+	public void setOrder(Integer order) {
+<span class="fc" id="L128">		this.order = order;</span>
+<span class="fc" id="L129">	}</span>
+
+	/**
+	 * Return the BOM(s) that should be automatically included if this BOM is required.
+	 * Can be {@code null} if it is provided via a mapping.
+	 * @return the additional BOMs
+	 */
+	public List&lt;String&gt; getAdditionalBoms() {
+<span class="fc" id="L137">		return this.additionalBoms;</span>
+	}
+
+	public void setAdditionalBoms(List&lt;String&gt; additionalBoms) {
+<span class="fc" id="L141">		this.additionalBoms = additionalBoms;</span>
+<span class="fc" id="L142">	}</span>
+
+	/**
+	 * Return the repositories that are required if this BOM is required. Can be
+	 * {@code null} if it is provided via a mapping.
+	 * @return the repositories
+	 */
+	public List&lt;String&gt; getRepositories() {
+<span class="fc" id="L150">		return this.repositories;</span>
+	}
+
+	public void setRepositories(List&lt;String&gt; repositories) {
+<span class="fc" id="L154">		this.repositories = repositories;</span>
+<span class="fc" id="L155">	}</span>
+
+	public List&lt;Mapping&gt; getMappings() {
+<span class="fc" id="L158">		return this.mappings;</span>
+	}
+
+	public void validate() {
+<span class="fc bfc" id="L162" title="All 4 branches covered.">		if (this.version == null &amp;&amp; this.mappings.isEmpty()) {</span>
+<span class="fc" id="L163">			throw new InvalidInitializrMetadataException(&quot;No version available for &quot; + this);</span>
+		}
+<span class="fc" id="L165">		updateCompatibilityRange(VersionParser.DEFAULT);</span>
+<span class="fc" id="L166">	}</span>
+
+	public void updateCompatibilityRange(VersionParser versionParser) {
+<span class="fc" id="L169">		this.mappings.forEach((it) -&gt; {</span>
+			try {
+<span class="fc" id="L171">				Assert.notNull(it.compatibilityRange,</span>
+						&quot;Invalid mapping for &quot; + this + &quot;: compatibility range is mandatory&quot;);
+<span class="fc" id="L173">				it.range = versionParser.parseRange(it.compatibilityRange);</span>
+			}
+<span class="fc" id="L175">			catch (InvalidVersionException ex) {</span>
+<span class="fc" id="L176">				throw new InvalidInitializrMetadataException(</span>
+						&quot;Invalid compatibility range &quot; + it.compatibilityRange + &quot; for &quot; + this, ex);
+<span class="fc" id="L178">			}</span>
+<span class="fc" id="L179">		});</span>
+<span class="fc" id="L180">	}</span>
+
+	/**
+	 * Resolve this instance according to the specified Spring Boot {@link Version}.
+	 * Return a {@link BillOfMaterials} instance that holds the version, repositories and
+	 * additional BOMs to use, if any.
+	 * @param bootVersion the Spring Boot version
+	 * @return the bill of materials
+	 * @throws InvalidInitializrMetadataException if no suitable mapping is found for that
+	 * version
+	 */
+	public BillOfMaterials resolve(Version bootVersion) {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		if (this.mappings.isEmpty()) {</span>
+<span class="fc" id="L193">			return this;</span>
+		}
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (Mapping mapping : this.mappings) {</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">			if (mapping.range.match(bootVersion)) {</span>
+<span class="fc" id="L197">				BillOfMaterials resolvedBom = new BillOfMaterials(</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">						(mapping.groupId != null) ? mapping.groupId : this.groupId,</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">						(mapping.artifactId != null) ? mapping.artifactId : this.artifactId, mapping.version);</span>
+<span class="fc" id="L200">				resolvedBom.setVersionProperty(this.versionProperty);</span>
+<span class="fc" id="L201">				resolvedBom.setOrder(this.order);</span>
+<span class="fc" id="L202">				resolvedBom.repositories</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">					.addAll(!mapping.repositories.isEmpty() ? mapping.repositories : this.repositories);</span>
+<span class="fc" id="L204">				resolvedBom.additionalBoms</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">					.addAll(!mapping.additionalBoms.isEmpty() ? mapping.additionalBoms : this.additionalBoms);</span>
+<span class="fc" id="L206">				return resolvedBom;</span>
+			}
+<span class="fc" id="L208">		}</span>
+<span class="fc" id="L209">		throw new InvalidInitializrMetadataException(</span>
+				&quot;No suitable mapping was found for &quot; + this + &quot; and version &quot; + bootVersion);
+	}
+
+	@Override
+	public String toString() {
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		return &quot;BillOfMaterials [&quot; + ((this.groupId != null) ? &quot;groupId=&quot; + this.groupId + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">				+ ((this.artifactId != null) ? &quot;artifactId=&quot; + this.artifactId + &quot;, &quot; : &quot;&quot;)</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">				+ ((this.version != null) ? &quot;version=&quot; + this.version + &quot;, &quot; : &quot;&quot;)</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				+ ((this.versionProperty != null) ? &quot;versionProperty=&quot; + this.versionProperty + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">				+ ((this.order != null) ? &quot;order=&quot; + this.order + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">				+ ((this.additionalBoms != null) ? &quot;additionalBoms=&quot; + this.additionalBoms + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				+ ((this.repositories != null) ? &quot;repositories=&quot; + this.repositories : &quot;&quot;) + &quot;]&quot;;</span>
+	}
+
+	public static BillOfMaterials create(String groupId, String artifactId) {
+<span class="fc" id="L225">		return new BillOfMaterials(groupId, artifactId);</span>
+	}
+
+	public static BillOfMaterials create(String groupId, String artifactId, String version) {
+<span class="fc" id="L229">		return new BillOfMaterials(groupId, artifactId, version);</span>
+	}
+
+	/**
+	 * Mapping information.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	public static class Mapping {
+
+		private String compatibilityRange;
+
+		/**
+		 * The groupId to use for this mapping or {@code null} to use the default.
+		 */
+		private String groupId;
+
+		/**
+		 * The artifactId to use for this mapping or {@code null} to use the default.
+		 */
+		private String artifactId;
+
+		private String version;
+
+<span class="fc" id="L252">		private List&lt;String&gt; repositories = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L254">		private List&lt;String&gt; additionalBoms = new ArrayList&lt;&gt;();</span>
+
+		@JsonIgnore
+		private VersionRange range;
+
+<span class="fc" id="L259">		public Mapping() {</span>
+<span class="fc" id="L260">		}</span>
+
+<span class="fc" id="L262">		private Mapping(String range, String version, String... repositories) {</span>
+<span class="fc" id="L263">			this.compatibilityRange = range;</span>
+<span class="fc" id="L264">			this.version = version;</span>
+<span class="fc" id="L265">			this.repositories.addAll(Arrays.asList(repositories));</span>
+<span class="fc" id="L266">		}</span>
+
+		public String determineCompatibilityRangeRequirement() {
+<span class="nc" id="L269">			return this.range.toString();</span>
+		}
+
+		public static Mapping create(String range, String version) {
+<span class="fc" id="L273">			return new Mapping(range, version);</span>
+		}
+
+		public static Mapping create(String range, String version, String... repositories) {
+<span class="fc" id="L277">			return new Mapping(range, version, repositories);</span>
+		}
+
+		public String getCompatibilityRange() {
+<span class="nc" id="L281">			return this.compatibilityRange;</span>
+		}
+
+		public void setCompatibilityRange(String compatibilityRange) {
+<span class="fc" id="L285">			this.compatibilityRange = compatibilityRange;</span>
+<span class="fc" id="L286">		}</span>
+
+		public String getGroupId() {
+<span class="nc" id="L289">			return this.groupId;</span>
+		}
+
+		public void setGroupId(String groupId) {
+<span class="fc" id="L293">			this.groupId = groupId;</span>
+<span class="fc" id="L294">		}</span>
+
+		public String getArtifactId() {
+<span class="nc" id="L297">			return this.artifactId;</span>
+		}
+
+		public void setArtifactId(String artifactId) {
+<span class="fc" id="L301">			this.artifactId = artifactId;</span>
+<span class="fc" id="L302">		}</span>
+
+		public String getVersion() {
+<span class="nc" id="L305">			return this.version;</span>
+		}
+
+		public void setVersion(String version) {
+<span class="fc" id="L309">			this.version = version;</span>
+<span class="fc" id="L310">		}</span>
+
+		public List&lt;String&gt; getRepositories() {
+<span class="fc" id="L313">			return this.repositories;</span>
+		}
+
+		public List&lt;String&gt; getAdditionalBoms() {
+<span class="fc" id="L317">			return this.additionalBoms;</span>
+		}
+
+		public VersionRange getRange() {
+<span class="nc" id="L321">			return this.range;</span>
+		}
+
+		public void setRepositories(List&lt;String&gt; repositories) {
+<span class="fc" id="L325">			this.repositories = repositories;</span>
+<span class="fc" id="L326">		}</span>
+
+		public void setAdditionalBoms(List&lt;String&gt; additionalBoms) {
+<span class="nc" id="L329">			this.additionalBoms = additionalBoms;</span>
+<span class="nc" id="L330">		}</span>
+
+		public void setRange(VersionRange range) {
+<span class="nc" id="L333">			this.range = range;</span>
+<span class="nc" id="L334">		}</span>
+
+		@Override
+		public String toString() {
+<span class="fc" id="L338">			return &quot;Mapping [&quot;</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">					+ ((this.compatibilityRange != null) ? &quot;compatibilityRange=&quot; + this.compatibilityRange + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">					+ ((this.groupId != null) ? &quot;groupId=&quot; + this.groupId + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">					+ ((this.artifactId != null) ? &quot;artifactId=&quot; + this.artifactId + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">					+ ((this.version != null) ? &quot;version=&quot; + this.version + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">					+ ((this.repositories != null) ? &quot;repositories=&quot; + this.repositories + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">					+ ((this.additionalBoms != null) ? &quot;additionalBoms=&quot; + this.additionalBoms + &quot;, &quot; : &quot;&quot;)</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">					+ ((this.range != null) ? &quot;range=&quot; + this.range : &quot;&quot;) + &quot;]&quot;;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

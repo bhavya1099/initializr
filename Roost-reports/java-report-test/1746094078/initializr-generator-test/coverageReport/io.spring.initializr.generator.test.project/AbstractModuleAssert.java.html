@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractModuleAssert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test.project</a> &gt; <span class="el_source">AbstractModuleAssert.java</span></div><h1>AbstractModuleAssert.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test.project;
+
+import java.nio.file.Path;
+
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.test.buildsystem.gradle.GroovyDslGradleBuildAssert;
+import io.spring.initializr.generator.test.buildsystem.gradle.KotlinDslGradleBuildAssert;
+import io.spring.initializr.generator.test.buildsystem.maven.MavenBuildAssert;
+
+/**
+ * Base class for module assertions.
+ *
+ * @param &lt;SELF&gt; the type of the concrete assert implementations
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractModuleAssert&lt;SELF extends AbstractModuleAssert&lt;SELF&gt;&gt;
+		extends AbstractProjectAssert&lt;SELF&gt; {
+
+	protected AbstractModuleAssert(Path projectDirectory, Class&lt;?&gt; selfType) {
+<span class="fc" id="L36">		super(projectDirectory, selfType);</span>
+<span class="fc" id="L37">	}</span>
+
+	/**
+	 * Return a {@link JvmModuleAssert JVM module} assertion for the specified
+	 * {@link Language}, to allow chaining of jvm module-specific assertions from this
+	 * call.
+	 * &lt;p&gt;
+	 * Does not validate that the module has source code for the specified language.
+	 * @param language the language of the module
+	 * @return a {@link JvmModuleAssert} for the specified language
+	 */
+	public JvmModuleAssert asJvmModule(Language language) {
+<span class="fc" id="L49">		return new JvmModuleAssert(this.actual, language);</span>
+	}
+
+	/**
+	 * Assert the module defines a {@code pom.xml}.
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasMavenBuild() {
+<span class="fc" id="L57">		filePaths().contains(&quot;pom.xml&quot;);</span>
+<span class="fc" id="L58">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert the module defines the Maven wrapper.
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasMavenWrapper() {
+<span class="fc" id="L66">		filePaths().contains(&quot;mvnw&quot;, &quot;mvnw.cmd&quot;, &quot;.mvn/wrapper/maven-wrapper.properties&quot;);</span>
+<span class="fc" id="L67">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert this module has a {@code pom.xml} and return an {@link MavenBuildAssert
+	 * assert} for the {@code pom.xml} file of this module, to allow chaining of
+	 * maven-specific assertions from this call.
+	 * @return a {@link MavenBuildAssert}
+	 */
+	public MavenBuildAssert mavenBuild() {
+<span class="fc" id="L77">		hasMavenBuild();</span>
+<span class="fc" id="L78">		return new MavenBuildAssert(this.actual.resolve(&quot;pom.xml&quot;));</span>
+	}
+
+	/**
+	 * Assert the module defines a {@code build.gradle}.
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasGroovyDslGradleBuild() {
+<span class="fc" id="L86">		filePaths().contains(&quot;build.gradle&quot;);</span>
+<span class="fc" id="L87">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert the module defines the Gradle wrapper.
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasGradleWrapper() {
+<span class="fc" id="L95">		filePaths().contains(&quot;gradlew&quot;, &quot;gradlew.bat&quot;, &quot;gradle/wrapper/gradle-wrapper.properties&quot;,</span>
+				&quot;gradle/wrapper/gradle-wrapper.jar&quot;);
+<span class="fc" id="L97">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert this module has a {@code build.gradle} and return an
+	 * {@link GroovyDslGradleBuildAssert assert} for the {@code build.gradle} file of this
+	 * module, to allow chaining of gradle-specific assertions from this call.
+	 * @return a {@link GroovyDslGradleBuildAssert}
+	 */
+	public GroovyDslGradleBuildAssert groovyDslGradleBuild() {
+<span class="fc" id="L107">		hasGroovyDslGradleBuild();</span>
+<span class="fc" id="L108">		return new GroovyDslGradleBuildAssert(this.actual.resolve(&quot;build.gradle&quot;));</span>
+	}
+
+	/**
+	 * Assert the module defines a {@code build.gradle.kts}.
+	 * @return {@code this} assertion object
+	 */
+	public SELF hasKotlinDslGradleBuild() {
+<span class="fc" id="L116">		filePaths().contains(&quot;build.gradle.kts&quot;);</span>
+<span class="fc" id="L117">		return this.myself;</span>
+	}
+
+	/**
+	 * Assert this module has a {@code build.gradle.kts} and return an
+	 * {@link KotlinDslGradleBuildAssert assert} for the {@code build.gradle.kts} file of
+	 * this module, to allow chaining of gradle-specific assertions from this call.
+	 * @return a {@link KotlinDslGradleBuildAssert}
+	 */
+	public KotlinDslGradleBuildAssert kotlinDslGradleBuild() {
+<span class="fc" id="L127">		hasKotlinDslGradleBuild();</span>
+<span class="fc" id="L128">		return new KotlinDslGradleBuildAssert(this.actual.resolve(&quot;build.gradle.kts&quot;));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

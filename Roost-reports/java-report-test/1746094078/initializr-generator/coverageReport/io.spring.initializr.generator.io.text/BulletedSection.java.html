@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BulletedSection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.io.text</a> &gt; <span class="el_source">BulletedSection.java</span></div><h1>BulletedSection.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.io.text;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.spring.initializr.generator.io.template.TemplateRenderer;
+
+/**
+ * {@link Section} for list of items using a {@link TemplateRenderer}. The template is
+ * rendered with the registered items set in the model with a configurable item name.
+ *
+ * @param &lt;T&gt; the type of the item in the bullets
+ * @author Madhura Bhave
+ */
+public class BulletedSection&lt;T&gt; implements Section {
+
+	private final TemplateRenderer templateRenderer;
+
+	private final String templateName;
+
+	private final String itemName;
+
+<span class="fc" id="L44">	private final List&lt;T&gt; items = new ArrayList&lt;&gt;();</span>
+
+	/**
+	 * Create a new instance adding items in the model with the {@code items} key.
+	 * @param templateRenderer the {@linkplain TemplateRenderer template renderer} to use
+	 * @param templateName the name of the template
+	 */
+	public BulletedSection(TemplateRenderer templateRenderer, String templateName) {
+<span class="fc" id="L52">		this(templateRenderer, templateName, &quot;items&quot;);</span>
+<span class="fc" id="L53">	}</span>
+
+	/**
+	 * Create a new instance.
+	 * @param templateRenderer the {@linkplain TemplateRenderer template renderer} to use
+	 * @param templateName the name of the template
+	 * @param itemName the key of the items in the model
+	 */
+<span class="fc" id="L61">	public BulletedSection(TemplateRenderer templateRenderer, String templateName, String itemName) {</span>
+<span class="fc" id="L62">		this.templateRenderer = templateRenderer;</span>
+<span class="fc" id="L63">		this.templateName = templateName;</span>
+<span class="fc" id="L64">		this.itemName = itemName;</span>
+<span class="fc" id="L65">	}</span>
+
+	/**
+	 * Add an item to the list.
+	 * @param item the item to add
+	 * @return this for method chaining
+	 */
+	public BulletedSection&lt;T&gt; addItem(T item) {
+<span class="fc" id="L73">		this.items.add(item);</span>
+<span class="fc" id="L74">		return this;</span>
+	}
+
+	/**
+	 * Specify whether this section is empty.
+	 * @return {@code true} if no item is registered
+	 */
+	public boolean isEmpty() {
+<span class="fc" id="L82">		return this.items.isEmpty();</span>
+	}
+
+	/**
+	 * Return an immutable list of the registered items.
+	 * @return the registered items
+	 */
+	public List&lt;T&gt; getItems() {
+<span class="nc" id="L90">		return Collections.unmodifiableList(this.items);</span>
+	}
+
+	@Override
+	public void write(PrintWriter writer) throws IOException {
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (!isEmpty()) {</span>
+<span class="fc" id="L96">			Map&lt;String, Object&gt; model = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L97">			model.put(this.itemName, this.items);</span>
+<span class="fc" id="L98">			writer.println(this.templateRenderer.render(this.templateName, model));</span>
+		}
+<span class="fc" id="L100">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

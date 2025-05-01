@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GroovyFieldDeclaration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language.groovy</a> &gt; <span class="el_source">GroovyFieldDeclaration.java</span></div><h1>GroovyFieldDeclaration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language.groovy;
+
+import io.spring.initializr.generator.language.Annotatable;
+import io.spring.initializr.generator.language.AnnotationContainer;
+
+/**
+ * Declaration of a field written in Groovy.
+ *
+ * @author Matt Berteaux
+ */
+public final class GroovyFieldDeclaration implements Annotatable {
+
+<span class="fc" id="L29">	private final AnnotationContainer annotations = new AnnotationContainer();</span>
+
+	private final int modifiers;
+
+	private final String name;
+
+	private final String returnType;
+
+	private final Object value;
+
+	private final boolean initialized;
+
+<span class="fc" id="L41">	private GroovyFieldDeclaration(Builder builder) {</span>
+<span class="fc" id="L42">		this.modifiers = builder.modifiers;</span>
+<span class="fc" id="L43">		this.name = builder.name;</span>
+<span class="fc" id="L44">		this.returnType = builder.returnType;</span>
+<span class="fc" id="L45">		this.value = builder.value;</span>
+<span class="fc" id="L46">		this.initialized = builder.initialized;</span>
+<span class="fc" id="L47">	}</span>
+
+	/**
+	 * Creates a new builder for the field with the given name.
+	 * @param name the name
+	 * @return the builder
+	 */
+	public static Builder field(String name) {
+<span class="fc" id="L55">		return new Builder(name);</span>
+	}
+
+	@Override
+	public AnnotationContainer annotations() {
+<span class="fc" id="L60">		return this.annotations;</span>
+	}
+
+	/**
+	 * Return the modifiers.
+	 * @return the modifiers
+	 */
+	public int getModifiers() {
+<span class="fc" id="L68">		return this.modifiers;</span>
+	}
+
+	/**
+	 * Return the name.
+	 * @return the name
+	 */
+	public String getName() {
+<span class="fc" id="L76">		return this.name;</span>
+	}
+
+	/**
+	 * Return the return type.
+	 * @return the return type
+	 */
+	public String getReturnType() {
+<span class="fc" id="L84">		return this.returnType;</span>
+	}
+
+	/**
+	 * Return the value.
+	 * @return the value
+	 */
+	public Object getValue() {
+<span class="fc" id="L92">		return this.value;</span>
+	}
+
+	/**
+	 * Whether the field declaration is initialized.
+	 * @return whether the field declaration is initialized
+	 */
+	public boolean isInitialized() {
+<span class="fc" id="L100">		return this.initialized;</span>
+	}
+
+	/**
+	 * Builder for {@link GroovyFieldDeclaration}.
+	 */
+	public static final class Builder {
+
+		private final String name;
+
+		private String returnType;
+
+		private int modifiers;
+
+		private Object value;
+
+		private boolean initialized;
+
+<span class="fc" id="L118">		private Builder(String name) {</span>
+<span class="fc" id="L119">			this.name = name;</span>
+<span class="fc" id="L120">		}</span>
+
+		/**
+		 * Sets the modifiers.
+		 * @param modifiers the modifiers
+		 * @return this for method chaining
+		 */
+		public Builder modifiers(int modifiers) {
+<span class="fc" id="L128">			this.modifiers = modifiers;</span>
+<span class="fc" id="L129">			return this;</span>
+		}
+
+		/**
+		 * Sets the value.
+		 * @param value the value
+		 * @return this for method chaining
+		 */
+		public Builder value(Object value) {
+<span class="fc" id="L138">			this.value = value;</span>
+<span class="fc" id="L139">			this.initialized = true;</span>
+<span class="fc" id="L140">			return this;</span>
+		}
+
+		/**
+		 * Sets the return type.
+		 * @param returnType the return type
+		 * @return the field
+		 */
+		public GroovyFieldDeclaration returning(String returnType) {
+<span class="fc" id="L149">			this.returnType = returnType;</span>
+<span class="fc" id="L150">			return new GroovyFieldDeclaration(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
