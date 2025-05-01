@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem</a> &gt; <span class="el_source">MavenRepository.java</span></div><h1>MavenRepository.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem;
+
+import java.util.Objects;
+
+/**
+ * A Maven repository.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ */
+public class MavenRepository {
+
+	/**
+	 * Maven Central.
+	 */
+<span class="fc" id="L32">	public static final MavenRepository MAVEN_CENTRAL = MavenRepository</span>
+<span class="fc" id="L33">		.withIdAndUrl(&quot;maven-central&quot;, &quot;https://repo.maven.apache.org/maven2&quot;)</span>
+<span class="fc" id="L34">		.name(&quot;Maven Central&quot;)</span>
+<span class="fc" id="L35">		.onlyReleases()</span>
+<span class="fc" id="L36">		.build();</span>
+
+	private final String id;
+
+	private final String name;
+
+	private final String url;
+
+	private final boolean releasesEnabled;
+
+	private final boolean snapshotsEnabled;
+
+	/**
+	 * Creates a new instance.
+	 * @param builder the builder to use
+	 */
+<span class="fc" id="L52">	protected MavenRepository(Builder builder) {</span>
+<span class="fc" id="L53">		this.id = builder.id;</span>
+<span class="fc" id="L54">		this.name = builder.name;</span>
+<span class="fc" id="L55">		this.url = builder.url;</span>
+<span class="fc" id="L56">		this.releasesEnabled = builder.releasesEnabled;</span>
+<span class="fc" id="L57">		this.snapshotsEnabled = builder.snapshotsEnabled;</span>
+<span class="fc" id="L58">	}</span>
+
+	/**
+	 * Initialize a new repository {@link Builder} with the specified id and url. The name
+	 * of the repository is initialized with the id.
+	 * @param id the identifier of the repository
+	 * @param url the url of the repository
+	 * @return a new builder
+	 */
+	public static Builder withIdAndUrl(String id, String url) {
+<span class="fc" id="L68">		return new Builder(id, url);</span>
+	}
+
+	/**
+	 * Return the identifier of the repository.
+	 * @return the repository ID
+	 */
+	public String getId() {
+<span class="fc" id="L76">		return this.id;</span>
+	}
+
+	/**
+	 * Return the name of the repository.
+	 * @return the repository name
+	 */
+	public String getName() {
+<span class="fc" id="L84">		return this.name;</span>
+	}
+
+	/**
+	 * Return the url of the repository.
+	 * @return the repository url
+	 */
+	public String getUrl() {
+<span class="fc" id="L92">		return this.url;</span>
+	}
+
+	/**
+	 * Return whether releases are enabled on the repository.
+	 * @return {@code true} to enable releases, {@code false} otherwise
+	 */
+	public boolean isReleasesEnabled() {
+<span class="fc" id="L100">		return this.releasesEnabled;</span>
+	}
+
+	/**
+	 * Return whether snapshots are enabled on the repository.
+	 * @return {@code true} to enable snapshots, {@code false} otherwise
+	 */
+	public boolean isSnapshotsEnabled() {
+<span class="fc" id="L108">		return this.snapshotsEnabled;</span>
+	}
+
+	@Override
+	public boolean equals(Object o) {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (this == o) {</span>
+<span class="fc" id="L114">			return true;</span>
+		}
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">		if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L117">			return false;</span>
+		}
+<span class="fc" id="L119">		MavenRepository that = (MavenRepository) o;</span>
+<span class="fc bfc" id="L120" title="All 4 branches covered.">		return this.releasesEnabled == that.releasesEnabled &amp;&amp; this.snapshotsEnabled == that.snapshotsEnabled</span>
+<span class="pc bpc" id="L121" title="3 of 4 branches missed.">				&amp;&amp; Objects.equals(this.id, that.id) &amp;&amp; Objects.equals(this.name, that.name)</span>
+<span class="pc bnc" id="L122" title="All 2 branches missed.">				&amp;&amp; Objects.equals(this.url, that.url);</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L127">		return Objects.hash(this.id, this.name, this.url, this.releasesEnabled, this.snapshotsEnabled);</span>
+	}
+
+	/**
+	 * Builder for {@link MavenRepository}.
+	 */
+	public static class Builder {
+
+		private String id;
+
+		private String name;
+
+		private String url;
+
+<span class="fc" id="L141">		private boolean releasesEnabled = true;</span>
+
+		private boolean snapshotsEnabled;
+
+		/**
+		 * Creates a new instance.
+		 * @param id the id
+		 * @param url the url
+		 */
+<span class="fc" id="L150">		public Builder(String id, String url) {</span>
+<span class="fc" id="L151">			this.id = id;</span>
+<span class="fc" id="L152">			this.name = id;</span>
+<span class="fc" id="L153">			this.url = url;</span>
+<span class="fc" id="L154">		}</span>
+
+		/**
+		 * Set the id of the repository.
+		 * @param id the identifier
+		 * @return this for method chaining
+		 */
+		public Builder id(String id) {
+<span class="nc" id="L162">			this.id = id;</span>
+<span class="nc" id="L163">			return this;</span>
+		}
+
+		/**
+		 * Set the name of the repository.
+		 * @param name the name
+		 * @return this for method chaining
+		 */
+		public Builder name(String name) {
+<span class="fc" id="L172">			this.name = name;</span>
+<span class="fc" id="L173">			return this;</span>
+		}
+
+		/**
+		 * Set the url of the repository.
+		 * @param url the url
+		 * @return this for method chaining
+		 */
+		public Builder url(String url) {
+<span class="nc" id="L182">			this.url = url;</span>
+<span class="nc" id="L183">			return this;</span>
+		}
+
+		/**
+		 * Specify whether releases are enabled.
+		 * @param releasesEnabled whether releases are served by the repository
+		 * @return this for method chaining
+		 */
+		public Builder releasesEnabled(boolean releasesEnabled) {
+<span class="fc" id="L192">			this.releasesEnabled = releasesEnabled;</span>
+<span class="fc" id="L193">			return this;</span>
+		}
+
+		/**
+		 * Specify whether snapshots are enabled.
+		 * @param snapshotsEnabled whether snapshots are served by the repository
+		 * @return this for method chaining
+		 */
+		public Builder snapshotsEnabled(boolean snapshotsEnabled) {
+<span class="fc" id="L202">			this.snapshotsEnabled = snapshotsEnabled;</span>
+<span class="fc" id="L203">			return this;</span>
+		}
+
+		/**
+		 * Specify that the repository should only be used for releases.
+		 * @return this for method chaining
+		 */
+		public Builder onlyReleases() {
+<span class="fc" id="L211">			return releasesEnabled(true).snapshotsEnabled(false);</span>
+		}
+
+		/**
+		 * Specify that the repository should only be used for snapshots.
+		 * @return this for method chaining
+		 */
+		public Builder onlySnapshots() {
+<span class="fc" id="L219">			return snapshotsEnabled(true).releasesEnabled(false);</span>
+		}
+
+		/**
+		 * Build a {@link MavenRepository} with the current state of this builder.
+		 * @return a {@link MavenRepository}
+		 */
+		public MavenRepository build() {
+<span class="fc" id="L227">			return new MavenRepository(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

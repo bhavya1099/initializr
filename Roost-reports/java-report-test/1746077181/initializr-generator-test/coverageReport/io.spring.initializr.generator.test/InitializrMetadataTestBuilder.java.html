@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrMetadataTestBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Test Infrastructure)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.test</a> &gt; <span class="el_source">InitializrMetadataTestBuilder.java</span></div><h1>InitializrMetadataTestBuilder.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.test;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
+
+import io.spring.initializr.metadata.BillOfMaterials;
+import io.spring.initializr.metadata.DefaultMetadataElement;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.DependencyGroup;
+import io.spring.initializr.metadata.InitializrConfiguration.Env.Kotlin;
+import io.spring.initializr.metadata.InitializrConfiguration.Env.Maven.ParentPom;
+import io.spring.initializr.metadata.InitializrConfiguration.Platform;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataBuilder;
+import io.spring.initializr.metadata.Repository;
+import io.spring.initializr.metadata.Type;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * Easily create a {@link InitializrMetadata} instance for testing purposes.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="nc" id="L42">public class InitializrMetadataTestBuilder {</span>
+
+<span class="nc" id="L44">	private final InitializrMetadataBuilder builder = InitializrMetadataBuilder.create();</span>
+
+	public static InitializrMetadataTestBuilder withDefaults() {
+<span class="nc" id="L47">		return new InitializrMetadataTestBuilder().addAllDefaults();</span>
+	}
+
+	public static InitializrMetadataTestBuilder withBasicDefaults() {
+<span class="nc" id="L51">		return new InitializrMetadataTestBuilder().addBasicDefaults();</span>
+	}
+
+	public InitializrMetadata build() {
+<span class="nc" id="L55">		return this.builder.build();</span>
+	}
+
+	public InitializrMetadataTestBuilder addDependencyGroup(String name, String... ids) {
+<span class="nc" id="L59">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L60">			DependencyGroup group = new DependencyGroup();</span>
+<span class="nc" id="L61">			group.setName(name);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			for (String id : ids) {</span>
+<span class="nc" id="L63">				Dependency dependency = new Dependency();</span>
+<span class="nc" id="L64">				dependency.setId(id);</span>
+<span class="nc" id="L65">				group.getContent().add(dependency);</span>
+			}
+<span class="nc" id="L67">			it.getDependencies().getContent().add(group);</span>
+<span class="nc" id="L68">		});</span>
+<span class="nc" id="L69">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addDependencyGroup(String name, Dependency... dependencies) {
+<span class="nc" id="L73">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L74">			DependencyGroup group = new DependencyGroup();</span>
+<span class="nc" id="L75">			group.setName(name);</span>
+<span class="nc" id="L76">			group.getContent().addAll(Arrays.asList(dependencies));</span>
+<span class="nc" id="L77">			it.getDependencies().getContent().add(group);</span>
+<span class="nc" id="L78">		});</span>
+<span class="nc" id="L79">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addAllDefaults() {
+<span class="nc" id="L83">		return addBasicDefaults().setGradleEnv(&quot;1.0.6.RELEASE&quot;).setKotlinEnv(&quot;1.1.1&quot;);</span>
+	}
+
+	public InitializrMetadataTestBuilder addBasicDefaults() {
+<span class="nc" id="L87">		return addDefaultTypes().addDefaultPackagings()</span>
+<span class="nc" id="L88">			.addDefaultJavaVersions()</span>
+<span class="nc" id="L89">			.addDefaultLanguages()</span>
+<span class="nc" id="L90">			.addDefaultBootVersions();</span>
+	}
+
+	public InitializrMetadataTestBuilder addDefaultTypes() {
+<span class="nc" id="L94">		return addType(&quot;maven-build&quot;, false, &quot;/pom.xml&quot;, &quot;maven&quot;, null, &quot;build&quot;)</span>
+<span class="nc" id="L95">			.addType(&quot;maven-project&quot;, true, &quot;/starter.zip&quot;, &quot;maven&quot;, null, &quot;project&quot;)</span>
+<span class="nc" id="L96">			.addType(&quot;gradle-build&quot;, false, &quot;/build.gradle&quot;, &quot;gradle&quot;, null, &quot;build&quot;)</span>
+<span class="nc" id="L97">			.addType(&quot;gradle-project&quot;, false, &quot;/starter.zip&quot;, &quot;gradle&quot;, null, &quot;project&quot;);</span>
+	}
+
+	public InitializrMetadataTestBuilder addType(String id, boolean defaultValue, String action, String build,
+			String dialect, String format) {
+<span class="nc" id="L102">		Type type = new Type();</span>
+<span class="nc" id="L103">		type.setId(id);</span>
+<span class="nc" id="L104">		type.setName(id);</span>
+<span class="nc" id="L105">		type.setDefault(defaultValue);</span>
+<span class="nc" id="L106">		type.setAction(action);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		if (StringUtils.hasText(build)) {</span>
+<span class="nc" id="L108">			type.getTags().put(&quot;build&quot;, build);</span>
+		}
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (StringUtils.hasText(dialect)) {</span>
+<span class="nc" id="L111">			type.getTags().put(&quot;dialect&quot;, dialect);</span>
+		}
+<span class="nc bnc" id="L113" title="All 2 branches missed.">		if (StringUtils.hasText(format)) {</span>
+<span class="nc" id="L114">			type.getTags().put(&quot;format&quot;, format);</span>
+		}
+<span class="nc" id="L116">		return addType(type);</span>
+	}
+
+	public InitializrMetadataTestBuilder addType(Type type) {
+<span class="nc" id="L120">		this.builder.withCustomizer((it) -&gt; it.getTypes().getContent().add(type));</span>
+<span class="nc" id="L121">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addDefaultPackagings() {
+<span class="nc" id="L125">		return addPackaging(&quot;jar&quot;, true).addPackaging(&quot;war&quot;, false);</span>
+	}
+
+	public InitializrMetadataTestBuilder addPackaging(String id, boolean defaultValue) {
+<span class="nc" id="L129">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L130">			DefaultMetadataElement packaging = new DefaultMetadataElement();</span>
+<span class="nc" id="L131">			packaging.setId(id);</span>
+<span class="nc" id="L132">			packaging.setName(id);</span>
+<span class="nc" id="L133">			packaging.setDefault(defaultValue);</span>
+<span class="nc" id="L134">			it.getPackagings().addContent(packaging);</span>
+<span class="nc" id="L135">		});</span>
+<span class="nc" id="L136">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addDefaultJavaVersions() {
+<span class="nc" id="L140">		return addJavaVersion(&quot;1.6&quot;, false).addJavaVersion(&quot;1.7&quot;, false).addJavaVersion(&quot;1.8&quot;, true);</span>
+	}
+
+	public InitializrMetadataTestBuilder addJavaVersion(String version, boolean defaultValue) {
+<span class="nc" id="L144">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L145">			DefaultMetadataElement element = new DefaultMetadataElement();</span>
+<span class="nc" id="L146">			element.setId(version);</span>
+<span class="nc" id="L147">			element.setName(version);</span>
+<span class="nc" id="L148">			element.setDefault(defaultValue);</span>
+<span class="nc" id="L149">			it.getJavaVersions().addContent(element);</span>
+<span class="nc" id="L150">		});</span>
+<span class="nc" id="L151">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addDefaultLanguages() {
+<span class="nc" id="L155">		return addLanguage(&quot;java&quot;, true).addLanguage(&quot;groovy&quot;, false).addLanguage(&quot;kotlin&quot;, false);</span>
+	}
+
+	public InitializrMetadataTestBuilder addLanguage(String id, boolean defaultValue) {
+<span class="nc" id="L159">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L160">			DefaultMetadataElement element = new DefaultMetadataElement();</span>
+<span class="nc" id="L161">			element.setId(id);</span>
+<span class="nc" id="L162">			element.setName(id);</span>
+<span class="nc" id="L163">			element.setDefault(defaultValue);</span>
+<span class="nc" id="L164">			it.getLanguages().addContent(element);</span>
+<span class="nc" id="L165">		});</span>
+<span class="nc" id="L166">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addDefaultBootVersions() {
+<span class="nc" id="L170">		return addBootVersion(&quot;2.2.17.RELEASE&quot;, false).addBootVersion(&quot;2.3.3.RELEASE&quot;, false)</span>
+<span class="nc" id="L171">			.addBootVersion(&quot;2.4.1&quot;, true)</span>
+<span class="nc" id="L172">			.addBootVersion(&quot;2.5.0-SNAPSHOT&quot;, false);</span>
+	}
+
+	public InitializrMetadataTestBuilder addBootVersion(String id, boolean defaultValue) {
+<span class="nc" id="L176">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L177">			DefaultMetadataElement element = new DefaultMetadataElement();</span>
+<span class="nc" id="L178">			element.setId(id);</span>
+<span class="nc" id="L179">			element.setName(id);</span>
+<span class="nc" id="L180">			element.setDefault(defaultValue);</span>
+<span class="nc" id="L181">			it.getBootVersions().addContent(element);</span>
+<span class="nc" id="L182">		});</span>
+<span class="nc" id="L183">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addBom(String id, String groupId, String artifactId, String version) {
+<span class="nc" id="L187">		BillOfMaterials bom = BillOfMaterials.create(groupId, artifactId, version);</span>
+<span class="nc" id="L188">		return addBom(id, bom);</span>
+	}
+
+	public InitializrMetadataTestBuilder addBom(String id, BillOfMaterials bom) {
+<span class="nc" id="L192">		this.builder.withCustomizer((it) -&gt; it.getConfiguration().getEnv().getBoms().put(id, bom));</span>
+<span class="nc" id="L193">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder setPlatformCompatibilityRange(String platformCompatibilityRange) {
+<span class="nc" id="L197">		this.builder.withCustomizer(</span>
+<span class="nc" id="L198">				(it) -&gt; it.getConfiguration().getEnv().getPlatform().setCompatibilityRange(platformCompatibilityRange));</span>
+<span class="nc" id="L199">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder setPlatformVersionFormatCompatibilityRange(String v1Range, String v2Range) {
+<span class="nc" id="L203">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L204">			Platform platform = it.getConfiguration().getEnv().getPlatform();</span>
+<span class="nc" id="L205">			platform.setV1FormatCompatibilityRange(v1Range);</span>
+<span class="nc" id="L206">			platform.setV2FormatCompatibilityRange(v2Range);</span>
+<span class="nc" id="L207">		});</span>
+<span class="nc" id="L208">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder setGradleEnv(String dependencyManagementPluginVersion) {
+<span class="nc" id="L212">		this.builder.withCustomizer((it) -&gt; it.getConfiguration()</span>
+<span class="nc" id="L213">			.getEnv()</span>
+<span class="nc" id="L214">			.getGradle()</span>
+<span class="nc" id="L215">			.setDependencyManagementPluginVersion(dependencyManagementPluginVersion));</span>
+<span class="nc" id="L216">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder setKotlinEnv(String defaultKotlinVersion, Kotlin.Mapping... mappings) {
+<span class="nc" id="L220">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L221">			it.getConfiguration().getEnv().getKotlin().setDefaultVersion(defaultKotlinVersion);</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">			for (Kotlin.Mapping mapping : mappings) {</span>
+<span class="nc" id="L223">				it.getConfiguration().getEnv().getKotlin().getMappings().add(mapping);</span>
+			}
+<span class="nc" id="L225">		});</span>
+<span class="nc" id="L226">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder setMavenParent(String groupId, String artifactId, String version,
+			String relativePath, boolean includeSpringBootBom) {
+<span class="nc" id="L231">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L232">			ParentPom parent = it.getConfiguration().getEnv().getMaven().getParent();</span>
+<span class="nc" id="L233">			parent.setGroupId(groupId);</span>
+<span class="nc" id="L234">			parent.setArtifactId(artifactId);</span>
+<span class="nc" id="L235">			parent.setVersion(version);</span>
+<span class="nc" id="L236">			parent.setRelativePath(relativePath);</span>
+<span class="nc" id="L237">			parent.setIncludeSpringBootBom(includeSpringBootBom);</span>
+<span class="nc" id="L238">		});</span>
+<span class="nc" id="L239">		return this;</span>
+	}
+
+	public InitializrMetadataTestBuilder addReleasesRepository(String id, String name, String url) {
+<span class="nc" id="L243">		return addRepository(id, name, url, true, false);</span>
+	}
+
+	public InitializrMetadataTestBuilder addSnapshotsRepository(String id, String name, String url) {
+<span class="nc" id="L247">		return addRepository(id, name, url, false, true);</span>
+	}
+
+	public InitializrMetadataTestBuilder addRepository(String id, String name, String url, boolean releasesEnabled,
+			boolean snapshotsEnabled) {
+<span class="nc" id="L252">		this.builder.withCustomizer((it) -&gt; {</span>
+<span class="nc" id="L253">			Repository repo = new Repository();</span>
+<span class="nc" id="L254">			repo.setName(name);</span>
+			try {
+<span class="nc" id="L256">				repo.setUrl(new URL(url));</span>
+			}
+<span class="nc" id="L258">			catch (MalformedURLException ex) {</span>
+<span class="nc" id="L259">				throw new IllegalArgumentException(&quot;Cannot create URL&quot;, ex);</span>
+<span class="nc" id="L260">			}</span>
+<span class="nc" id="L261">			repo.setReleasesEnabled(releasesEnabled);</span>
+<span class="nc" id="L262">			repo.setSnapshotsEnabled(snapshotsEnabled);</span>
+<span class="nc" id="L263">			it.getConfiguration().getEnv().getRepositories().put(id, repo);</span>
+<span class="nc" id="L264">		});</span>
+<span class="nc" id="L265">		return this;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

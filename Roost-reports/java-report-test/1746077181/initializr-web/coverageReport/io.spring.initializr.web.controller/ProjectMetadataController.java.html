@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectMetadataController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.controller</a> &gt; <span class="el_source">ProjectMetadataController.java</span></div><h1>ProjectMetadataController.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.controller;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.metadata.DependencyMetadata;
+import io.spring.initializr.metadata.DependencyMetadataProvider;
+import io.spring.initializr.metadata.InitializrConfiguration.Platform;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.metadata.InvalidInitializrMetadataException;
+import io.spring.initializr.web.mapper.DependencyMetadataJsonMapper;
+import io.spring.initializr.web.mapper.DependencyMetadataV21JsonMapper;
+import io.spring.initializr.web.mapper.InitializrMetadataJsonMapper;
+import io.spring.initializr.web.mapper.InitializrMetadataV21JsonMapper;
+import io.spring.initializr.web.mapper.InitializrMetadataV22JsonMapper;
+import io.spring.initializr.web.mapper.InitializrMetadataV2JsonMapper;
+import io.spring.initializr.web.mapper.InitializrMetadataVersion;
+import io.spring.initializr.web.project.InvalidProjectRequestException;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * {@link RestController} that exposes metadata and service configuration.
+ *
+ * @author Stephane Nicoll
+ * @author Moritz Halbritter
+ */
+@RestController
+public class ProjectMetadataController extends AbstractMetadataController {
+
+	/**
+	 * HAL JSON content type.
+	 */
+<span class="fc" id="L60">	public static final MediaType HAL_JSON_CONTENT_TYPE = MediaType.parseMediaType(&quot;application/hal+json&quot;);</span>
+
+	private final DependencyMetadataProvider dependencyMetadataProvider;
+
+	public ProjectMetadataController(InitializrMetadataProvider metadataProvider,
+			DependencyMetadataProvider dependencyMetadataProvider) {
+<span class="fc" id="L66">		super(metadataProvider);</span>
+<span class="fc" id="L67">		this.dependencyMetadataProvider = dependencyMetadataProvider;</span>
+<span class="fc" id="L68">	}</span>
+
+	@GetMapping(path = &quot;/metadata/config&quot;, produces = &quot;application/json&quot;)
+	public InitializrMetadata config() {
+<span class="fc" id="L72">		return this.metadataProvider.get();</span>
+	}
+
+	@GetMapping(path = { &quot;/&quot;, &quot;/metadata/client&quot; }, produces = &quot;application/hal+json&quot;)
+	public ResponseEntity&lt;String&gt; serviceCapabilitiesHal() {
+<span class="fc" id="L77">		return serviceCapabilitiesFor(InitializrMetadataVersion.V2_1, HAL_JSON_CONTENT_TYPE);</span>
+	}
+
+	@GetMapping(path = { &quot;/&quot;, &quot;/metadata/client&quot; }, produces = { &quot;application/vnd.initializr.v2.2+json&quot; })
+	public ResponseEntity&lt;String&gt; serviceCapabilitiesV22() {
+<span class="fc" id="L82">		return serviceCapabilitiesFor(InitializrMetadataVersion.V2_2);</span>
+	}
+
+	@GetMapping(path = { &quot;/&quot;, &quot;/metadata/client&quot; },
+			produces = { &quot;application/vnd.initializr.v2.1+json&quot;, &quot;application/json&quot; })
+	public ResponseEntity&lt;String&gt; serviceCapabilitiesV21() {
+<span class="fc" id="L88">		return serviceCapabilitiesFor(InitializrMetadataVersion.V2_1);</span>
+	}
+
+	@GetMapping(path = { &quot;/&quot;, &quot;/metadata/client&quot; }, produces = &quot;application/vnd.initializr.v2+json&quot;)
+	public ResponseEntity&lt;String&gt; serviceCapabilitiesV2() {
+<span class="fc" id="L93">		return serviceCapabilitiesFor(InitializrMetadataVersion.V2);</span>
+	}
+
+	@GetMapping(path = &quot;/dependencies&quot;, produces = &quot;application/vnd.initializr.v2.2+json&quot;)
+	public ResponseEntity&lt;String&gt; dependenciesV22(@RequestParam(required = false) String bootVersion) {
+<span class="fc" id="L98">		return dependenciesFor(InitializrMetadataVersion.V2_2, bootVersion);</span>
+	}
+
+	@GetMapping(path = &quot;/dependencies&quot;, produces = { &quot;application/vnd.initializr.v2.1+json&quot;, &quot;application/json&quot; })
+	public ResponseEntity&lt;String&gt; dependenciesV21(@RequestParam(required = false) String bootVersion) {
+<span class="fc" id="L103">		return dependenciesFor(InitializrMetadataVersion.V2_1, bootVersion);</span>
+	}
+
+	@ExceptionHandler
+	public void invalidMetadataRequest(HttpServletResponse response, InvalidInitializrMetadataException ex)
+			throws IOException {
+<span class="fc" id="L109">		response.sendError(HttpStatus.BAD_REQUEST.value(), ex.getMessage());</span>
+<span class="fc" id="L110">	}</span>
+
+	@ExceptionHandler
+	public void invalidProjectRequest(HttpServletResponse response, InvalidProjectRequestException ex)
+			throws IOException {
+<span class="fc" id="L115">		response.sendError(HttpStatus.BAD_REQUEST.value(), ex.getMessage());</span>
+<span class="fc" id="L116">	}</span>
+
+	/**
+	 * Return the {@link CacheControl} response headers to use for the specified
+	 * {@link InitializrMetadata metadata}. If no cache should be applied
+	 * {@link CacheControl#empty()} can be used.
+	 * @param metadata the metadata about to be exposed
+	 * @return the {@code Cache-Control} headers to use
+	 */
+	protected CacheControl determineCacheControlFor(InitializrMetadata metadata) {
+<span class="fc" id="L126">		return CacheControl.maxAge(2, TimeUnit.HOURS);</span>
+	}
+
+	/**
+	 * Create the dependencies {@link ResponseEntity} for the given version and Spring
+	 * Boot version.
+	 * @param metadataVersion the metadata version
+	 * @param bootVersion the Spring Boot version.
+	 * @return the {@link ResponseEntity}
+	 */
+	protected ResponseEntity&lt;String&gt; dependenciesFor(InitializrMetadataVersion metadataVersion, String bootVersion) {
+<span class="fc" id="L137">		InitializrMetadata metadata = this.metadataProvider.get();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		Version effectiveBootVersion = (bootVersion != null) ? Version.parse(bootVersion)</span>
+<span class="fc" id="L139">				: Version.parse(metadata.getBootVersions().getDefault().getId());</span>
+<span class="fc" id="L140">		Platform platform = metadata.getConfiguration().getEnv().getPlatform();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		if (!platform.isCompatibleVersion(effectiveBootVersion)) {</span>
+<span class="fc" id="L142">			throw new InvalidProjectRequestException(&quot;Invalid Spring Boot version '&quot; + bootVersion</span>
+<span class="fc" id="L143">					+ &quot;', Spring Boot compatibility range is &quot; + platform.determineCompatibilityRangeRequirement());</span>
+		}
+<span class="fc" id="L145">		DependencyMetadata dependencyMetadata = this.dependencyMetadataProvider.get(metadata, effectiveBootVersion);</span>
+<span class="fc" id="L146">		String content = createDependencyJsonMapper(metadataVersion).write(dependencyMetadata);</span>
+<span class="fc" id="L147">		return ResponseEntity.ok()</span>
+<span class="fc" id="L148">			.contentType(metadataVersion.getMediaType())</span>
+<span class="fc" id="L149">			.eTag(createUniqueId(content))</span>
+<span class="fc" id="L150">			.cacheControl(determineCacheControlFor(metadata))</span>
+<span class="fc" id="L151">			.body(content);</span>
+	}
+
+	private ResponseEntity&lt;String&gt; serviceCapabilitiesFor(InitializrMetadataVersion metadataVersion) {
+<span class="fc" id="L155">		return serviceCapabilitiesFor(metadataVersion, metadataVersion.getMediaType());</span>
+	}
+
+	/**
+	 * Create the service capabilities {@link ResponseEntity} for the given metadata
+	 * version and content type.
+	 * @param metadataVersion the metadata version
+	 * @param contentType the content type
+	 * @return the {@link ResponseEntity}
+	 */
+	protected ResponseEntity&lt;String&gt; serviceCapabilitiesFor(InitializrMetadataVersion metadataVersion,
+			MediaType contentType) {
+<span class="fc" id="L167">		String appUrl = generateAppUrl();</span>
+<span class="fc" id="L168">		InitializrMetadata metadata = this.metadataProvider.get();</span>
+<span class="fc" id="L169">		String content = createMetadataJsonMapper(metadataVersion).write(metadata, appUrl);</span>
+<span class="fc" id="L170">		return ResponseEntity.ok()</span>
+<span class="fc" id="L171">			.contentType(contentType)</span>
+<span class="fc" id="L172">			.eTag(createUniqueId(content))</span>
+<span class="fc" id="L173">			.varyBy(&quot;Accept&quot;)</span>
+<span class="fc" id="L174">			.cacheControl(determineCacheControlFor(metadata))</span>
+<span class="fc" id="L175">			.body(content);</span>
+	}
+
+	/**
+	 * Create the {@link InitializrMetadataJsonMapper JSON mapper} for the given metadata
+	 * version.
+	 * @param metadataVersion the metadata version
+	 * @return the JSON mapper
+	 */
+	protected InitializrMetadataJsonMapper createMetadataJsonMapper(InitializrMetadataVersion metadataVersion) {
+<span class="fc bfc" id="L185" title="All 3 branches covered.">		return switch (metadataVersion) {</span>
+<span class="fc" id="L186">			case V2 -&gt; new InitializrMetadataV2JsonMapper();</span>
+<span class="fc" id="L187">			case V2_1 -&gt; new InitializrMetadataV21JsonMapper();</span>
+<span class="fc" id="L188">			default -&gt; new InitializrMetadataV22JsonMapper();</span>
+		};
+	}
+
+	/**
+	 * Create the {@link DependencyMetadataJsonMapper JSON mapper} for the given metadata
+	 * version.
+	 * @param metadataVersion the metadata version
+	 * @return the JSON mapper
+	 */
+	protected DependencyMetadataJsonMapper createDependencyJsonMapper(InitializrMetadataVersion metadataVersion) {
+<span class="fc" id="L199">		return new DependencyMetadataV21JsonMapper();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

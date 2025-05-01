@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DependencyMetadataV21JsonMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.mapper</a> &gt; <span class="el_source">DependencyMetadataV21JsonMapper.java</span></div><h1>DependencyMetadataV21JsonMapper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.mapper;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.spring.initializr.metadata.BillOfMaterials;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.DependencyMetadata;
+import io.spring.initializr.metadata.Repository;
+
+import org.springframework.util.CollectionUtils;
+
+/**
+ * A {@link DependencyMetadataJsonMapper} handling the metadata format for v2.1.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L39">public class DependencyMetadataV21JsonMapper implements DependencyMetadataJsonMapper {</span>
+
+<span class="fc" id="L41">	private static final JsonNodeFactory nodeFactory = JsonNodeFactory.instance;</span>
+
+	@Override
+	public String write(DependencyMetadata metadata) {
+<span class="fc" id="L45">		ObjectNode parent = nodeFactory.objectNode();</span>
+<span class="fc" id="L46">		parent.put(&quot;bootVersion&quot;, metadata.getBootVersion().toString());</span>
+<span class="fc" id="L47">		parent.set(&quot;dependencies&quot;, mapDependencies(metadata.getDependencies()));</span>
+<span class="fc" id="L48">		parent.set(&quot;repositories&quot;, mapRepositories(metadata.getRepositories()));</span>
+<span class="fc" id="L49">		parent.set(&quot;boms&quot;, mapBoms(metadata.getBoms()));</span>
+<span class="fc" id="L50">		customizeParent(parent, metadata);</span>
+<span class="fc" id="L51">		return parent.toString();</span>
+	}
+
+	/**
+	 * Customizes the parent.
+	 * @param parent the parent
+	 * @param metadata the metadata
+	 */
+	protected void customizeParent(ObjectNode parent, DependencyMetadata metadata) {
+<span class="fc" id="L60">	}</span>
+
+	private static ObjectNode mapDependency(Dependency dep) {
+<span class="fc" id="L63">		ObjectNode node = nodeFactory.objectNode();</span>
+<span class="fc" id="L64">		node.put(&quot;groupId&quot;, dep.getGroupId());</span>
+<span class="fc" id="L65">		node.put(&quot;artifactId&quot;, dep.getArtifactId());</span>
+<span class="fc" id="L66">		node.put(&quot;scope&quot;, dep.getScope());</span>
+<span class="fc" id="L67">		addIfNotNull(node, &quot;version&quot;, dep.getVersion());</span>
+<span class="fc" id="L68">		addIfNotNull(node, &quot;bom&quot;, dep.getBom());</span>
+<span class="fc" id="L69">		addIfNotNull(node, &quot;repository&quot;, dep.getRepository());</span>
+<span class="fc" id="L70">		return node;</span>
+	}
+
+	private static void addIfNotNull(ObjectNode node, String key, String value) {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		if (value != null) {</span>
+<span class="fc" id="L75">			node.put(key, value);</span>
+		}
+<span class="fc" id="L77">	}</span>
+
+	private static JsonNode mapRepository(Repository repo) {
+<span class="fc" id="L80">		ObjectNode node = nodeFactory.objectNode();</span>
+<span class="fc" id="L81">		node.put(&quot;name&quot;, repo.getName())</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			.put(&quot;url&quot;, (repo.getUrl() != null) ? repo.getUrl().toString() : null)</span>
+<span class="fc" id="L83">			.put(&quot;snapshotEnabled&quot;, repo.isSnapshotsEnabled());</span>
+<span class="fc" id="L84">		return node;</span>
+	}
+
+	private static ObjectNode mapBom(BillOfMaterials bom) {
+<span class="fc" id="L88">		ObjectNode node = nodeFactory.objectNode();</span>
+<span class="fc" id="L89">		node.put(&quot;groupId&quot;, bom.getGroupId());</span>
+<span class="fc" id="L90">		node.put(&quot;artifactId&quot;, bom.getArtifactId());</span>
+<span class="fc" id="L91">		addIfNotNull(node, &quot;version&quot;, bom.getVersion());</span>
+<span class="fc" id="L92">		addArrayIfNotNull(node, bom.getRepositories());</span>
+<span class="fc" id="L93">		return node;</span>
+	}
+
+	private static void addArrayIfNotNull(ObjectNode node, List&lt;String&gt; values) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (!CollectionUtils.isEmpty(values)) {</span>
+<span class="fc" id="L98">			ArrayNode arrayNode = nodeFactory.arrayNode();</span>
+<span class="fc" id="L99">			values.forEach(arrayNode::add);</span>
+<span class="fc" id="L100">			node.set(&quot;repositories&quot;, arrayNode);</span>
+		}
+<span class="fc" id="L102">	}</span>
+
+	private static ObjectNode mapNode(Map&lt;String, JsonNode&gt; content) {
+<span class="fc" id="L105">		ObjectNode node = nodeFactory.objectNode();</span>
+<span class="fc" id="L106">		content.forEach(node::set);</span>
+<span class="fc" id="L107">		return node;</span>
+	}
+
+	private ObjectNode mapDependencies(Map&lt;String, Dependency&gt; dependencies) {
+<span class="fc" id="L111">		return mapNode(dependencies.entrySet()</span>
+<span class="fc" id="L112">			.stream()</span>
+<span class="fc" id="L113">			.collect(Collectors.toMap(Map.Entry::getKey, (entry) -&gt; mapDependency(entry.getValue()))));</span>
+	}
+
+	private ObjectNode mapRepositories(Map&lt;String, Repository&gt; repositories) {
+<span class="fc" id="L117">		return mapNode(repositories.entrySet()</span>
+<span class="fc" id="L118">			.stream()</span>
+<span class="fc" id="L119">			.collect(Collectors.toMap(Map.Entry::getKey, (entry) -&gt; mapRepository(entry.getValue()))));</span>
+	}
+
+	private ObjectNode mapBoms(Map&lt;String, BillOfMaterials&gt; boms) {
+<span class="fc" id="L123">		return mapNode(boms.entrySet()</span>
+<span class="fc" id="L124">			.stream()</span>
+<span class="fc" id="L125">			.collect(Collectors.toMap(Map.Entry::getKey, (entry) -&gt; mapBom(entry.getValue()))));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

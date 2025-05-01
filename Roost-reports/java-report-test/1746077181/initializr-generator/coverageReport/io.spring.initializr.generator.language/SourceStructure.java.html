@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SourceStructure.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language</a> &gt; <span class="el_source">SourceStructure.java</span></div><h1>SourceStructure.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+/**
+ * Provide dedicated methods for a structure that holds sources.
+ *
+ * @author Stephane Nicoll
+ */
+public class SourceStructure {
+
+	private final Path rootDirectory;
+
+	private final String sourceFileExtension;
+
+	private final Path sourcesDirectory;
+
+	private final Path resourcesDirectory;
+
+<span class="fc" id="L38">	public SourceStructure(Path rootDirectory, Language language) {</span>
+<span class="fc" id="L39">		this.rootDirectory = rootDirectory;</span>
+<span class="fc" id="L40">		this.sourceFileExtension = language.sourceFileExtension();</span>
+<span class="fc" id="L41">		this.sourcesDirectory = rootDirectory.resolve(language.id());</span>
+<span class="fc" id="L42">		this.resourcesDirectory = rootDirectory.resolve(&quot;resources&quot;);</span>
+<span class="fc" id="L43">	}</span>
+
+	/**
+	 * Return the root {@link Path directory} of this structure. Can be used to access
+	 * additional resources.
+	 * @return the root directory
+	 */
+	public Path getRootDirectory() {
+<span class="fc" id="L51">		return this.rootDirectory;</span>
+	}
+
+	/**
+	 * Return the sources {@link Path directory} of this structure.
+	 * @return the sources directory
+	 */
+	public Path getSourcesDirectory() {
+<span class="fc" id="L59">		return this.sourcesDirectory;</span>
+	}
+
+	/**
+	 * Return the resources {@link Path directory} of this structure.
+	 * @return the resources directory
+	 */
+	public Path getResourcesDirectory() {
+<span class="fc" id="L67">		return this.resourcesDirectory;</span>
+	}
+
+	/**
+	 * Resolve a source file.
+	 * @param packageName the name of the package
+	 * @param fileName the name of the file (without its extension)
+	 * @return the {@link Path file} to use to store a {@code CompilationUnit} with the
+	 * specified package and name
+	 * @see #getSourcesDirectory()
+	 */
+	public Path resolveSourceFile(String packageName, String fileName) {
+<span class="fc" id="L79">		String file = fileName + &quot;.&quot; + this.sourceFileExtension;</span>
+<span class="fc" id="L80">		return resolvePackage(this.sourcesDirectory, packageName).resolve(file);</span>
+	}
+
+	/**
+	 * Create a source file, creating its package structure if necessary.
+	 * @param packageName the name of the package
+	 * @param fileName the name of the file (without its extension)
+	 * @return the {@link Path file} to use to store a {@code CompilationUnit} with the
+	 * specified package and name
+	 * @throws IOException if an error occurred while trying to create the directory
+	 * structure or the file itself
+	 * @see #getSourcesDirectory()
+	 */
+	public Path createSourceFile(String packageName, String fileName) throws IOException {
+<span class="fc" id="L94">		Path sourceFile = resolveSourceFile(packageName, fileName);</span>
+<span class="fc" id="L95">		createFile(sourceFile);</span>
+<span class="fc" id="L96">		return sourceFile;</span>
+	}
+
+	/**
+	 * Resolve a resource file defined in the specified package.
+	 * @param packageName the name of the package
+	 * @param file the name of the file (including its extension)
+	 * @return the {@link Path file} to use to store a resource with the specified package
+	 * @see #getResourcesDirectory()
+	 */
+	public Path resolveResourceFile(String packageName, String file) {
+<span class="fc" id="L107">		return resolvePackage(this.resourcesDirectory, packageName).resolve(file);</span>
+	}
+
+	/**
+	 * Create a resource file, creating its package structure if necessary.
+	 * @param packageName the name of the package
+	 * @param file the name of the file (including its extension)
+	 * @return the {@link Path file} to use to store a resource with the specified package
+	 * @throws IOException if an error occurred while trying to create the directory
+	 * structure or the file itself
+	 * @see #getResourcesDirectory()
+	 */
+	public Path createResourceFile(String packageName, String file) throws IOException {
+<span class="fc" id="L120">		Path resourceFile = resolveResourceFile(packageName, file);</span>
+<span class="fc" id="L121">		createFile(resourceFile);</span>
+<span class="fc" id="L122">		return resourceFile;</span>
+	}
+
+	private void createFile(Path file) throws IOException {
+<span class="fc" id="L126">		Files.createDirectories(file.getParent());</span>
+<span class="fc" id="L127">		Files.createFile(file);</span>
+<span class="fc" id="L128">	}</span>
+
+	private static Path resolvePackage(Path directory, String packageName) {
+<span class="fc" id="L131">		return directory.resolve(packageName.replace('.', '/'));</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

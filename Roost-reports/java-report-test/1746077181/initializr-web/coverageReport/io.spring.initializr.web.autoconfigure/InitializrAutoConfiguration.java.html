@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrAutoConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.autoconfigure</a> &gt; <span class="el_source">InitializrAutoConfiguration.java</span></div><h1>InitializrAutoConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.autoconfigure;
+
+import java.nio.file.Files;
+import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
+
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+
+import io.spring.initializr.generator.io.IndentingWriterFactory;
+import io.spring.initializr.generator.io.SimpleIndentStrategy;
+import io.spring.initializr.generator.io.template.MustacheTemplateRenderer;
+import io.spring.initializr.generator.io.template.TemplateRenderer;
+import io.spring.initializr.generator.project.ProjectDirectoryFactory;
+import io.spring.initializr.metadata.DependencyMetadataProvider;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataBuilder;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.metadata.InitializrProperties;
+import io.spring.initializr.web.controller.CommandLineMetadataController;
+import io.spring.initializr.web.controller.DefaultProjectGenerationController;
+import io.spring.initializr.web.controller.ProjectGenerationController;
+import io.spring.initializr.web.controller.ProjectMetadataController;
+import io.spring.initializr.web.controller.SpringCliDistributionController;
+import io.spring.initializr.web.project.DefaultProjectRequestPlatformVersionTransformer;
+import io.spring.initializr.web.project.DefaultProjectRequestToDescriptionConverter;
+import io.spring.initializr.web.project.ProjectGenerationInvoker;
+import io.spring.initializr.web.project.ProjectRequest;
+import io.spring.initializr.web.project.ProjectRequestPlatformVersionTransformer;
+import io.spring.initializr.web.support.DefaultDependencyMetadataProvider;
+import io.spring.initializr.web.support.DefaultInitializrMetadataProvider;
+import io.spring.initializr.web.support.InitializrMetadataUpdateStrategy;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.cache.JCacheManagerCustomizer;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.client.RestTemplateAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.support.NoOpCache;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+
+/**
+ * {@link org.springframework.boot.autoconfigure.EnableAutoConfiguration
+ * Auto-configuration} to configure Spring initializr. In a web environment, configures
+ * the necessary controller to serve the applications from the root context.
+ *
+ * @author Stephane Nicoll
+ */
+@AutoConfiguration(after = { JacksonAutoConfiguration.class, RestTemplateAutoConfiguration.class })
+@EnableConfigurationProperties(InitializrProperties.class)
+<span class="fc" id="L79">public class InitializrAutoConfiguration {</span>
+
+	@Bean
+	@ConditionalOnMissingBean
+	public ProjectDirectoryFactory projectDirectoryFactory() {
+<span class="fc" id="L84">		return (description) -&gt; Files.createTempDirectory(&quot;project-&quot;);</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public IndentingWriterFactory indentingWriterFactory() {
+<span class="fc" id="L90">		return IndentingWriterFactory.create(new SimpleIndentStrategy(&quot;\t&quot;),</span>
+<span class="fc" id="L91">				(builder) -&gt; builder.indentingStrategy(&quot;yaml&quot;, new SimpleIndentStrategy(&quot;  &quot;)));</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(TemplateRenderer.class)
+	public MustacheTemplateRenderer templateRenderer(Environment environment,
+			ObjectProvider&lt;CacheManager&gt; cacheManager) {
+<span class="fc" id="L98">		return new MustacheTemplateRenderer(&quot;classpath:/templates&quot;,</span>
+<span class="fc" id="L99">				determineCache(environment, cacheManager.getIfAvailable()));</span>
+	}
+
+	private Cache determineCache(Environment environment, CacheManager cacheManager) {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (cacheManager != null) {</span>
+<span class="fc" id="L104">			Binder binder = Binder.get(environment);</span>
+<span class="fc" id="L105">			boolean cache = binder.bind(&quot;spring.mustache.cache&quot;, Boolean.class).orElse(true);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">			if (cache) {</span>
+<span class="fc" id="L107">				return cacheManager.getCache(&quot;initializr.templates&quot;);</span>
+			}
+		}
+<span class="fc" id="L110">		return new NoOpCache(&quot;templates&quot;);</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(InitializrMetadataProvider.class)
+	public InitializrMetadataProvider initializrMetadataProvider(InitializrProperties properties,
+			ObjectProvider&lt;InitializrMetadataUpdateStrategy&gt; initializrMetadataUpdateStrategy) {
+<span class="fc" id="L117">		InitializrMetadata metadata = InitializrMetadataBuilder.fromInitializrProperties(properties).build();</span>
+<span class="fc" id="L118">		return new DefaultInitializrMetadataProvider(metadata,</span>
+<span class="fc" id="L119">				initializrMetadataUpdateStrategy.getIfAvailable(() -&gt; (current) -&gt; current));</span>
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public DependencyMetadataProvider dependencyMetadataProvider() {
+<span class="fc" id="L125">		return new DefaultDependencyMetadataProvider();</span>
+	}
+
+	/**
+	 * Initializr web configuration.
+	 */
+	@Configuration
+	@ConditionalOnWebApplication
+<span class="fc" id="L133">	static class InitializrWebConfiguration {</span>
+
+		@Bean
+		InitializrWebConfig initializrWebConfig() {
+<span class="fc" id="L137">			return new InitializrWebConfig();</span>
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		ProjectGenerationController&lt;ProjectRequest&gt; projectGenerationController(
+				InitializrMetadataProvider metadataProvider,
+				ObjectProvider&lt;ProjectRequestPlatformVersionTransformer&gt; platformVersionTransformer,
+				ApplicationContext applicationContext) {
+<span class="fc" id="L146">			ProjectGenerationInvoker&lt;ProjectRequest&gt; projectGenerationInvoker = new ProjectGenerationInvoker&lt;&gt;(</span>
+					applicationContext, new DefaultProjectRequestToDescriptionConverter(platformVersionTransformer
+<span class="fc" id="L148">						.getIfAvailable(DefaultProjectRequestPlatformVersionTransformer::new)));</span>
+<span class="fc" id="L149">			return new DefaultProjectGenerationController(metadataProvider, projectGenerationInvoker);</span>
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		ProjectMetadataController projectMetadataController(InitializrMetadataProvider metadataProvider,
+				DependencyMetadataProvider dependencyMetadataProvider) {
+<span class="fc" id="L156">			return new ProjectMetadataController(metadataProvider, dependencyMetadataProvider);</span>
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		CommandLineMetadataController commandLineMetadataController(InitializrMetadataProvider metadataProvider,
+				TemplateRenderer templateRenderer) {
+<span class="fc" id="L163">			return new CommandLineMetadataController(metadataProvider, templateRenderer);</span>
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		SpringCliDistributionController cliDistributionController(InitializrMetadataProvider metadataProvider) {
+<span class="fc" id="L169">			return new SpringCliDistributionController(metadataProvider);</span>
+		}
+
+		@Bean
+		InitializrModule InitializrJacksonModule() {
+<span class="fc" id="L174">			return new InitializrModule();</span>
+		}
+
+	}
+
+	/**
+	 * Initializr cache configuration.
+	 */
+	@Configuration
+	@ConditionalOnClass(javax.cache.CacheManager.class)
+<span class="fc" id="L184">	static class InitializrCacheConfiguration {</span>
+
+		@Bean
+		JCacheManagerCustomizer initializrCacheManagerCustomizer() {
+<span class="fc" id="L188">			return new InitializrJCacheManagerCustomizer();</span>
+		}
+
+	}
+
+	@Order(0)
+	private static final class InitializrJCacheManagerCustomizer implements JCacheManagerCustomizer {
+
+		@Override
+		public void customize(javax.cache.CacheManager cacheManager) {
+<span class="fc" id="L198">			createMissingCache(cacheManager, &quot;initializr.metadata&quot;,</span>
+<span class="fc" id="L199">					() -&gt; config().setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(Duration.TEN_MINUTES)));</span>
+<span class="fc" id="L200">			createMissingCache(cacheManager, &quot;initializr.dependency-metadata&quot;, this::config);</span>
+<span class="fc" id="L201">			createMissingCache(cacheManager, &quot;initializr.project-resources&quot;, this::config);</span>
+<span class="fc" id="L202">			createMissingCache(cacheManager, &quot;initializr.templates&quot;, this::config);</span>
+<span class="fc" id="L203">		}</span>
+
+		private void createMissingCache(javax.cache.CacheManager cacheManager, String cacheName,
+				Supplier&lt;MutableConfiguration&lt;Object, Object&gt;&gt; config) {
+<span class="fc" id="L207">			boolean cacheExist = StreamSupport.stream(cacheManager.getCacheNames().spliterator(), true)</span>
+<span class="fc" id="L208">				.anyMatch((name) -&gt; name.equals(cacheName));</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			if (!cacheExist) {</span>
+<span class="fc" id="L210">				cacheManager.createCache(cacheName, config.get());</span>
+			}
+<span class="fc" id="L212">		}</span>
+
+		private MutableConfiguration&lt;Object, Object&gt; config() {
+<span class="fc" id="L215">			return new MutableConfiguration&lt;&gt;().setStoreByValue(false)</span>
+<span class="fc" id="L216">				.setManagementEnabled(true)</span>
+<span class="fc" id="L217">				.setStatisticsEnabled(true);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

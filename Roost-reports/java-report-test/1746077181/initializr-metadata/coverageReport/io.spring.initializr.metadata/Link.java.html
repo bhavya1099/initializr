@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Link.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">Link.java</span></div><h1>Link.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+/**
+ * Metadata for a link. Each link has a &quot;relation&quot; that potentially attaches a strong
+ * semantic to the nature of the link. The URI of the link itself can be templated by
+ * including variables in the form `{variableName}`.
+ * &lt;p&gt;
+ * An actual {@code URI} can be generated using {@code expand}, providing a mapping for
+ * those variables.
+ *
+ * @author Dave Syer
+ * @author Stephane Nicoll
+ */
+public class Link {
+
+<span class="fc" id="L45">	private static final Pattern VARIABLE_REGEX = Pattern.compile(&quot;\\{(\\w+)\\}&quot;);</span>
+
+	/**
+	 * The relation of the link.
+	 */
+	private String rel;
+
+	/**
+	 * The URI the link is pointing to.
+	 */
+	private String href;
+
+	/**
+	 * Specify if the URI is templated.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+	private boolean templated;
+
+<span class="fc" id="L63">	@JsonIgnore</span>
+	private final Set&lt;String&gt; templateVariables = new LinkedHashSet&lt;&gt;();
+
+	/**
+	 * A description of the link.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String description;
+
+<span class="fc" id="L72">	public Link() {</span>
+<span class="fc" id="L73">	}</span>
+
+	private Link(String rel, String href) {
+<span class="fc" id="L76">		this(rel, href, null);</span>
+<span class="fc" id="L77">	}</span>
+
+<span class="fc" id="L79">	private Link(String rel, String href, String description) {</span>
+<span class="fc" id="L80">		this.rel = rel;</span>
+<span class="fc" id="L81">		this.href = href;</span>
+<span class="fc" id="L82">		this.description = description;</span>
+<span class="fc" id="L83">	}</span>
+
+	private Link(String rel, String href, boolean templated) {
+<span class="nc" id="L86">		this(rel, href);</span>
+<span class="nc" id="L87">		this.templated = templated;</span>
+<span class="nc" id="L88">	}</span>
+
+	public String getRel() {
+<span class="nc" id="L91">		return this.rel;</span>
+	}
+
+	public void setRel(String rel) {
+<span class="fc" id="L95">		this.rel = rel;</span>
+<span class="fc" id="L96">	}</span>
+
+	public boolean isTemplated() {
+<span class="fc" id="L99">		return this.templated;</span>
+	}
+
+	public void setTemplated(boolean templated) {
+<span class="nc" id="L103">		this.templated = templated;</span>
+<span class="nc" id="L104">	}</span>
+
+	public String getDescription() {
+<span class="nc" id="L107">		return this.description;</span>
+	}
+
+	public void setDescription(String description) {
+<span class="fc" id="L111">		this.description = description;</span>
+<span class="fc" id="L112">	}</span>
+
+	public String getHref() {
+<span class="nc" id="L115">		return this.href;</span>
+	}
+
+	public Set&lt;String&gt; getTemplateVariables() {
+<span class="fc" id="L119">		return Collections.unmodifiableSet(this.templateVariables);</span>
+	}
+
+	public void setHref(String href) {
+<span class="fc" id="L123">		this.href = href;</span>
+<span class="fc" id="L124">	}</span>
+
+	public void resolve() {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (this.rel == null) {</span>
+<span class="fc" id="L128">			throw new InvalidInitializrMetadataException(&quot;Invalid link &quot; + this + &quot;: rel attribute is mandatory&quot;);</span>
+		}
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (this.href == null) {</span>
+<span class="fc" id="L131">			throw new InvalidInitializrMetadataException(&quot;Invalid link &quot; + this + &quot;: href attribute is mandatory&quot;);</span>
+		}
+<span class="fc" id="L133">		Matcher matcher = VARIABLE_REGEX.matcher(this.href);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc" id="L135">			String variable = matcher.group(1);</span>
+<span class="fc" id="L136">			this.templateVariables.add(variable);</span>
+<span class="fc" id="L137">		}</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		this.templated = !this.templateVariables.isEmpty();</span>
+<span class="fc" id="L139">	}</span>
+
+	/**
+	 * Expand the link using the specified parameters.
+	 * @param parameters the parameters value
+	 * @return an URI where all variables have been expanded
+	 */
+	public URI expand(Map&lt;String, String&gt; parameters) {
+<span class="fc" id="L147">		AtomicReference&lt;String&gt; result = new AtomicReference&lt;&gt;(this.href);</span>
+<span class="fc" id="L148">		this.templateVariables.forEach((var) -&gt; {</span>
+<span class="fc" id="L149">			Object value = parameters.get(var);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">			if (value == null) {</span>
+<span class="fc" id="L151">				throw new IllegalArgumentException(</span>
+						&quot;Could not expand &quot; + this.href + &quot;, missing value for '&quot; + var + &quot;'&quot;);
+			}
+<span class="fc" id="L154">			result.set(result.get().replace(&quot;{&quot; + var + &quot;}&quot;, value.toString()));</span>
+<span class="fc" id="L155">		});</span>
+		try {
+<span class="fc" id="L157">			return new URI(result.get());</span>
+		}
+<span class="nc" id="L159">		catch (URISyntaxException ex) {</span>
+<span class="nc" id="L160">			throw new IllegalStateException(&quot;Invalid URL&quot;, ex);</span>
+		}
+	}
+
+	public static Link create(String rel, String href) {
+<span class="fc" id="L165">		return new Link(rel, href);</span>
+	}
+
+	public static Link create(String rel, String href, String description) {
+<span class="fc" id="L169">		return new Link(rel, href, description);</span>
+	}
+
+	public static Link create(String rel, String href, boolean templated) {
+<span class="nc" id="L173">		return new Link(rel, href, templated);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

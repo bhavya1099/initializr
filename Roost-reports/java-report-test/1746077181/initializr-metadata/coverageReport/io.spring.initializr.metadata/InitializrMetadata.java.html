@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrMetadata.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">InitializrMetadata.java</span></div><h1>InitializrMetadata.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.generator.version.VersionProperty;
+
+/**
+ * Meta-data used to generate a project.
+ *
+ * @author Stephane Nicoll
+ * @see ServiceCapability
+ */
+public class InitializrMetadata {
+
+	private final InitializrConfiguration configuration;
+
+<span class="fc" id="L38">	private final DependenciesCapability dependencies = new DependenciesCapability();</span>
+
+<span class="fc" id="L40">	private final TypeCapability types = new TypeCapability();</span>
+
+<span class="fc" id="L42">	private final SingleSelectCapability bootVersions = new SingleSelectCapability(&quot;bootVersion&quot;, &quot;Spring Boot Version&quot;,</span>
+			&quot;spring boot version&quot;);
+
+<span class="fc" id="L45">	private final SingleSelectCapability packagings = new SingleSelectCapability(&quot;packaging&quot;, &quot;Packaging&quot;,</span>
+			&quot;project packaging&quot;);
+
+<span class="fc" id="L48">	private final SingleSelectCapability javaVersions = new SingleSelectCapability(&quot;javaVersion&quot;, &quot;Java Version&quot;,</span>
+			&quot;language level&quot;);
+
+<span class="fc" id="L51">	private final SingleSelectCapability languages = new SingleSelectCapability(&quot;language&quot;, &quot;Language&quot;,</span>
+			&quot;programming language&quot;);
+
+<span class="fc" id="L54">	private final TextCapability name = new TextCapability(&quot;name&quot;, &quot;Name&quot;, &quot;project name (infer application name)&quot;);</span>
+
+<span class="fc" id="L56">	private final TextCapability description = new TextCapability(&quot;description&quot;, &quot;Description&quot;, &quot;project description&quot;);</span>
+
+<span class="fc" id="L58">	private final TextCapability groupId = new TextCapability(&quot;groupId&quot;, &quot;Group&quot;, &quot;project coordinates&quot;);</span>
+
+<span class="fc" id="L60">	private final TextCapability artifactId = new ArtifactIdCapability(this.name);</span>
+
+<span class="fc" id="L62">	private final TextCapability version = new TextCapability(&quot;version&quot;, &quot;Version&quot;, &quot;project version&quot;);</span>
+
+<span class="fc" id="L64">	private final TextCapability packageName = new PackageCapability(this.groupId, this.artifactId);</span>
+
+	public InitializrMetadata() {
+<span class="fc" id="L67">		this(new InitializrConfiguration());</span>
+<span class="fc" id="L68">	}</span>
+
+<span class="fc" id="L70">	protected InitializrMetadata(InitializrConfiguration configuration) {</span>
+<span class="fc" id="L71">		this.configuration = configuration;</span>
+<span class="fc" id="L72">	}</span>
+
+	public InitializrConfiguration getConfiguration() {
+<span class="fc" id="L75">		return this.configuration;</span>
+	}
+
+	public DependenciesCapability getDependencies() {
+<span class="fc" id="L79">		return this.dependencies;</span>
+	}
+
+	public TypeCapability getTypes() {
+<span class="fc" id="L83">		return this.types;</span>
+	}
+
+	public SingleSelectCapability getBootVersions() {
+<span class="fc" id="L87">		return this.bootVersions;</span>
+	}
+
+	public SingleSelectCapability getPackagings() {
+<span class="fc" id="L91">		return this.packagings;</span>
+	}
+
+	public SingleSelectCapability getJavaVersions() {
+<span class="fc" id="L95">		return this.javaVersions;</span>
+	}
+
+	public SingleSelectCapability getLanguages() {
+<span class="fc" id="L99">		return this.languages;</span>
+	}
+
+	public TextCapability getName() {
+<span class="fc" id="L103">		return this.name;</span>
+	}
+
+	public TextCapability getDescription() {
+<span class="fc" id="L107">		return this.description;</span>
+	}
+
+	public TextCapability getGroupId() {
+<span class="fc" id="L111">		return this.groupId;</span>
+	}
+
+	public TextCapability getArtifactId() {
+<span class="fc" id="L115">		return this.artifactId;</span>
+	}
+
+	public TextCapability getVersion() {
+<span class="fc" id="L119">		return this.version;</span>
+	}
+
+	public TextCapability getPackageName() {
+<span class="fc" id="L123">		return this.packageName;</span>
+	}
+
+	/**
+	 * Merge this instance with the specified argument.
+	 * @param other the other instance
+	 */
+	public void merge(InitializrMetadata other) {
+<span class="fc" id="L131">		this.configuration.merge(other.configuration);</span>
+<span class="fc" id="L132">		this.dependencies.merge(other.dependencies);</span>
+<span class="fc" id="L133">		this.types.merge(other.types);</span>
+<span class="fc" id="L134">		this.bootVersions.merge(other.bootVersions);</span>
+<span class="fc" id="L135">		this.packagings.merge(other.packagings);</span>
+<span class="fc" id="L136">		this.javaVersions.merge(other.javaVersions);</span>
+<span class="fc" id="L137">		this.languages.merge(other.languages);</span>
+<span class="fc" id="L138">		this.name.merge(other.name);</span>
+<span class="fc" id="L139">		this.description.merge(other.description);</span>
+<span class="fc" id="L140">		this.groupId.merge(other.groupId);</span>
+<span class="fc" id="L141">		this.artifactId.merge(other.artifactId);</span>
+<span class="fc" id="L142">		this.version.merge(other.version);</span>
+<span class="fc" id="L143">		this.packageName.merge(other.packageName);</span>
+<span class="fc" id="L144">	}</span>
+
+	/**
+	 * Validate the metadata.
+	 */
+	public void validate() {
+<span class="fc" id="L150">		this.configuration.validate();</span>
+<span class="fc" id="L151">		this.dependencies.validate();</span>
+
+<span class="fc" id="L153">		Map&lt;String, Repository&gt; repositories = this.configuration.getEnv().getRepositories();</span>
+<span class="fc" id="L154">		Map&lt;String, BillOfMaterials&gt; boms = this.configuration.getEnv().getBoms();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (Dependency dependency : this.dependencies.getAll()) {</span>
+<span class="fc bfc" id="L156" title="All 4 branches covered.">			if (dependency.getBom() != null &amp;&amp; !boms.containsKey(dependency.getBom())) {</span>
+<span class="fc" id="L157">				throw new InvalidInitializrMetadataException(&quot;Dependency &quot; + dependency + &quot;defines an invalid BOM id &quot;</span>
+<span class="fc" id="L158">						+ dependency.getBom() + &quot;, available boms &quot; + boms);</span>
+			}
+
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">			if (dependency.getRepository() != null &amp;&amp; !repositories.containsKey(dependency.getRepository())) {</span>
+<span class="fc" id="L162">				throw new InvalidInitializrMetadataException(</span>
+<span class="fc" id="L163">						&quot;Dependency &quot; + dependency + &quot;defines an invalid repository id &quot; + dependency.getRepository()</span>
+								+ &quot;, available repositories &quot; + repositories);
+			}
+<span class="fc" id="L166">		}</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (BillOfMaterials bom : boms.values()) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			for (String r : bom.getRepositories()) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">				if (!repositories.containsKey(r)) {</span>
+<span class="fc" id="L170">					throw new InvalidInitializrMetadataException(</span>
+							bom + &quot;defines an invalid repository id &quot; + r + &quot;, available repositories &quot; + repositories);
+				}
+<span class="fc" id="L173">			}</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			for (String b : bom.getAdditionalBoms()) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">				if (!boms.containsKey(b)) {</span>
+<span class="fc" id="L176">					throw new InvalidInitializrMetadataException(</span>
+							bom + &quot; defines an invalid &quot; + &quot;additional bom id &quot; + b + &quot;, available boms &quot; + boms);
+				}
+<span class="fc" id="L179">			}</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">			for (BillOfMaterials.Mapping m : bom.getMappings()) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">				for (String r : m.getRepositories()) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">					if (!repositories.containsKey(r)) {</span>
+<span class="fc" id="L183">						throw new InvalidInitializrMetadataException(m + &quot; of &quot; + bom</span>
+								+ &quot;defines an invalid repository id &quot; + r + &quot;, available repositories &quot; + repositories);
+					}
+
+<span class="fc" id="L187">				}</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">				for (String b : m.getAdditionalBoms()) {</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">					if (!boms.containsKey(b)) {</span>
+<span class="fc" id="L190">						throw new InvalidInitializrMetadataException(m + &quot; of &quot; + bom + &quot; defines &quot;</span>
+								+ &quot;an invalid additional bom id &quot; + b + &quot;, available boms &quot; + boms);
+					}
+<span class="nc" id="L193">				}</span>
+<span class="fc" id="L194">			}</span>
+<span class="fc" id="L195">		}</span>
+<span class="fc" id="L196">	}</span>
+
+	/**
+	 * Update the available Spring Boot versions with the specified capabilities.
+	 * @param versionsMetadata the Spring Boot boot versions metadata to use
+	 */
+	public void updateSpringBootVersions(List&lt;DefaultMetadataElement&gt; versionsMetadata) {
+<span class="fc" id="L203">		this.bootVersions.setContent(versionsMetadata);</span>
+<span class="fc" id="L204">		List&lt;Version&gt; bootVersions = this.bootVersions.getContent()</span>
+<span class="fc" id="L205">			.stream()</span>
+<span class="fc" id="L206">			.map((it) -&gt; Version.parse(it.getId()))</span>
+<span class="fc" id="L207">			.collect(Collectors.toList());</span>
+<span class="fc" id="L208">		VersionParser parser = new VersionParser(bootVersions);</span>
+<span class="fc" id="L209">		this.dependencies.updateCompatibilityRange(parser);</span>
+<span class="fc" id="L210">		this.configuration.getEnv().updateCompatibilityRange(parser);</span>
+<span class="fc" id="L211">	}</span>
+
+	/**
+	 * Create an URL suitable to download Spring Boot cli for the specified version and
+	 * extension.
+	 * @param extension the required extension
+	 * @return the download URL
+	 */
+	public String createCliDistributionURl(String extension) {
+<span class="nc" id="L220">		String bootVersion = defaultId(this.bootVersions);</span>
+<span class="nc" id="L221">		return this.configuration.getEnv().getArtifactRepository() + &quot;org/springframework/boot/spring-boot-cli/&quot;</span>
+				+ bootVersion + &quot;/spring-boot-cli-&quot; + bootVersion + &quot;-bin.&quot; + extension;
+	}
+
+	/**
+	 * Create a {@link BillOfMaterials} for the spring boot BOM.
+	 * @param bootVersion the Spring Boot version
+	 * @param versionProperty the property that contains the version
+	 * @return a new {@link BillOfMaterials} instance
+	 */
+	public BillOfMaterials createSpringBootBom(String bootVersion, String versionProperty) {
+<span class="nc" id="L232">		BillOfMaterials bom = BillOfMaterials.create(&quot;org.springframework.boot&quot;, &quot;spring-boot-dependencies&quot;,</span>
+				bootVersion);
+<span class="nc" id="L234">		bom.setVersionProperty(VersionProperty.of(versionProperty));</span>
+<span class="nc" id="L235">		bom.setOrder(100);</span>
+<span class="nc" id="L236">		return bom;</span>
+	}
+
+	/**
+	 * Return the defaults for the capabilities defined on this instance.
+	 * @return the default capabilities
+	 */
+	public Map&lt;String, Object&gt; defaults() {
+<span class="nc" id="L244">		Map&lt;String, Object&gt; defaults = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L245">		defaults.put(&quot;type&quot;, defaultId(this.types));</span>
+<span class="nc" id="L246">		defaults.put(&quot;bootVersion&quot;, defaultId(this.bootVersions));</span>
+<span class="nc" id="L247">		defaults.put(&quot;packaging&quot;, defaultId(this.packagings));</span>
+<span class="nc" id="L248">		defaults.put(&quot;javaVersion&quot;, defaultId(this.javaVersions));</span>
+<span class="nc" id="L249">		defaults.put(&quot;language&quot;, defaultId(this.languages));</span>
+<span class="nc" id="L250">		defaults.put(&quot;groupId&quot;, this.groupId.getContent());</span>
+<span class="nc" id="L251">		defaults.put(&quot;artifactId&quot;, this.artifactId.getContent());</span>
+<span class="nc" id="L252">		defaults.put(&quot;version&quot;, this.version.getContent());</span>
+<span class="nc" id="L253">		defaults.put(&quot;name&quot;, this.name.getContent());</span>
+<span class="nc" id="L254">		defaults.put(&quot;description&quot;, this.description.getContent());</span>
+<span class="nc" id="L255">		defaults.put(&quot;packageName&quot;, this.packageName.getContent());</span>
+<span class="nc" id="L256">		return defaults;</span>
+	}
+
+	private static String defaultId(Defaultable&lt;? extends DefaultMetadataElement&gt; element) {
+<span class="nc" id="L260">		DefaultMetadataElement defaultValue = element.getDefault();</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">		return (defaultValue != null) ? defaultValue.getId() : null;</span>
+	}
+
+	private static class ArtifactIdCapability extends TextCapability {
+
+		private final TextCapability nameCapability;
+
+		ArtifactIdCapability(TextCapability nameCapability) {
+<span class="fc" id="L269">			super(&quot;artifactId&quot;, &quot;Artifact&quot;, &quot;project coordinates (infer archive name)&quot;);</span>
+<span class="fc" id="L270">			this.nameCapability = nameCapability;</span>
+<span class="fc" id="L271">		}</span>
+
+		@Override
+		public String getContent() {
+<span class="fc" id="L275">			String value = super.getContent();</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">			return (value != null) ? value : this.nameCapability.getContent();</span>
+		}
+
+	}
+
+	private static class PackageCapability extends TextCapability {
+
+		private final TextCapability groupId;
+
+		private final TextCapability artifactId;
+
+		PackageCapability(TextCapability groupId, TextCapability artifactId) {
+<span class="fc" id="L288">			super(&quot;packageName&quot;, &quot;Package Name&quot;, &quot;root package&quot;);</span>
+<span class="fc" id="L289">			this.groupId = groupId;</span>
+<span class="fc" id="L290">			this.artifactId = artifactId;</span>
+<span class="fc" id="L291">		}</span>
+
+		@Override
+		public String getContent() {
+<span class="fc" id="L295">			String value = super.getContent();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">			if (value != null) {</span>
+<span class="fc" id="L297">				return value;</span>
+			}
+<span class="pc bpc" id="L299" title="1 of 4 branches missed.">			else if (this.groupId.getContent() != null &amp;&amp; this.artifactId.getContent() != null) {</span>
+<span class="fc" id="L300">				return InitializrConfiguration</span>
+<span class="fc" id="L301">					.cleanPackageName(this.groupId.getContent() + &quot;.&quot; + this.artifactId.getContent());</span>
+			}
+<span class="fc" id="L303">			return null;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
