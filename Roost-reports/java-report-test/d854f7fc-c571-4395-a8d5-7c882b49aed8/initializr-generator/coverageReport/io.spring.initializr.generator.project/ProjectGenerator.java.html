@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.project</a> &gt; <span class="el_source">ProjectGenerator.java</span></div><h1>ProjectGenerator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.project;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.support.SpringFactoriesLoader;
+import org.springframework.util.ClassUtils;
+
+/**
+ * Main entry point for project generation that processes a {@link ProjectDescription} by
+ * creating a dedicated {@link ProjectGenerationContext} with all available
+ * {@link ProjectGenerationConfiguration} classes. Once the context has been started for a
+ * particular {@link ProjectDescription}, a {@link ProjectAssetGenerator} can query it and
+ * generate an appropriate asset (for instance, a project structure on disk).
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ * @author Simon Zambrovski
+ * @author Moritz Halbritter
+ */
+public class ProjectGenerator {
+
+	private final Consumer&lt;ProjectGenerationContext&gt; contextConsumer;
+
+	private final Supplier&lt;? extends ProjectGenerationContext&gt; contextFactory;
+
+	/**
+	 * Create an instance with a customizer for the project generator application context
+	 * and a factory for the {@link ProjectGenerationContext}.
+	 * @param contextConsumer a consumer of the project generation context after
+	 * contributors and the {@link ProjectDescription} have been registered but before it
+	 * is refreshed
+	 * @param contextFactory the factory to use to create {@link ProjectGenerationContext}
+	 * instances
+	 */
+	public ProjectGenerator(Consumer&lt;ProjectGenerationContext&gt; contextConsumer,
+<span class="fc" id="L57">			Supplier&lt;? extends ProjectGenerationContext&gt; contextFactory) {</span>
+<span class="fc" id="L58">		this.contextConsumer = contextConsumer;</span>
+<span class="fc" id="L59">		this.contextFactory = contextFactory;</span>
+<span class="fc" id="L60">	}</span>
+
+	/**
+	 * Create an instance with a customizer for the {@link ProjectGenerationContext} and a
+	 * default factory for the {@link ProjectGenerationContext} that disables bean
+	 * definition overriding.
+	 * @param contextConsumer a consumer of the project generation context after
+	 * contributors and the {@link ProjectDescription} have been registered but before it
+	 * is refreshed
+	 * @see GenericApplicationContext#setAllowBeanDefinitionOverriding(boolean)
+	 */
+	public ProjectGenerator(Consumer&lt;ProjectGenerationContext&gt; contextConsumer) {
+<span class="fc" id="L72">		this(contextConsumer, defaultContextFactory());</span>
+<span class="fc" id="L73">	}</span>
+
+	private static Supplier&lt;ProjectGenerationContext&gt; defaultContextFactory() {
+<span class="fc" id="L76">		return () -&gt; {</span>
+<span class="fc" id="L77">			ProjectGenerationContext context = new ProjectGenerationContext();</span>
+<span class="fc" id="L78">			context.setAllowBeanDefinitionOverriding(false);</span>
+<span class="fc" id="L79">			return context;</span>
+		};
+	}
+
+	/**
+	 * Generate project assets using the specified {@link ProjectAssetGenerator} for the
+	 * specified {@link ProjectDescription}.
+	 * &lt;p&gt;
+	 * Create a dedicated {@link ProjectGenerationContext} using the supplied
+	 * {@link #ProjectGenerator(Consumer, Supplier) contextFactory} and then apply the
+	 * following:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Register a {@link ProjectDescription} bean based on the given
+	 * {@code description} post-processed by available
+	 * {@link ProjectDescriptionCustomizer} beans.&lt;/li&gt;
+	 * &lt;li&gt;Process all registered {@link ProjectGenerationConfiguration} classes.&lt;/li&gt;
+	 * &lt;li&gt;Apply the {@link #ProjectGenerator(Consumer, Supplier) contextConsumer} to
+	 * further customize the context before it is refreshed.&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * @param description the description of the project to generate
+	 * @param projectAssetGenerator the {@link ProjectAssetGenerator} to invoke
+	 * @param &lt;T&gt; the type that gathers the project assets
+	 * @return the generated content
+	 * @throws ProjectGenerationException if an error occurs while generating the project
+	 */
+	public &lt;T&gt; T generate(ProjectDescription description, ProjectAssetGenerator&lt;T&gt; projectAssetGenerator)
+			throws ProjectGenerationException {
+<span class="fc" id="L106">		try (ProjectGenerationContext context = this.contextFactory.get()) {</span>
+<span class="fc" id="L107">			registerProjectDescription(context, description);</span>
+<span class="fc" id="L108">			registerProjectContributors(context, description);</span>
+<span class="fc" id="L109">			this.contextConsumer.accept(context);</span>
+<span class="fc" id="L110">			context.refresh();</span>
+			try {
+<span class="fc" id="L112">				return projectAssetGenerator.generate(context);</span>
+			}
+<span class="fc" id="L114">			catch (IOException ex) {</span>
+<span class="fc" id="L115">				throw new ProjectGenerationException(&quot;Failed to generate project&quot;, ex);</span>
+			}
+		}
+	}
+
+	/**
+	 * Return the {@link ProjectGenerationConfiguration} class names that should be
+	 * considered. By default, this method will load candidates using
+	 * {@link SpringFactoriesLoader} with {@link ProjectGenerationConfiguration} and
+	 * exclude those which are not matched by the
+	 * {@link ProjectGenerationConfigurationTypeFilter}, also loaded by
+	 * {@link SpringFactoriesLoader}.
+	 * @param description the description of the project to generate
+	 * @return a list of candidate configurations
+	 */
+
+	protected List&lt;String&gt; getCandidateProjectGenerationConfigurations(ProjectDescription description) {
+<span class="fc" id="L132">		List&lt;String&gt; candidates = getProjectGenerationConfigurationFactoryNames();</span>
+<span class="fc" id="L133">		ProjectGenerationConfigurationTypeFilter filter = getProjectGenerationConfigurationExclusionFilter();</span>
+<span class="fc" id="L134">		return candidates.stream().filter((candidate) -&gt; {</span>
+<span class="fc" id="L135">			Class&lt;?&gt; type = resolveClass(candidate);</span>
+<span class="pc bpc" id="L136" title="1 of 4 branches missed.">			return type != null &amp;&amp; filter.test(type);</span>
+<span class="fc" id="L137">		}).toList();</span>
+	}
+
+	private Class&lt;?&gt; resolveClass(String candidate) {
+		try {
+<span class="fc" id="L142">			return ClassUtils.forName(candidate, getClass().getClassLoader());</span>
+		}
+<span class="nc" id="L144">		catch (ClassNotFoundException ex) {</span>
+<span class="nc" id="L145">			return null;</span>
+		}
+	}
+
+	@SuppressWarnings(&quot;deprecation&quot;)
+	List&lt;String&gt; getProjectGenerationConfigurationFactoryNames() {
+<span class="fc" id="L151">		return SpringFactoriesLoader.loadFactoryNames(ProjectGenerationConfiguration.class,</span>
+<span class="fc" id="L152">				getClass().getClassLoader());</span>
+	}
+
+	ProjectGenerationConfigurationTypeFilter getProjectGenerationConfigurationExclusionFilter() {
+<span class="fc" id="L156">		List&lt;ProjectGenerationConfigurationTypeFilter&gt; filters = SpringFactoriesLoader</span>
+<span class="fc" id="L157">			.loadFactories(ProjectGenerationConfigurationTypeFilter.class, getClass().getClassLoader());</span>
+<span class="fc" id="L158">		return ProjectGenerationConfigurationTypeFilter.allMatch(filters);</span>
+	}
+
+	private void registerProjectDescription(ProjectGenerationContext context, ProjectDescription description) {
+<span class="fc" id="L162">		context.registerBean(ProjectDescription.class, resolve(description, context));</span>
+<span class="fc" id="L163">	}</span>
+
+	private void registerProjectContributors(ProjectGenerationContext context, ProjectDescription description) {
+<span class="fc" id="L166">		getCandidateProjectGenerationConfigurations(description).forEach((configurationClassName) -&gt; {</span>
+<span class="fc" id="L167">			GenericBeanDefinition beanDefinition = new GenericBeanDefinition();</span>
+<span class="fc" id="L168">			beanDefinition.setBeanClassName(configurationClassName);</span>
+<span class="fc" id="L169">			context.registerBeanDefinition(configurationClassName, beanDefinition);</span>
+<span class="fc" id="L170">		});</span>
+<span class="fc" id="L171">	}</span>
+
+	private Supplier&lt;ProjectDescription&gt; resolve(ProjectDescription description, ProjectGenerationContext context) {
+<span class="fc" id="L174">		return () -&gt; {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			if (description instanceof MutableProjectDescription mutableDescription) {</span>
+<span class="fc" id="L176">				ProjectDescriptionDiffFactory diffFactory = context.getBeanProvider(ProjectDescriptionDiffFactory.class)</span>
+<span class="fc" id="L177">					.getIfAvailable(DefaultProjectDescriptionDiffFactory::new);</span>
+				// Create the diff here so that it takes a copy of the description
+				// immediately
+<span class="fc" id="L180">				ProjectDescriptionDiff diff = diffFactory.create(mutableDescription);</span>
+<span class="fc" id="L181">				context.registerBean(ProjectDescriptionDiff.class, () -&gt; diff);</span>
+<span class="fc" id="L182">				context.getBeanProvider(ProjectDescriptionCustomizer.class)</span>
+<span class="fc" id="L183">					.orderedStream()</span>
+<span class="fc" id="L184">					.forEach((customizer) -&gt; customizer.customize(mutableDescription));</span>
+			}
+<span class="fc" id="L186">			return description;</span>
+		};
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

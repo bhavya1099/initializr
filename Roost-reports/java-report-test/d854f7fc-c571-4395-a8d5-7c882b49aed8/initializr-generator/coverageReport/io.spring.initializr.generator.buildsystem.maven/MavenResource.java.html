@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenResource.java</span></div><h1>MavenResource.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * A resource of a {@link MavenBuild}.
+ *
+ * @author Stephane Nicoll
+ */
+public class MavenResource {
+
+	private final String directory;
+
+	private final String targetPath;
+
+	private final boolean filtering;
+
+	private final List&lt;String&gt; includes;
+
+	private final List&lt;String&gt; excludes;
+
+	/**
+	 * Creates a new instance.
+	 * @param builder the builder to use
+	 */
+<span class="fc" id="L44">	public MavenResource(Builder builder) {</span>
+<span class="fc" id="L45">		this.directory = builder.directory;</span>
+<span class="fc" id="L46">		this.targetPath = builder.targetPath;</span>
+<span class="fc" id="L47">		this.filtering = builder.filtering;</span>
+<span class="fc" id="L48">		this.includes = builder.includes;</span>
+<span class="fc" id="L49">		this.excludes = builder.excludes;</span>
+<span class="fc" id="L50">	}</span>
+
+	/**
+	 * Return the directory where resources are to be found. Can use regular maven token
+	 * such as {@code ${basedir}/src/main}.
+	 * @return the resources directory
+	 */
+	public String getDirectory() {
+<span class="fc" id="L58">		return this.directory;</span>
+	}
+
+	/**
+	 * Return the directory structure to place the set of resources from a build. Return
+	 * {@code null} by default which represents the root directory.
+	 * @return the target path or {@code null}
+	 */
+	public String getTargetPath() {
+<span class="fc" id="L67">		return this.targetPath;</span>
+	}
+
+	/**
+	 * Return whether filtering is enabled when copying resources.
+	 * @return {@code true} if filtering is enabled
+	 */
+	public boolean isFiltering() {
+<span class="fc" id="L75">		return this.filtering;</span>
+	}
+
+	/**
+	 * Return files patterns which specify the files to include as resources under that
+	 * specified directory. Can use {@code *} for all.
+	 * @return the include patterns
+	 */
+	public List&lt;String&gt; getIncludes() {
+<span class="fc" id="L84">		return this.includes;</span>
+	}
+
+	/**
+	 * Return files patterns which specify the files to ignore as resources under that
+	 * specified directory. In conflicts between {@code include} and {@code exclude},
+	 * {@code exclude} wins.
+	 * @return the exclude patterns
+	 */
+	public List&lt;String&gt; getExcludes() {
+<span class="fc" id="L94">		return this.excludes;</span>
+	}
+
+	/**
+	 * Builder for a resource.
+	 */
+	public static class Builder {
+
+		private final String directory;
+
+		private String targetPath;
+
+		private boolean filtering;
+
+<span class="fc" id="L108">		private List&lt;String&gt; includes = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L110">		private List&lt;String&gt; excludes = new ArrayList&lt;&gt;();</span>
+
+		/**
+		 * Creates a new instance.
+		 * @param directory the directory
+		 */
+<span class="fc" id="L116">		public Builder(String directory) {</span>
+<span class="fc" id="L117">			this.directory = directory;</span>
+<span class="fc" id="L118">		}</span>
+
+		/**
+		 * Set the directory structure to place the set of resources from a build or
+		 * {@code null} to use the root directory.
+		 * @param targetPath the target path
+		 * @return this for method chaining
+		 */
+		public Builder targetPath(String targetPath) {
+<span class="fc" id="L127">			this.targetPath = targetPath;</span>
+<span class="fc" id="L128">			return this;</span>
+		}
+
+		/**
+		 * Specify if filtering is enabled when copying resources.
+		 * @param filtering {@code true} to enable resource filtering
+		 * @return this for method chaining
+		 */
+		public Builder filtering(Boolean filtering) {
+<span class="fc" id="L137">			this.filtering = filtering;</span>
+<span class="fc" id="L138">			return this;</span>
+		}
+
+		/**
+		 * Set the files patterns to use to include files. In conflicts between
+		 * {@code include} and {@code exclude}, {@code exclude} wins.
+		 * @param includes the include patterns
+		 * @return this for method chaining
+		 */
+		public Builder includes(String... includes) {
+<span class="fc" id="L148">			this.includes = Arrays.asList(includes);</span>
+<span class="fc" id="L149">			return this;</span>
+		}
+
+		/**
+		 * Set the files patterns to use to exclude files. In conflicts between
+		 * {@code include} and {@code exclude}, {@code exclude} wins.
+		 * @param excludes the exclude patterns
+		 * @return this for method chaining
+		 */
+		public Builder excludes(String... excludes) {
+<span class="fc" id="L159">			this.excludes = Arrays.asList(excludes);</span>
+<span class="fc" id="L160">			return this;</span>
+		}
+
+		/**
+		 * Build a {@link MavenResource} with the current state of this builder.
+		 * @return a {@link MavenResource}
+		 */
+		public MavenResource build() {
+<span class="fc" id="L168">			return new MavenResource(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

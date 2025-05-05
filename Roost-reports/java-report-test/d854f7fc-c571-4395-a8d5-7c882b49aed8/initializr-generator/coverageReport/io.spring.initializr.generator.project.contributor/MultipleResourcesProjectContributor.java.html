@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultipleResourcesProjectContributor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.project.contributor</a> &gt; <span class="el_source">MultipleResourcesProjectContributor.java</span></div><h1>MultipleResourcesProjectContributor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.project.contributor;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Predicate;
+
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
+
+/**
+ * A {@link ProjectContributor} that contributes all of the resources found beneath a root
+ * location to a generated project.
+ *
+ * @author Andy Wilkinson
+ * @see PathMatchingResourcePatternResolver
+ */
+public class MultipleResourcesProjectContributor implements ProjectContributor {
+
+<span class="fc" id="L39">	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();</span>
+
+	private final String rootResource;
+
+	private final Predicate&lt;String&gt; executable;
+
+	/**
+	 * Create a new instance with the {@code rootResource} to use to locate resources to
+	 * copy to the project structure.
+	 * @param rootResource the root resource path
+	 * @see PathMatchingResourcePatternResolver#getResources(String)
+	 */
+	public MultipleResourcesProjectContributor(String rootResource) {
+<span class="fc" id="L52">		this(rootResource, (filename) -&gt; false);</span>
+<span class="fc" id="L53">	}</span>
+
+<span class="fc" id="L55">	public MultipleResourcesProjectContributor(String rootResource, Predicate&lt;String&gt; executable) {</span>
+<span class="fc" id="L56">		this.rootResource = StringUtils.trimTrailingCharacter(rootResource, '/');</span>
+<span class="fc" id="L57">		this.executable = executable;</span>
+<span class="fc" id="L58">	}</span>
+
+	@Override
+	public void contribute(Path projectRoot) throws IOException {
+<span class="fc" id="L62">		Resource root = this.resolver.getResource(this.rootResource);</span>
+<span class="fc" id="L63">		Resource[] resources = this.resolver.getResources(this.rootResource + &quot;/**&quot;);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (Resource resource : resources) {</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (resource.isReadable()) {</span>
+<span class="fc" id="L66">				String filename = extractFileName(root.getURI(), resource.getURI());</span>
+<span class="fc" id="L67">				Path output = projectRoot.resolve(filename);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				if (!Files.exists(output)) {</span>
+<span class="fc" id="L69">					Files.createDirectories(output.getParent());</span>
+<span class="fc" id="L70">					Files.createFile(output);</span>
+				}
+<span class="fc" id="L72">				FileCopyUtils.copy(resource.getInputStream(), Files.newOutputStream(output));</span>
+				// TODO Set executable using NIO
+<span class="fc" id="L74">				output.toFile().setExecutable(this.executable.test(filename));</span>
+			}
+		}
+<span class="fc" id="L77">	}</span>
+
+	private String extractFileName(URI root, URI resource) {
+<span class="fc" id="L80">		String candidate = resource.toString().substring(root.toString().length());</span>
+<span class="fc" id="L81">		return StringUtils.trimLeadingCharacter(candidate, '/');</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

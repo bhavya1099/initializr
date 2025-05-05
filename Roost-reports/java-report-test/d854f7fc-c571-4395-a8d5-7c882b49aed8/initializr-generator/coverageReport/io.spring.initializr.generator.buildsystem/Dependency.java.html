@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Dependency.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem</a> &gt; <span class="el_source">Dependency.java</span></div><h1>Dependency.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem;
+
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+
+import io.spring.initializr.generator.version.VersionReference;
+
+import org.springframework.util.Assert;
+
+/**
+ * A dependency to be declared in a project's build configuration.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ */
+public class Dependency {
+
+	private final String groupId;
+
+	private final String artifactId;
+
+	private final VersionReference version;
+
+	private final DependencyScope scope;
+
+	private final String classifier;
+
+	private final String type;
+
+	private final Set&lt;Exclusion&gt; exclusions;
+
+<span class="fc" id="L50">	protected Dependency(Builder&lt;?&gt; builder) {</span>
+<span class="fc" id="L51">		this.groupId = builder.groupId;</span>
+<span class="fc" id="L52">		this.artifactId = builder.artifactId;</span>
+<span class="fc" id="L53">		this.version = builder.version;</span>
+<span class="fc" id="L54">		this.scope = builder.scope;</span>
+<span class="fc" id="L55">		this.classifier = builder.classifier;</span>
+<span class="fc" id="L56">		this.type = builder.type;</span>
+<span class="fc" id="L57">		this.exclusions = new LinkedHashSet&lt;&gt;(builder.exclusions);</span>
+<span class="fc" id="L58">	}</span>
+
+	/**
+	 * Initialize a new dependency {@link Builder} with the specified coordinates.
+	 * @param groupId the group ID of the dependency
+	 * @param artifactId the artifact ID of the dependency
+	 * @return a new builder
+	 */
+	public static Builder&lt;?&gt; withCoordinates(String groupId, String artifactId) {
+<span class="fc" id="L67">		return new Builder&lt;&gt;(groupId, artifactId);</span>
+	}
+
+	/**
+	 * Initialize a new dependency {@link Builder} with the state of the specified
+	 * {@link Dependency}.
+	 * @param dependency the dependency to use to initialize the builder
+	 * @return a new builder initialized with the same state as the {@code dependency}
+	 */
+	public static Builder&lt;?&gt; from(Dependency dependency) {
+<span class="nc" id="L77">		return new Builder&lt;&gt;(dependency.getGroupId(), dependency.getArtifactId()).initialize(dependency);</span>
+	}
+
+	/**
+	 * The group ID of the dependency.
+	 * @return the group ID
+	 */
+	public String getGroupId() {
+<span class="fc" id="L85">		return this.groupId;</span>
+	}
+
+	/**
+	 * The artifact ID of the dependency.
+	 * @return the artifact ID
+	 */
+	public String getArtifactId() {
+<span class="fc" id="L93">		return this.artifactId;</span>
+	}
+
+	/**
+	 * The {@link VersionReference} of the dependency. May be {@code null} for a
+	 * dependency whose version is expected to be provided by dependency management.
+	 * @return the version reference or {@code null}
+	 */
+	public VersionReference getVersion() {
+<span class="fc" id="L102">		return this.version;</span>
+	}
+
+	/**
+	 * The {@link DependencyScope scope} of the dependency.
+	 * @return the scope
+	 */
+	public DependencyScope getScope() {
+<span class="fc" id="L110">		return this.scope;</span>
+	}
+
+	/**
+	 * The classifier of this dependency. Can be {@code null}
+	 * @return the classifier or {@code null}
+	 */
+	public String getClassifier() {
+<span class="fc" id="L118">		return this.classifier;</span>
+	}
+
+	/**
+	 * The type of the dependency. Can be {@code null} to indicate that the default type
+	 * should be used (i.e. {@code jar}).
+	 * @return the type or {@code null}
+	 */
+	public String getType() {
+<span class="fc" id="L127">		return this.type;</span>
+	}
+
+	/**
+	 * The {@link Exclusion exclusions} to apply.
+	 * @return the exclusions to apply
+	 */
+	public Set&lt;Exclusion&gt; getExclusions() {
+<span class="fc" id="L135">		return this.exclusions;</span>
+	}
+
+	/**
+	 * Builder for a dependency.
+	 *
+	 * @param &lt;B&gt; builder type
+	 * @see Dependency#withCoordinates(String, String)
+	 */
+	public static class Builder&lt;B extends Builder&lt;B&gt;&gt; {
+
+		private String groupId;
+
+		private String artifactId;
+
+		private VersionReference version;
+
+		private DependencyScope scope;
+
+		private String type;
+
+		private String classifier;
+
+<span class="fc" id="L158">		private Set&lt;Exclusion&gt; exclusions = new LinkedHashSet&lt;&gt;();</span>
+
+<span class="fc" id="L160">		protected Builder(String groupId, String artifactId) {</span>
+<span class="fc" id="L161">			this.groupId = groupId;</span>
+<span class="fc" id="L162">			this.artifactId = artifactId;</span>
+<span class="fc" id="L163">		}</span>
+
+		public B groupId(String groupId) {
+<span class="nc" id="L166">			this.groupId = groupId;</span>
+<span class="nc" id="L167">			return self();</span>
+		}
+
+		public B artifactId(String artifactId) {
+<span class="nc" id="L171">			this.artifactId = artifactId;</span>
+<span class="nc" id="L172">			return self();</span>
+		}
+
+		public B version(VersionReference version) {
+<span class="fc" id="L176">			this.version = version;</span>
+<span class="fc" id="L177">			return self();</span>
+		}
+
+		public B scope(DependencyScope scope) {
+<span class="fc" id="L181">			this.scope = scope;</span>
+<span class="fc" id="L182">			return self();</span>
+		}
+
+		public B classifier(String classifier) {
+<span class="fc" id="L186">			this.classifier = classifier;</span>
+<span class="fc" id="L187">			return self();</span>
+		}
+
+		public B type(String type) {
+<span class="fc" id="L191">			this.type = type;</span>
+<span class="fc" id="L192">			return self();</span>
+		}
+
+		public B exclusions(Exclusion... exclusions) {
+<span class="fc" id="L196">			this.exclusions = new LinkedHashSet&lt;&gt;(Arrays.asList(exclusions));</span>
+<span class="fc" id="L197">			return self();</span>
+		}
+
+		public B exclusions(Set&lt;Exclusion&gt; exclusions) {
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">			this.exclusions = (exclusions != null) ? new LinkedHashSet&lt;&gt;(exclusions) : new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L202">			return self();</span>
+		}
+
+		@SuppressWarnings(&quot;unchecked&quot;)
+		protected B self() {
+<span class="fc" id="L207">			return (B) this;</span>
+		}
+
+		protected B initialize(Dependency dependency) {
+<span class="fc" id="L211">			version(dependency.getVersion()).scope(dependency.getScope())</span>
+<span class="fc" id="L212">				.classifier(dependency.getClassifier())</span>
+<span class="fc" id="L213">				.type(dependency.getType())</span>
+<span class="fc" id="L214">				.exclusions(dependency.getExclusions());</span>
+<span class="fc" id="L215">			return self();</span>
+		}
+
+		/**
+		 * Build a {@link Dependency} with the current state of this builder.
+		 * @return a {@link Dependency}
+		 */
+		public Dependency build() {
+<span class="fc" id="L223">			return new Dependency(this);</span>
+		}
+
+	}
+
+	/**
+	 * Define the reference to a transitive dependency to exclude.
+	 */
+	public static final class Exclusion {
+
+		private final String groupId;
+
+		private final String artifactId;
+
+<span class="fc" id="L237">		public Exclusion(String groupId, String artifactId) {</span>
+<span class="fc" id="L238">			Assert.hasText(groupId, &quot;GroupId must not be null&quot;);</span>
+<span class="fc" id="L239">			Assert.hasText(groupId, &quot;ArtifactId must not be null&quot;);</span>
+<span class="fc" id="L240">			this.groupId = groupId;</span>
+<span class="fc" id="L241">			this.artifactId = artifactId;</span>
+<span class="fc" id="L242">		}</span>
+
+		public String getGroupId() {
+<span class="fc" id="L245">			return this.groupId;</span>
+		}
+
+		public String getArtifactId() {
+<span class="fc" id="L249">			return this.artifactId;</span>
+		}
+
+		@Override
+		public boolean equals(Object o) {
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">			if (this == o) {</span>
+<span class="nc" id="L255">				return true;</span>
+			}
+<span class="pc bpc" id="L257" title="2 of 4 branches missed.">			if (o == null || getClass() != o.getClass()) {</span>
+<span class="nc" id="L258">				return false;</span>
+			}
+<span class="fc" id="L260">			Exclusion exclusion = (Exclusion) o;</span>
+<span class="pc bpc" id="L261" title="2 of 4 branches missed.">			return this.groupId.equals(exclusion.groupId) &amp;&amp; this.artifactId.equals(exclusion.artifactId);</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="fc" id="L266">			return Objects.hash(this.groupId, this.artifactId);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

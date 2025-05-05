@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClassName.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language</a> &gt; <span class="el_source">ClassName.java</span></div><h1>ClassName.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language;
+
+import java.util.List;
+import java.util.Objects;
+
+import javax.lang.model.SourceVersion;
+
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
+
+/**
+ * Type reference abstraction to refer to a {@link Class} that is not available on the
+ * classpath.
+ *
+ * @author Stephane Nicoll
+ */
+public final class ClassName {
+
+<span class="fc" id="L35">	private static final List&lt;String&gt; PRIMITIVE_NAMES = List.of(&quot;boolean&quot;, &quot;byte&quot;, &quot;short&quot;, &quot;int&quot;, &quot;long&quot;, &quot;char&quot;,</span>
+			&quot;float&quot;, &quot;double&quot;, &quot;void&quot;);
+
+	private final String packageName;
+
+	private final String simpleName;
+
+	private final ClassName enclosingType;
+
+	private String canonicalName;
+
+<span class="fc" id="L46">	private ClassName(String packageName, String simpleName, ClassName enclosingType) {</span>
+<span class="fc" id="L47">		this.packageName = packageName;</span>
+<span class="fc" id="L48">		this.simpleName = simpleName;</span>
+<span class="fc" id="L49">		this.enclosingType = enclosingType;</span>
+<span class="fc" id="L50">	}</span>
+
+	/**
+	 * Create a {@link ClassName} based on the specified fully qualified name. The format
+	 * of the class name must follow {@linkplain Class#getName()}, in particular inner
+	 * classes should be separated by a {@code $}.
+	 * @param fqName the fully qualified name of the class
+	 * @return a class name
+	 */
+	public static ClassName of(String fqName) {
+<span class="fc" id="L60">		Assert.notNull(fqName, &quot;'className' must not be null&quot;);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (!isValidClassName(fqName)) {</span>
+<span class="fc" id="L62">			throw new IllegalStateException(&quot;Invalid class name '&quot; + fqName + &quot;'&quot;);</span>
+		}
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (!fqName.contains(&quot;$&quot;)) {</span>
+<span class="fc" id="L65">			return createClassName(fqName);</span>
+		}
+<span class="fc" id="L67">		String[] elements = fqName.split(&quot;(?&lt;!\\$)\\$(?!\\$)&quot;);</span>
+<span class="fc" id="L68">		ClassName className = createClassName(elements[0]);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		for (int i = 1; i &lt; elements.length; i++) {</span>
+<span class="fc" id="L70">			className = new ClassName(className.getPackageName(), elements[i], className);</span>
+		}
+<span class="fc" id="L72">		return className;</span>
+	}
+
+	/**
+	 * Create a {@link ClassName} based on the specified {@link Class}.
+	 * @param type the class to wrap
+	 * @return a class name
+	 */
+	public static ClassName of(Class&lt;?&gt; type) {
+<span class="fc" id="L81">		return of(type.getName());</span>
+	}
+
+	/**
+	 * Return the fully qualified name.
+	 * @return the reflection target name
+	 */
+	public String getName() {
+<span class="fc" id="L89">		ClassName enclosingType = getEnclosingType();</span>
+<span class="fc" id="L90">		String simpleName = getSimpleName();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		return (enclosingType != null) ? (enclosingType.getName() + '$' + simpleName)</span>
+<span class="fc" id="L92">				: addPackageIfNecessary(simpleName);</span>
+	}
+
+	/**
+	 * Return the package name.
+	 * @return the package name
+	 */
+	public String getPackageName() {
+<span class="fc" id="L100">		return this.packageName;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Class#getSimpleName() simple name}.
+	 * @return the simple name
+	 */
+	public String getSimpleName() {
+<span class="fc" id="L108">		return this.simpleName;</span>
+	}
+
+	/**
+	 * Return the enclosing class name, or {@code null} if this instance does not have an
+	 * enclosing type.
+	 * @return the enclosing type, if any
+	 */
+	public ClassName getEnclosingType() {
+<span class="fc" id="L117">		return this.enclosingType;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Class#getCanonicalName() canonical name}.
+	 * @return the canonical name
+	 */
+	public String getCanonicalName() {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		if (this.canonicalName == null) {</span>
+<span class="fc" id="L126">			StringBuilder names = new StringBuilder();</span>
+<span class="fc" id="L127">			buildName(this, names);</span>
+<span class="fc" id="L128">			this.canonicalName = addPackageIfNecessary(names.toString());</span>
+		}
+<span class="fc" id="L130">		return this.canonicalName;</span>
+	}
+
+	private boolean isPrimitive() {
+<span class="fc" id="L134">		return isPrimitive(getSimpleName());</span>
+	}
+
+	private static boolean isPrimitive(String name) {
+<span class="fc" id="L138">		return PRIMITIVE_NAMES.stream().anyMatch(name::startsWith);</span>
+	}
+
+	private String addPackageIfNecessary(String part) {
+<span class="fc bfc" id="L142" title="All 6 branches covered.">		if (this.packageName.isEmpty() || this.packageName.equals(&quot;java.lang&quot;) &amp;&amp; isPrimitive()) {</span>
+<span class="fc" id="L143">			return part;</span>
+		}
+<span class="fc" id="L145">		return this.packageName + '.' + part;</span>
+	}
+
+	private static boolean isValidClassName(String className) {
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (String s : className.split(&quot;\\.&quot;, -1)) {</span>
+<span class="fc" id="L150">			String candidate = s.replace(&quot;[&quot;, &quot;&quot;).replace(&quot;]&quot;, &quot;&quot;);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			if (!SourceVersion.isIdentifier(candidate)) {</span>
+<span class="fc" id="L152">				return false;</span>
+			}
+		}
+<span class="fc" id="L155">		return true;</span>
+	}
+
+	private static ClassName createClassName(String className) {
+<span class="fc" id="L159">		int i = className.lastIndexOf('.');</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		if (i != -1) {</span>
+<span class="fc" id="L161">			return new ClassName(className.substring(0, i), className.substring(i + 1), null);</span>
+		}
+		else {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">			String packageName = (isPrimitive(className)) ? &quot;java.lang&quot; : &quot;&quot;;</span>
+<span class="fc" id="L165">			return new ClassName(packageName, className, null);</span>
+		}
+	}
+
+	private static void buildName(ClassName className, StringBuilder sb) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (className == null) {</span>
+<span class="fc" id="L171">			return;</span>
+		}
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		String typeName = (className.getEnclosingType() != null) ? &quot;.&quot; + className.getSimpleName()</span>
+<span class="fc" id="L174">				: className.getSimpleName();</span>
+<span class="fc" id="L175">		sb.insert(0, typeName);</span>
+<span class="fc" id="L176">		buildName(className.getEnclosingType(), sb);</span>
+<span class="fc" id="L177">	}</span>
+
+	@Override
+	public boolean equals(@Nullable Object other) {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (this == other) {</span>
+<span class="fc" id="L182">			return true;</span>
+		}
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		if (!(other instanceof ClassName className)) {</span>
+<span class="fc" id="L185">			return false;</span>
+		}
+<span class="fc" id="L187">		return getCanonicalName().equals(className.getCanonicalName());</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="fc" id="L192">		return Objects.hash(getCanonicalName());</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L197">		return getCanonicalName();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

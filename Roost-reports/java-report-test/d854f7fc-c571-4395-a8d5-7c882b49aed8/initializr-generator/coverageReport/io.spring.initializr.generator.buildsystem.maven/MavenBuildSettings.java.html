@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenBuildSettings.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenBuildSettings.java</span></div><h1>MavenBuildSettings.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
+
+import io.spring.initializr.generator.buildsystem.BuildSettings;
+import io.spring.initializr.generator.packaging.Packaging;
+
+/**
+ * Maven {@link BuildSettings}.
+ *
+ * @author Stephane Nicoll
+ * @author Jafer Khan Shamshad
+ */
+public class MavenBuildSettings extends BuildSettings {
+
+	private final MavenParent parent;
+
+	private final String packaging;
+
+	private final String name;
+
+	private final String description;
+
+	private final List&lt;MavenLicense&gt; licenses;
+
+	private final List&lt;MavenDeveloper&gt; developers;
+
+	private final MavenScm scm;
+
+	private final String defaultGoal;
+
+	private final String finalName;
+
+	private final String sourceDirectory;
+
+	private final String testSourceDirectory;
+
+	private final String url;
+
+	private final boolean addOverrideIfEmpty;
+
+	/**
+	 * Creates a new instance.
+	 * @param builder the builder to use
+	 */
+	protected MavenBuildSettings(Builder builder) {
+<span class="fc" id="L67">		super(builder);</span>
+<span class="fc" id="L68">		this.parent = builder.parent;</span>
+<span class="fc" id="L69">		this.packaging = builder.packaging;</span>
+<span class="fc" id="L70">		this.name = builder.name;</span>
+<span class="fc" id="L71">		this.description = builder.description;</span>
+<span class="fc" id="L72">		this.licenses = Collections.unmodifiableList(new ArrayList&lt;&gt;(builder.licenses));</span>
+<span class="fc" id="L73">		this.developers = Collections.unmodifiableList(new ArrayList&lt;&gt;(builder.developers));</span>
+<span class="fc" id="L74">		this.scm = builder.scm.build();</span>
+<span class="fc" id="L75">		this.defaultGoal = builder.defaultGoal;</span>
+<span class="fc" id="L76">		this.finalName = builder.finalName;</span>
+<span class="fc" id="L77">		this.sourceDirectory = builder.sourceDirectory;</span>
+<span class="fc" id="L78">		this.testSourceDirectory = builder.testSourceDirectory;</span>
+<span class="fc" id="L79">		this.url = builder.url;</span>
+<span class="fc" id="L80">		this.addOverrideIfEmpty = builder.addOverrideIfEmpty;</span>
+<span class="fc" id="L81">	}</span>
+
+	/**
+	 * Return the {@link MavenParent} to use or {@code null} if this project has no
+	 * parent.
+	 * @return the parent pom or {@code null}
+	 */
+	public MavenParent getParent() {
+<span class="fc" id="L89">		return this.parent;</span>
+	}
+
+	/**
+	 * Return the {@code packaging} to use or {@code null} to use the default {@code jar}
+	 * packaging.
+	 * @return the packaging to use
+	 */
+	public String getPackaging() {
+<span class="fc" id="L98">		return this.packaging;</span>
+	}
+
+	/**
+	 * Return a simple name for the project.
+	 * @return the name of the project or {@code null}
+	 */
+	public String getName() {
+<span class="fc" id="L106">		return this.name;</span>
+	}
+
+	/**
+	 * Return a human readable description of the project.
+	 * @return the description of the project or {@code null}
+	 */
+	public String getDescription() {
+<span class="fc" id="L114">		return this.description;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenLicense licenses} associated with the project.
+	 * @return the licenses of the project
+	 */
+	public List&lt;MavenLicense&gt; getLicenses() {
+<span class="fc" id="L122">		return this.licenses;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenDeveloper developers} associated with the project.
+	 * @return the developers of the project
+	 */
+	public List&lt;MavenDeveloper&gt; getDevelopers() {
+<span class="fc" id="L130">		return this.developers;</span>
+	}
+
+	/**
+	 * Return the {@linkplain MavenScm version control} section of the project.
+	 * @return the version control of the project
+	 */
+	public MavenScm getScm() {
+<span class="fc" id="L138">		return this.scm;</span>
+	}
+
+	/**
+	 * Return the default goal or phase to execute if none is given.
+	 * @return the default goal or {@code null} to use the default
+	 */
+	public String getDefaultGoal() {
+<span class="fc" id="L146">		return this.defaultGoal;</span>
+	}
+
+	/**
+	 * Return the final name of the artifact.
+	 * @return the final name or {@code null} to use the default
+	 */
+	public String getFinalName() {
+<span class="fc" id="L154">		return this.finalName;</span>
+	}
+
+	/**
+	 * Return the location of main source code. Can use Maven properties such as
+	 * {@code ${basedir}}.
+	 * @return the location of main source code or {@code null} to use the default
+	 */
+	public String getSourceDirectory() {
+<span class="fc" id="L163">		return this.sourceDirectory;</span>
+	}
+
+	/**
+	 * Return the location of test source code. Can use Maven properties such as
+	 * {@code ${basedir}}.
+	 * @return the location of test source code or {@code null} to use the default
+	 */
+	public String getTestSourceDirectory() {
+<span class="fc" id="L172">		return this.testSourceDirectory;</span>
+	}
+
+	/**
+	 * The URL to the project.
+	 * @return the url to the project
+	 */
+	public String getUrl() {
+<span class="fc" id="L180">		return this.url;</span>
+	}
+
+	/**
+	 * Whether to add overrides for empty elements so that they are not inherited from the
+	 * parent.
+	 * @return whether to add overrides for empty elements
+	 */
+	public boolean isAddOverrideIfEmpty() {
+<span class="fc" id="L189">		return this.addOverrideIfEmpty;</span>
+	}
+
+	/**
+	 * Builder for {@link BuildSettings}.
+	 */
+	public static class Builder extends BuildSettings.Builder&lt;Builder&gt; {
+
+		private MavenParent parent;
+
+		private String packaging;
+
+		private String name;
+
+		private String description;
+
+<span class="fc" id="L205">		private List&lt;MavenLicense&gt; licenses = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L207">		private List&lt;MavenDeveloper&gt; developers = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L209">		private final MavenScm.Builder scm = new MavenScm.Builder();</span>
+
+		private String defaultGoal;
+
+		private String finalName;
+
+		private String sourceDirectory;
+
+		private String testSourceDirectory;
+
+		private String url;
+
+		private boolean addOverrideIfEmpty;
+
+		/**
+		 * Creates a new instance.
+		 */
+<span class="fc" id="L226">		public Builder() {</span>
+<span class="fc" id="L227">		}</span>
+
+		/**
+		 * Set the coordinates of the project.
+		 * @param groupId the group ID of the project
+		 * @param artifactId the artifact ID of the project
+		 * @return this for method chaining
+		 */
+		public Builder coordinates(String groupId, String artifactId) {
+<span class="fc" id="L236">			return group(groupId).artifact(artifactId);</span>
+		}
+
+		/**
+		 * Set the coordinates of the parent, to be resolved against the repository.
+		 * @param groupId the groupID of the parent
+		 * @param artifactId the artifactID of the parent
+		 * @param version the version of the parent
+		 * @return this for method chaining
+		 * @see #parent(String, String, String, String)
+		 */
+		public Builder parent(String groupId, String artifactId, String version) {
+<span class="fc" id="L248">			return parent(groupId, artifactId, version, &quot;&quot;);</span>
+		}
+
+		/**
+		 * Set the coordinates of the parent and its relative path. The relative path can
+		 * be set to {@code null} to let Maven search the parent using local file search,
+		 * for instance {@code pom.xml} in the parent directory. It can also be set to an
+		 * empty string to specify that it should be resolved against the repository.
+		 * @param groupId the groupID of the parent
+		 * @param artifactId the artifactID of the parent
+		 * @param version the version of the parent
+		 * @param relativePath the relative path
+		 * @return this for method chaining
+		 */
+		public Builder parent(String groupId, String artifactId, String version, String relativePath) {
+<span class="fc" id="L263">			this.parent = new MavenParent(groupId, artifactId, version, relativePath);</span>
+<span class="fc" id="L264">			return self();</span>
+		}
+
+		/**
+		 * Set the packaging of the project.
+		 * @param packaging the packaging
+		 * @return this for method chaining
+		 * @see Packaging
+		 */
+		public Builder packaging(String packaging) {
+<span class="fc" id="L274">			this.packaging = packaging;</span>
+<span class="fc" id="L275">			return self();</span>
+		}
+
+		/**
+		 * Set the name of the project.
+		 * @param name the name of the project
+		 * @return this for method chaining
+		 */
+		public Builder name(String name) {
+<span class="fc" id="L284">			this.name = name;</span>
+<span class="fc" id="L285">			return self();</span>
+		}
+
+		/**
+		 * Set a human readable description of the project.
+		 * @param description the description of the project
+		 * @return this for method chaining
+		 */
+		public Builder description(String description) {
+<span class="fc" id="L294">			this.description = description;</span>
+<span class="fc" id="L295">			return self();</span>
+		}
+
+		/**
+		 * Set the licenses of the project.
+		 * @param licenses the licenses associated with the project
+		 * @return this for method chaining
+		 */
+		public Builder licenses(MavenLicense... licenses) {
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">			this.licenses = (licenses != null) ? Arrays.asList(licenses) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L305">			return self();</span>
+		}
+
+		/**
+		 * Set the developers of the project.
+		 * @param developers the developers associated with the project
+		 * @return this for method chaining
+		 */
+		public Builder developers(MavenDeveloper... developers) {
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">			this.developers = (developers != null) ? Arrays.asList(developers) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L315">			return self();</span>
+		}
+
+		/**
+		 * Customize the {@code scm} section using the specified consumer.
+		 * @param scm a consumer of the current version control section
+		 * @return this for method chaining
+		 */
+		public Builder scm(Consumer&lt;MavenScm.Builder&gt; scm) {
+<span class="fc" id="L324">			scm.accept(this.scm);</span>
+<span class="fc" id="L325">			return self();</span>
+		}
+
+		/**
+		 * Set the name of the bundled project when it is finally built.
+		 * @param finalName the final name of the artifact
+		 * @return this for method chaining
+		 */
+		public Builder finalName(String finalName) {
+<span class="fc" id="L334">			this.finalName = finalName;</span>
+<span class="fc" id="L335">			return self();</span>
+		}
+
+		/**
+		 * Set the default goal or phase to execute if none is given.
+		 * @param defaultGoal the default goal or {@code null} to use the default
+		 * @return this for method chaining
+		 */
+		public Builder defaultGoal(String defaultGoal) {
+<span class="fc" id="L344">			this.defaultGoal = defaultGoal;</span>
+<span class="fc" id="L345">			return self();</span>
+		}
+
+		/**
+		 * Set the location of main source code. Can use Maven properties such as
+		 * {@code ${basedir}}.
+		 * @param sourceDirectory the location of main source code or {@code null} to use
+		 * the default
+		 * @return this for method chaining
+		 */
+		public Builder sourceDirectory(String sourceDirectory) {
+<span class="fc" id="L356">			this.sourceDirectory = sourceDirectory;</span>
+<span class="fc" id="L357">			return self();</span>
+		}
+
+		/**
+		 * Set the location of test source code. Can use Maven properties such as
+		 * {@code ${basedir}}.
+		 * @param testSourceDirectory the location of test source code or {@code null} to
+		 * use the default
+		 * @return this for method chaining
+		 */
+		public Builder testSourceDirectory(String testSourceDirectory) {
+<span class="fc" id="L368">			this.testSourceDirectory = testSourceDirectory;</span>
+<span class="fc" id="L369">			return self();</span>
+		}
+
+		/**
+		 * Set the url of the project.
+		 * @param url the url of the project
+		 * @return this for method chaining
+		 */
+		public Builder url(String url) {
+<span class="nc" id="L378">			this.url = url;</span>
+<span class="nc" id="L379">			return self();</span>
+		}
+
+		/**
+		 * Whether to add overrides for empty elements so that they are not inherited from
+		 * the parent.
+		 * @param addOverrideIfEmpty whether to add overrides for empty elements
+		 * @return this for method chaining
+		 */
+		public Builder addOverrideIfEmpty(boolean addOverrideIfEmpty) {
+<span class="nc" id="L389">			this.addOverrideIfEmpty = addOverrideIfEmpty;</span>
+<span class="nc" id="L390">			return self();</span>
+		}
+
+		@Override
+		public MavenBuildSettings build() {
+<span class="fc" id="L395">			return new MavenBuildSettings(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

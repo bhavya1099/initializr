@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MutableProjectDescription.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.project</a> &gt; <span class="el_source">MutableProjectDescription.java</span></div><h1>MutableProjectDescription.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.project;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import io.spring.initializr.generator.buildsystem.BuildSystem;
+import io.spring.initializr.generator.buildsystem.Dependency;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.packaging.Packaging;
+import io.spring.initializr.generator.version.Version;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * A mutable implementation of {@link ProjectDescription}.
+ *
+ * @author Andy Wilkinson
+ */
+public class MutableProjectDescription implements ProjectDescription {
+
+	private Version platformVersion;
+
+	private BuildSystem buildSystem;
+
+	private Packaging packaging;
+
+	private Language language;
+
+<span class="fc" id="L46">	private final Map&lt;String, Dependency&gt; requestedDependencies = new LinkedHashMap&lt;&gt;();</span>
+
+	private String groupId;
+
+	private String artifactId;
+
+	private String version;
+
+	private String name;
+
+	private String description;
+
+	private String applicationName;
+
+	private String packageName;
+
+	private String baseDirectory;
+
+	/**
+	 * Creates a new instance.
+	 */
+<span class="fc" id="L67">	public MutableProjectDescription() {</span>
+<span class="fc" id="L68">	}</span>
+
+	/**
+	 * Create a new instance with the state of the specified {@code source}.
+	 * @param source the source description to initialize this instance with
+	 */
+<span class="fc" id="L74">	protected MutableProjectDescription(MutableProjectDescription source) {</span>
+<span class="fc" id="L75">		this.platformVersion = source.getPlatformVersion();</span>
+<span class="fc" id="L76">		this.buildSystem = source.getBuildSystem();</span>
+<span class="fc" id="L77">		this.packaging = source.getPackaging();</span>
+<span class="fc" id="L78">		this.language = source.getLanguage();</span>
+<span class="fc" id="L79">		this.requestedDependencies.putAll(source.getRequestedDependencies());</span>
+<span class="fc" id="L80">		this.groupId = source.getGroupId();</span>
+<span class="fc" id="L81">		this.artifactId = source.getArtifactId();</span>
+<span class="fc" id="L82">		this.version = source.getVersion();</span>
+<span class="fc" id="L83">		this.name = source.getName();</span>
+<span class="fc" id="L84">		this.description = source.getDescription();</span>
+<span class="fc" id="L85">		this.applicationName = source.getApplicationName();</span>
+<span class="fc" id="L86">		this.packageName = source.getPackageName();</span>
+<span class="fc" id="L87">		this.baseDirectory = source.getBaseDirectory();</span>
+<span class="fc" id="L88">	}</span>
+
+	@Override
+	public MutableProjectDescription createCopy() {
+<span class="fc" id="L92">		return new MutableProjectDescription(this);</span>
+	}
+
+	@Override
+	public Version getPlatformVersion() {
+<span class="fc" id="L97">		return this.platformVersion;</span>
+	}
+
+	/**
+	 * Sets the platform version.
+	 * @param platformVersion the platform version
+	 */
+	public void setPlatformVersion(Version platformVersion) {
+<span class="fc" id="L105">		this.platformVersion = platformVersion;</span>
+<span class="fc" id="L106">	}</span>
+
+	@Override
+	public BuildSystem getBuildSystem() {
+<span class="fc" id="L110">		return this.buildSystem;</span>
+	}
+
+	/**
+	 * Sets the build system.
+	 * @param buildSystem the build system
+	 */
+	public void setBuildSystem(BuildSystem buildSystem) {
+<span class="fc" id="L118">		this.buildSystem = buildSystem;</span>
+<span class="fc" id="L119">	}</span>
+
+	@Override
+	public Packaging getPackaging() {
+<span class="fc" id="L123">		return this.packaging;</span>
+	}
+
+	/**
+	 * Sets the packaging.
+	 * @param packaging the packaging
+	 */
+	public void setPackaging(Packaging packaging) {
+<span class="fc" id="L131">		this.packaging = packaging;</span>
+<span class="fc" id="L132">	}</span>
+
+	@Override
+	public Language getLanguage() {
+<span class="fc" id="L136">		return this.language;</span>
+	}
+
+	/**
+	 * Sets the language.
+	 * @param language the language
+	 */
+	public void setLanguage(Language language) {
+<span class="fc" id="L144">		this.language = language;</span>
+<span class="fc" id="L145">	}</span>
+
+	/**
+	 * Adds the given dependency.
+	 * @param id the id
+	 * @param dependency the dependency
+	 * @return the added dependency
+	 */
+	public Dependency addDependency(String id, Dependency dependency) {
+<span class="fc" id="L154">		return this.requestedDependencies.put(id, dependency);</span>
+	}
+
+	/**
+	 * Adds the given dependency.
+	 * @param id the id
+	 * @param builder the dependency builder
+	 * @return the added dependency
+	 */
+	public Dependency addDependency(String id, Dependency.Builder&lt;?&gt; builder) {
+<span class="nc" id="L164">		return addDependency(id, builder.build());</span>
+	}
+
+	/**
+	 * Removes the dependency with the given id.
+	 * @param id the id
+	 * @return the removed dependency
+	 */
+	public Dependency removeDependency(String id) {
+<span class="fc" id="L173">		return this.requestedDependencies.remove(id);</span>
+	}
+
+	@Override
+	public Map&lt;String, Dependency&gt; getRequestedDependencies() {
+<span class="fc" id="L178">		return Collections.unmodifiableMap(this.requestedDependencies);</span>
+	}
+
+	@Override
+	public String getGroupId() {
+<span class="fc" id="L183">		return this.groupId;</span>
+	}
+
+	/**
+	 * Sets the group id.
+	 * @param groupId the group id
+	 */
+	public void setGroupId(String groupId) {
+<span class="fc" id="L191">		this.groupId = groupId;</span>
+<span class="fc" id="L192">	}</span>
+
+	@Override
+	public String getArtifactId() {
+<span class="fc" id="L196">		return this.artifactId;</span>
+	}
+
+	/**
+	 * Sets the artifact id.
+	 * @param artifactId the artifact id
+	 */
+	public void setArtifactId(String artifactId) {
+<span class="fc" id="L204">		this.artifactId = artifactId;</span>
+<span class="fc" id="L205">	}</span>
+
+	@Override
+	public String getVersion() {
+<span class="fc" id="L209">		return this.version;</span>
+	}
+
+	/**
+	 * Sets the version.
+	 * @param version the version
+	 */
+	public void setVersion(String version) {
+<span class="fc" id="L217">		this.version = version;</span>
+<span class="fc" id="L218">	}</span>
+
+	@Override
+	public String getName() {
+<span class="fc" id="L222">		return this.name;</span>
+	}
+
+	/**
+	 * Sets the name.
+	 * @param name the name
+	 */
+	public void setName(String name) {
+<span class="fc" id="L230">		this.name = name;</span>
+<span class="fc" id="L231">	}</span>
+
+	@Override
+	public String getDescription() {
+<span class="fc" id="L235">		return this.description;</span>
+	}
+
+	/**
+	 * Sets the description.
+	 * @param description the description
+	 */
+	public void setDescription(String description) {
+<span class="fc" id="L243">		this.description = description;</span>
+<span class="fc" id="L244">	}</span>
+
+	@Override
+	public String getApplicationName() {
+<span class="fc" id="L248">		return this.applicationName;</span>
+	}
+
+	/**
+	 * Sets the application name.
+	 * @param applicationName the application name
+	 */
+	public void setApplicationName(String applicationName) {
+<span class="fc" id="L256">		this.applicationName = applicationName;</span>
+<span class="fc" id="L257">	}</span>
+
+	@Override
+	public String getPackageName() {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">		if (StringUtils.hasText(this.packageName)) {</span>
+<span class="fc" id="L262">			return this.packageName;</span>
+		}
+<span class="pc bpc" id="L264" title="1 of 4 branches missed.">		if (StringUtils.hasText(this.groupId) &amp;&amp; StringUtils.hasText(this.artifactId)) {</span>
+<span class="nc" id="L265">			return this.groupId + &quot;.&quot; + this.artifactId;</span>
+		}
+<span class="fc" id="L267">		return null;</span>
+	}
+
+	/**
+	 * Sets the package name.
+	 * @param packageName the package name
+	 */
+	public void setPackageName(String packageName) {
+<span class="fc" id="L275">		this.packageName = packageName;</span>
+<span class="fc" id="L276">	}</span>
+
+	@Override
+	public String getBaseDirectory() {
+<span class="fc" id="L280">		return this.baseDirectory;</span>
+	}
+
+	/**
+	 * Sets the base directory.
+	 * @param baseDirectory the base directory
+	 */
+	public void setBaseDirectory(String baseDirectory) {
+<span class="fc" id="L288">		this.baseDirectory = baseDirectory;</span>
+<span class="fc" id="L289">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

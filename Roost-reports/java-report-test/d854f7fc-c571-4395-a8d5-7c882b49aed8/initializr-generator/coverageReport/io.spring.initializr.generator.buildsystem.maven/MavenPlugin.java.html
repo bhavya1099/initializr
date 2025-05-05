@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenPlugin.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenPlugin.java</span></div><h1>MavenPlugin.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import io.spring.initializr.generator.version.VersionReference;
+
+/**
+ * A plugin in a {@link MavenBuild}.
+ *
+ * @author Andy Wilkinson
+ * @author Olga Maciaszek-Sharma
+ * @author Maurice Zeijen
+ */
+public class MavenPlugin {
+
+	private final String groupId;
+
+	private final String artifactId;
+
+	private final VersionReference version;
+
+	private final boolean extensions;
+
+	private final boolean inherited;
+
+	private final List&lt;Execution&gt; executions;
+
+	private final List&lt;Dependency&gt; dependencies;
+
+	private final Configuration configuration;
+
+	/**
+	 * Creates a new instance.
+	 * @param builder the builder to use
+	 */
+<span class="fc" id="L57">	protected MavenPlugin(Builder builder) {</span>
+<span class="fc" id="L58">		this.groupId = builder.groupId;</span>
+<span class="fc" id="L59">		this.artifactId = builder.artifactId;</span>
+<span class="fc" id="L60">		this.version = builder.version;</span>
+<span class="fc" id="L61">		this.extensions = builder.extensions;</span>
+<span class="fc" id="L62">		this.inherited = builder.inherited;</span>
+<span class="fc" id="L63">		this.executions = builder.executions.values().stream().map(ExecutionBuilder::build).toList();</span>
+<span class="fc" id="L64">		this.dependencies = List.copyOf(builder.dependencies);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		this.configuration = (builder.configurationBuilder == null) ? null : builder.configurationBuilder.build();</span>
+<span class="fc" id="L66">	}</span>
+
+	/**
+	 * Return the group ID of the plugin.
+	 * @return the group ID
+	 */
+	public String getGroupId() {
+<span class="fc" id="L73">		return this.groupId;</span>
+	}
+
+	/**
+	 * Return the artifact ID of the plugin.
+	 * @return the artifact ID
+	 */
+	public String getArtifactId() {
+<span class="fc" id="L81">		return this.artifactId;</span>
+	}
+
+	/**
+	 * Return the version of the plugin or {@code null} if the version of the plugin is
+	 * managed. Also returns {@code null} if the version references a property.
+	 * @return the version or {@code null}
+	 * @deprecated for removal in favor of {@link #getVersionReference()}
+	 */
+	@Deprecated(forRemoval = true)
+	public String getVersion() {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">		return (this.version != null) ? this.version.getValue() : null;</span>
+	}
+
+	/**
+	 * Return the version of the plugin or {@code null} if the version of the plugin is
+	 * managed.
+	 * @return the version or {@code null}
+	 */
+	public VersionReference getVersionReference() {
+<span class="fc" id="L101">		return this.version;</span>
+	}
+
+	/**
+	 * Return whether to load extensions of this plugin.
+	 * @return {@code true} to load extensions
+	 */
+	public boolean isExtensions() {
+<span class="fc" id="L109">		return this.extensions;</span>
+	}
+
+	/**
+	 * Return whether to inherit plugin configuration to child POMs.
+	 * @return whether to inherit plugin configuration
+	 */
+	public boolean isInherited() {
+<span class="fc" id="L117">		return this.inherited;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Execution executions} of the plugin.
+	 * @return the executions
+	 */
+	public List&lt;Execution&gt; getExecutions() {
+<span class="fc" id="L125">		return this.executions;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Dependency dependencies} of the plugin.
+	 * @return the dependencies
+	 */
+	public List&lt;Dependency&gt; getDependencies() {
+<span class="fc" id="L133">		return this.dependencies;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Configuration configuration} of the plugin.
+	 * @return the configuration
+	 */
+	public Configuration getConfiguration() {
+<span class="fc" id="L141">		return this.configuration;</span>
+	}
+
+	/**
+	 * Builder for a {@link MavenPlugin}.
+	 */
+	public static class Builder {
+
+		private final String groupId;
+
+		private final String artifactId;
+
+		private VersionReference version;
+
+		private boolean extensions;
+
+<span class="fc" id="L157">		private boolean inherited = true;</span>
+
+<span class="fc" id="L159">		private final Map&lt;String, ExecutionBuilder&gt; executions = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L161">		private final List&lt;Dependency&gt; dependencies = new ArrayList&lt;&gt;();</span>
+
+		private ConfigurationBuilder configurationBuilder;
+
+		/**
+		 * Creates a new instance.
+		 * @param groupId the group id
+		 * @param artifactId the artifact id
+		 */
+<span class="fc" id="L170">		protected Builder(String groupId, String artifactId) {</span>
+<span class="fc" id="L171">			this.groupId = groupId;</span>
+<span class="fc" id="L172">			this.artifactId = artifactId;</span>
+<span class="fc" id="L173">		}</span>
+
+		/**
+		 * Set the version of the plugin or {@code null} if the version is managed by the
+		 * project.
+		 * @param version the version of the plugin or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder version(String version) {
+<span class="fc bfc" id="L182" title="All 2 branches covered.">			if (version == null) {</span>
+<span class="fc" id="L183">				return versionReference(null);</span>
+			}
+<span class="fc" id="L185">			return versionReference(VersionReference.ofValue(version));</span>
+		}
+
+		/**
+		 * Set the version of the plugin or {@code null} if the version is managed by the
+		 * project.
+		 * @param version the version of the plugin or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder versionReference(VersionReference version) {
+<span class="fc" id="L195">			this.version = version;</span>
+<span class="fc" id="L196">			return this;</span>
+		}
+
+		/**
+		 * Set whether to load extensions of this plugin.
+		 * @param extensions whether to load extensions
+		 * @return this for method chaining
+		 */
+		public Builder extensions(boolean extensions) {
+<span class="fc" id="L205">			this.extensions = extensions;</span>
+<span class="fc" id="L206">			return this;</span>
+		}
+
+		/**
+		 * Set whether to inherit plugin configuration to child POMs.
+		 * @param inherited whether to inherit plugin configuration
+		 * @return this for method chaining
+		 */
+		public Builder inherited(boolean inherited) {
+<span class="fc" id="L215">			this.inherited = inherited;</span>
+<span class="fc" id="L216">			return this;</span>
+		}
+
+		/**
+		 * Customize the {@code configuration} of the plugin using the specified consumer.
+		 * @param configuration a consumer of the current configuration
+		 * @return this for method chaining
+		 */
+		public Builder configuration(Consumer&lt;ConfigurationBuilder&gt; configuration) {
+<span class="fc bfc" id="L225" title="All 2 branches covered.">			if (this.configurationBuilder == null) {</span>
+<span class="fc" id="L226">				this.configurationBuilder = new ConfigurationBuilder();</span>
+			}
+<span class="fc" id="L228">			configuration.accept(this.configurationBuilder);</span>
+<span class="fc" id="L229">			return this;</span>
+		}
+
+		/**
+		 * Add an {@code execution} with the specified id and {@link Consumer} to
+		 * customize the object. If the execution has already been¬ added, the consumer
+		 * can be used to further tune the existing plugin execution
+		 * @param id the id of the execution
+		 * @param execution a {@link Consumer} to customize the {@link Execution}
+		 * @return this for method chaining
+		 */
+		public Builder execution(String id, Consumer&lt;ExecutionBuilder&gt; execution) {
+<span class="fc" id="L241">			execution.accept(this.executions.computeIfAbsent(id, (key) -&gt; new ExecutionBuilder(id)));</span>
+<span class="fc" id="L242">			return this;</span>
+		}
+
+		/**
+		 * Add a plugin dependency.
+		 * @param groupId the group ID of the dependency
+		 * @param artifactId the artifact ID of the dependency
+		 * @param version the version of the dependency
+		 * @return this for method chaining
+		 */
+		public Builder dependency(String groupId, String artifactId, String version) {
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">			return dependency(groupId, artifactId, (version != null) ? VersionReference.ofValue(version) : null);</span>
+		}
+
+		/**
+		 * Add a plugin dependency.
+		 * @param groupId the group ID of the dependency
+		 * @param artifactId the artifact ID of the dependency
+		 * @param version the version of the dependency
+		 * @return this for method chaining
+		 */
+		public Builder dependency(String groupId, String artifactId, VersionReference version) {
+<span class="fc" id="L264">			this.dependencies.add(new Dependency(groupId, artifactId, version));</span>
+<span class="fc" id="L265">			return this;</span>
+		}
+
+		/**
+		 * Build a {@link MavenPlugin} with the current state of this builder.
+		 * @return a {@link MavenBuild}
+		 */
+		public MavenPlugin build() {
+<span class="fc" id="L273">			return new MavenPlugin(this);</span>
+		}
+
+	}
+
+	/**
+	 * Builder for an {@link Execution}.
+	 */
+	public static class ExecutionBuilder {
+
+		private final String id;
+
+		private String phase;
+
+<span class="fc" id="L287">		private final List&lt;String&gt; goals = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L289">		private ConfigurationBuilder configurationCustomization = null;</span>
+
+		/**
+		 * Creates a new instance.
+		 * @param id the id
+		 */
+<span class="fc" id="L295">		public ExecutionBuilder(String id) {</span>
+<span class="fc" id="L296">			this.id = id;</span>
+<span class="fc" id="L297">		}</span>
+
+		Execution build() {
+<span class="fc" id="L300">			return new Execution(this.id, this.phase, this.goals,</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">					(this.configurationCustomization == null) ? null : this.configurationCustomization.build());</span>
+		}
+
+		/**
+		 * Set the {@code phase} of the build lifecycle that goals will execute in.
+		 * @param phase the phase to use
+		 * @return this for method chaining
+		 */
+		public ExecutionBuilder phase(String phase) {
+<span class="fc" id="L310">			this.phase = phase;</span>
+<span class="fc" id="L311">			return this;</span>
+		}
+
+		/**
+		 * Add a goal to invoke for this execution.
+		 * @param goal the goal to invoke
+		 * @return this for method chaining
+		 */
+		public ExecutionBuilder goal(String goal) {
+<span class="fc" id="L320">			this.goals.add(goal);</span>
+<span class="fc" id="L321">			return this;</span>
+		}
+
+		/**
+		 * Customize the {@code configuration} of the execution using the specified
+		 * consumer.
+		 * @param configuration a consumer of the current configuration
+		 * @return this for method chaining
+		 */
+		public ExecutionBuilder configuration(Consumer&lt;ConfigurationBuilder&gt; configuration) {
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			if (this.configurationCustomization == null) {</span>
+<span class="fc" id="L332">				this.configurationCustomization = new ConfigurationBuilder();</span>
+			}
+<span class="fc" id="L334">			configuration.accept(this.configurationCustomization);</span>
+<span class="fc" id="L335">			return this;</span>
+		}
+
+	}
+
+	/**
+	 * Builder for a {@link Configuration}.
+	 */
+<span class="fc" id="L343">	public static class ConfigurationBuilder {</span>
+
+<span class="fc" id="L345">		private final List&lt;Setting&gt; settings = new ArrayList&lt;&gt;();</span>
+
+		/**
+		 * Add the specified parameter with a single value.
+		 * @param name the name of the parameter
+		 * @param value the single value of the parameter
+		 * @return this for method chaining
+		 */
+		public ConfigurationBuilder add(String name, String value) {
+<span class="fc" id="L354">			this.settings.add(new Setting(name, value));</span>
+<span class="fc" id="L355">			return this;</span>
+		}
+
+		/**
+		 * Add the specified parameter with a nested structure.
+		 * @param name the name of the parameter
+		 * @param consumer a consumer to further configure the parameter
+		 * @return this for method chaining
+		 * @see #configure(String, Consumer) name
+		 */
+		public ConfigurationBuilder add(String name, Consumer&lt;ConfigurationBuilder&gt; consumer) {
+<span class="fc" id="L366">			ConfigurationBuilder nestedConfiguration = new ConfigurationBuilder();</span>
+<span class="fc" id="L367">			consumer.accept(nestedConfiguration);</span>
+<span class="fc" id="L368">			this.settings.add(new Setting(name, nestedConfiguration));</span>
+<span class="fc" id="L369">			return this;</span>
+		}
+
+		/**
+		 * Configure the parameter with the specified {@code name}. If no parameter with
+		 * that name exists, it is created. If the parameter already exists, the consumer
+		 * can be used to further tune the nested structure.
+		 * @param name the name of the parameter
+		 * @param consumer a consumer to further configure the parameter
+		 * @return this for method chaining
+		 * @throws IllegalArgumentException if a parameter with the same name is
+		 * registered with a single value
+		 * @see #add(String, Consumer)
+		 */
+		public ConfigurationBuilder configure(String name, Consumer&lt;ConfigurationBuilder&gt; consumer) {
+<span class="fc" id="L384">			Object value = this.settings.stream()</span>
+<span class="fc" id="L385">				.filter((candidate) -&gt; candidate.getName().equals(name))</span>
+<span class="fc" id="L386">				.findFirst()</span>
+<span class="fc" id="L387">				.orElseGet(() -&gt; {</span>
+<span class="fc" id="L388">					Setting nestedSetting = new Setting(name, new ConfigurationBuilder());</span>
+<span class="fc" id="L389">					this.settings.add(nestedSetting);</span>
+<span class="fc" id="L390">					return nestedSetting;</span>
+				})
+<span class="fc" id="L392">				.getValue();</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">			if (!(value instanceof ConfigurationBuilder nestedConfiguration)) {</span>
+<span class="fc" id="L394">				throw new IllegalArgumentException(String.format(</span>
+						&quot;Could not customize parameter '%s', a single value %s is already registered&quot;, name, value));
+			}
+<span class="fc" id="L397">			consumer.accept(nestedConfiguration);</span>
+<span class="fc" id="L398">			return this;</span>
+		}
+
+		/**
+		 * Build a {@link Configuration} with the current state of this builder.
+		 * @return a {@link Configuration}
+		 */
+		Configuration build() {
+<span class="fc" id="L406">			return new Configuration(</span>
+<span class="fc" id="L407">					this.settings.stream().map((entry) -&gt; resolve(entry.getName(), entry.getValue())).toList());</span>
+		}
+
+		private Setting resolve(String key, Object value) {
+<span class="fc bfc" id="L411" title="All 2 branches covered.">			if (value instanceof ConfigurationBuilder configurationBuilder) {</span>
+<span class="fc" id="L412">				List&lt;Setting&gt; values = configurationBuilder.settings.stream()</span>
+<span class="fc" id="L413">					.map((entry) -&gt; resolve(entry.getName(), entry.getValue()))</span>
+<span class="fc" id="L414">					.toList();</span>
+<span class="fc" id="L415">				return new Setting(key, values);</span>
+			}
+			else {
+<span class="fc" id="L418">				return new Setting(key, value);</span>
+			}
+		}
+
+	}
+
+	/**
+	 * A {@code &lt;configuration&gt;} on an {@link Execution} or {@link MavenPlugin}.
+	 */
+	public static final class Configuration {
+
+		private final List&lt;Setting&gt; settings;
+
+<span class="fc" id="L431">		private Configuration(List&lt;Setting&gt; settings) {</span>
+<span class="fc" id="L432">			this.settings = List.copyOf(settings);</span>
+<span class="fc" id="L433">		}</span>
+
+		/**
+		 * Return the {@linkplain Setting settings} of the configuration.
+		 * @return the settings
+		 */
+		public List&lt;Setting&gt; getSettings() {
+<span class="fc" id="L440">			return this.settings;</span>
+		}
+
+	}
+
+	/**
+	 * A setting in a {@link Configuration}.
+	 */
+	public static final class Setting {
+
+		private final String name;
+
+		private final Object value;
+
+<span class="fc" id="L454">		private Setting(String name, Object value) {</span>
+<span class="fc" id="L455">			this.name = name;</span>
+<span class="fc" id="L456">			this.value = value;</span>
+<span class="fc" id="L457">		}</span>
+
+		/**
+		 * Return the name of the configuration item.
+		 * @return the name
+		 */
+		public String getName() {
+<span class="fc" id="L464">			return this.name;</span>
+		}
+
+		/**
+		 * Return the value. Can be a nested {@link Configuration}.
+		 * @return a simple value or a nested configuration
+		 */
+		public Object getValue() {
+<span class="fc" id="L472">			return this.value;</span>
+		}
+
+	}
+
+	/**
+	 * An {@code &lt;execution&gt;} of a {@link MavenPlugin}.
+	 */
+	public static final class Execution {
+
+		private final String id;
+
+		private final String phase;
+
+		private final List&lt;String&gt; goals;
+
+		private final Configuration configuration;
+
+<span class="fc" id="L490">		private Execution(String id, String phase, List&lt;String&gt; goals, Configuration configuration) {</span>
+<span class="fc" id="L491">			this.id = id;</span>
+<span class="fc" id="L492">			this.phase = phase;</span>
+<span class="fc" id="L493">			this.goals = Collections.unmodifiableList(goals);</span>
+<span class="fc" id="L494">			this.configuration = configuration;</span>
+<span class="fc" id="L495">		}</span>
+
+		/**
+		 * Return the id of the execution.
+		 * @return the execution id
+		 */
+		public String getId() {
+<span class="fc" id="L502">			return this.id;</span>
+		}
+
+		/**
+		 * Return the {@code phase} of the build lifecycle that goals will execute in.
+		 * @return the execution phase
+		 */
+		public String getPhase() {
+<span class="fc" id="L510">			return this.phase;</span>
+		}
+
+		/**
+		 * Return the plugin gaols that this execution should invoke.
+		 * @return the execution goals
+		 */
+		public List&lt;String&gt; getGoals() {
+<span class="fc" id="L518">			return this.goals;</span>
+		}
+
+		/**
+		 * Return the {@linkplain Configuration configuration} of the execution.
+		 * @return the configuration
+		 */
+		public Configuration getConfiguration() {
+<span class="fc" id="L526">			return this.configuration;</span>
+		}
+
+	}
+
+	/**
+	 * A {@code &lt;dependency&gt;} of a {@link MavenPlugin}.
+	 */
+	public static final class Dependency {
+
+		private final String groupId;
+
+		private final String artifactId;
+
+		private final VersionReference version;
+
+<span class="fc" id="L542">		private Dependency(String groupId, String artifactId, VersionReference version) {</span>
+<span class="fc" id="L543">			this.groupId = groupId;</span>
+<span class="fc" id="L544">			this.artifactId = artifactId;</span>
+<span class="fc" id="L545">			this.version = version;</span>
+<span class="fc" id="L546">		}</span>
+
+		/**
+		 * Return the group ID of the plugin dependency.
+		 * @return the group ID
+		 */
+		public String getGroupId() {
+<span class="fc" id="L553">			return this.groupId;</span>
+		}
+
+		/**
+		 * Return the artifact ID of the plugin dependency.
+		 * @return the artifact ID
+		 */
+		public String getArtifactId() {
+<span class="fc" id="L561">			return this.artifactId;</span>
+		}
+
+		/**
+		 * Return the version of the plugin dependency.
+		 * @return the version
+		 * @deprecated for removal in favor of {@link #getVersionReference()}.
+		 */
+		@Deprecated(forRemoval = true)
+		public String getVersion() {
+<span class="nc bnc" id="L571" title="All 2 branches missed.">			return (this.version != null) ? this.version.getValue() : null;</span>
+		}
+
+		/**
+		 * Return the version of the plugin dependency.
+		 * @return the version
+		 */
+		public VersionReference getVersionReference() {
+<span class="fc" id="L579">			return this.version;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

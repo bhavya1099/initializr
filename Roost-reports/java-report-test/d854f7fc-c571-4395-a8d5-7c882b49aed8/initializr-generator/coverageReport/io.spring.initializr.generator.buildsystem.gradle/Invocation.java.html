@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Invocation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">Invocation.java</span></div><h1>Invocation.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.List;
+
+/**
+ * An invocation of a method.
+ *
+ * @author Moritz Halbritter
+ * @author Stephane Nicoll
+ */
+public class Invocation {
+
+	private final String target;
+
+	private final List&lt;String&gt; arguments;
+
+	/**
+	 * Creates a new instance.
+	 * @param target the target
+	 * @param arguments the arguments
+	 */
+<span class="fc" id="L38">	public Invocation(String target, List&lt;String&gt; arguments) {</span>
+<span class="fc" id="L39">		this.target = target;</span>
+<span class="fc" id="L40">		this.arguments = List.copyOf(arguments);</span>
+<span class="fc" id="L41">	}</span>
+
+	/**
+	 * Return the name of the method.
+	 * @return the method name
+	 */
+	public String getTarget() {
+<span class="fc" id="L48">		return this.target;</span>
+	}
+
+	/**
+	 * Return the arguments (can be empty).
+	 * @return the method arguments
+	 */
+	public List&lt;String&gt; getArguments() {
+<span class="fc" id="L56">		return this.arguments;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
