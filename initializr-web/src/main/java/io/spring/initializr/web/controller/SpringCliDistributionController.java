@@ -38,6 +38,7 @@ public class SpringCliDistributionController {
 	@GetMapping(path = { "/spring", "/spring.zip" })
 	public String spring() {
 		String url = this.metadataProvider.get().createCliDistributionURl("zip");
+		System.out.println(url);
 		return "redirect:" + url;
 	}
 
