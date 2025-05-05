@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommandLineHelpGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.support</a> &gt; <span class="el_source">CommandLineHelpGenerator.java</span></div><h1>CommandLineHelpGenerator.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.support;
+
+import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import io.spring.initializr.generator.io.template.TemplateRenderer;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.MetadataElement;
+import io.spring.initializr.metadata.Type;
+import org.apache.commons.text.WordUtils;
+
+import org.springframework.beans.BeanWrapperImpl;
+
+/**
+ * Generate help pages for command-line clients.
+ *
+ * @author Stephane Nicoll
+ */
+public class CommandLineHelpGenerator {
+
+	private static final String LOGO = &quot;  .   ____          _            __ _ _\n&quot;
+			+ &quot; /\\\\ / ___'_ __ _ _(_)_ __  __ _ \\ \\ \\ \\\n&quot; + &quot;( ( )\\___ | '_ | '_| | '_ \\/ _` | \\ \\ \\ \\\n&quot;
+			+ &quot; \\\\/  ___)| |_)| | | | | || (_| |  ) ) ) )\n&quot; + &quot;  '  |____| .__|_| |_|_| |_\\__, | / / / /\n&quot;
+			+ &quot; =========|_|==============|___/=/_/_/_/&quot;;
+
+<span class="fc" id="L49">	private static final String NEW_LINE = System.getProperty(&quot;line.separator&quot;);</span>
+
+	private final TemplateRenderer template;
+
+	private final int maxColumnWidth;
+
+	public CommandLineHelpGenerator(TemplateRenderer template) {
+<span class="fc" id="L56">		this(template, 60);</span>
+<span class="fc" id="L57">	}</span>
+
+<span class="fc" id="L59">	public CommandLineHelpGenerator(TemplateRenderer template, int maxColumnWidth) {</span>
+<span class="fc" id="L60">		this.template = template;</span>
+<span class="fc" id="L61">		this.maxColumnWidth = maxColumnWidth;</span>
+<span class="fc" id="L62">	}</span>
+
+	/**
+	 * Generate the capabilities of the service as a generic plain text document. Used
+	 * when no particular agent was detected.
+	 * @param metadata the initializr metadata
+	 * @param serviceUrl the service URL
+	 * @return the generic capabilities text document
+	 * @throws IOException if rendering the capabilities failed
+	 */
+	public String generateGenericCapabilities(InitializrMetadata metadata, String serviceUrl) throws IOException {
+<span class="fc" id="L73">		Map&lt;String, Object&gt; model = initializeCommandLineModel(metadata, serviceUrl);</span>
+<span class="fc" id="L74">		model.put(&quot;hasExamples&quot;, false);</span>
+<span class="fc" id="L75">		return this.template.render(&quot;cli/cli-capabilities&quot;, model);</span>
+	}
+
+	/**
+	 * Generate the capabilities of the service using &quot;curl&quot; as a plain text document.
+	 * @param metadata the initializr metadata
+	 * @param serviceUrl the service URL
+	 * @return the generic capabilities text document
+	 * @throws IOException if rendering the capabilities failed
+	 */
+	public String generateCurlCapabilities(InitializrMetadata metadata, String serviceUrl) throws IOException {
+<span class="fc" id="L86">		Map&lt;String, Object&gt; model = initializeCommandLineModel(metadata, serviceUrl);</span>
+<span class="fc" id="L87">		model.put(&quot;examples&quot;, this.template.render(&quot;cli/curl-examples&quot;, model));</span>
+<span class="fc" id="L88">		model.put(&quot;hasExamples&quot;, true);</span>
+<span class="fc" id="L89">		return this.template.render(&quot;cli/cli-capabilities&quot;, model);</span>
+	}
+
+	/**
+	 * Generate the capabilities of the service using &quot;HTTPie&quot; as a plain text document.
+	 * @param metadata the initializr metadata
+	 * @param serviceUrl the service URL
+	 * @return the generic capabilities text document
+	 * @throws IOException if rendering the capabilities failed
+	 */
+	public String generateHttpieCapabilities(InitializrMetadata metadata, String serviceUrl) throws IOException {
+<span class="fc" id="L100">		Map&lt;String, Object&gt; model = initializeCommandLineModel(metadata, serviceUrl);</span>
+<span class="fc" id="L101">		model.put(&quot;examples&quot;, this.template.render(&quot;cli/httpie-examples&quot;, model));</span>
+<span class="fc" id="L102">		model.put(&quot;hasExamples&quot;, true);</span>
+<span class="fc" id="L103">		return this.template.render(&quot;cli/cli-capabilities&quot;, model);</span>
+	}
+
+	/**
+	 * Generate the capabilities of the service using Spring Boot CLI as a plain text
+	 * document.
+	 * @param metadata the initializr metadata
+	 * @param serviceUrl the service URL
+	 * @return the generic capabilities text document
+	 * @throws IOException if rendering the capabilities failed
+	 */
+	public String generateSpringBootCliCapabilities(InitializrMetadata metadata, String serviceUrl) throws IOException {
+<span class="fc" id="L115">		Map&lt;String, Object&gt; model = initializeSpringBootCliModel(metadata, serviceUrl);</span>
+<span class="fc" id="L116">		model.put(&quot;hasExamples&quot;, false);</span>
+<span class="fc" id="L117">		return this.template.render(&quot;cli/boot-cli-capabilities&quot;, model);</span>
+	}
+
+	protected Map&lt;String, Object&gt; initializeCommandLineModel(InitializrMetadata metadata, String serviceUrl) {
+<span class="fc" id="L121">		Map&lt;String, Object&gt; model = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L122">		model.put(&quot;logo&quot;, LOGO);</span>
+<span class="fc" id="L123">		model.put(&quot;serviceUrl&quot;, serviceUrl);</span>
+<span class="fc" id="L124">		model.put(&quot;dependencies&quot;, generateDependencyTable(metadata));</span>
+<span class="fc" id="L125">		model.put(&quot;types&quot;, generateTypeTable(metadata, &quot;Rel&quot;, false));</span>
+
+<span class="fc" id="L127">		Map&lt;String, Object&gt; defaults = metadata.defaults();</span>
+<span class="fc" id="L128">		defaults.put(&quot;applicationName&quot;,</span>
+<span class="fc" id="L129">				metadata.getConfiguration().generateApplicationName(metadata.getName().getContent()));</span>
+<span class="fc" id="L130">		defaults.put(&quot;baseDir&quot;, &quot;no base dir&quot;);</span>
+<span class="fc" id="L131">		defaults.put(&quot;dependencies&quot;, &quot;none&quot;);</span>
+
+<span class="fc" id="L133">		Map&lt;String, Object&gt; parametersDescription = buildParametersDescription(metadata);</span>
+<span class="fc" id="L134">		String[][] parameterTable = new String[defaults.size() + 1][];</span>
+<span class="fc" id="L135">		parameterTable[0] = new String[] { &quot;Parameter&quot;, &quot;Description&quot;, &quot;Default value&quot; };</span>
+<span class="fc" id="L136">		int i = 1;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		for (String id : defaults.keySet().stream().sorted().toList()) {</span>
+<span class="fc" id="L138">			String[] data = new String[3];</span>
+<span class="fc" id="L139">			data[0] = id;</span>
+<span class="fc" id="L140">			data[1] = (String) parametersDescription.get(id);</span>
+<span class="fc" id="L141">			data[2] = (String) defaults.get(id);</span>
+<span class="fc" id="L142">			parameterTable[i++] = data;</span>
+<span class="fc" id="L143">		}</span>
+<span class="fc" id="L144">		model.put(&quot;parameters&quot;, TableGenerator.generate(parameterTable, this.maxColumnWidth));</span>
+
+<span class="fc" id="L146">		return model;</span>
+	}
+
+	protected Map&lt;String, Object&gt; initializeSpringBootCliModel(InitializrMetadata metadata, String serviceUrl) {
+<span class="fc" id="L150">		Map&lt;String, Object&gt; model = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L151">		model.put(&quot;logo&quot;, LOGO);</span>
+<span class="fc" id="L152">		model.put(&quot;serviceUrl&quot;, serviceUrl);</span>
+<span class="fc" id="L153">		model.put(&quot;dependencies&quot;, generateDependencyTable(metadata));</span>
+<span class="fc" id="L154">		model.put(&quot;types&quot;, generateTypeTable(metadata, &quot;Id&quot;, true));</span>
+
+<span class="fc" id="L156">		Map&lt;String, Object&gt; defaults = metadata.defaults();</span>
+<span class="fc" id="L157">		Map&lt;String, Object&gt; parametersDescription = buildParametersDescription(metadata);</span>
+<span class="fc" id="L158">		String[][] parameterTable = new String[defaults.size() + 1][];</span>
+<span class="fc" id="L159">		parameterTable[0] = new String[] { &quot;Id&quot;, &quot;Description&quot;, &quot;Default value&quot; };</span>
+<span class="fc" id="L160">		int i = 1;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		for (String id : defaults.keySet().stream().sorted().toList()) {</span>
+<span class="fc" id="L162">			String[] data = new String[3];</span>
+<span class="fc" id="L163">			data[0] = id;</span>
+<span class="fc" id="L164">			data[1] = (String) parametersDescription.get(id);</span>
+<span class="fc" id="L165">			data[2] = (String) defaults.get(id);</span>
+<span class="fc" id="L166">			parameterTable[i++] = data;</span>
+<span class="fc" id="L167">		}</span>
+<span class="fc" id="L168">		model.put(&quot;parameters&quot;, TableGenerator.generate(parameterTable, this.maxColumnWidth));</span>
+<span class="fc" id="L169">		return model;</span>
+	}
+
+	protected String generateDependencyTable(InitializrMetadata metadata) {
+<span class="fc" id="L173">		String[][] dependencyTable = new String[metadata.getDependencies().getAll().size() + 1][];</span>
+<span class="fc" id="L174">		dependencyTable[0] = new String[] { &quot;Id&quot;, &quot;Description&quot;, &quot;Required version&quot; };</span>
+<span class="fc" id="L175">		int i = 1;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		for (Dependency dep : metadata.getDependencies()</span>
+<span class="fc" id="L177">			.getAll()</span>
+<span class="fc" id="L178">			.stream()</span>
+<span class="fc" id="L179">			.sorted(Comparator.comparing(MetadataElement::getId))</span>
+<span class="fc" id="L180">			.toList()) {</span>
+<span class="fc" id="L181">			String[] data = new String[3];</span>
+<span class="fc" id="L182">			data[0] = dep.getId();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">			data[1] = (dep.getDescription() != null) ? dep.getDescription() : dep.getName();</span>
+<span class="fc" id="L184">			data[2] = dep.getVersionRequirement();</span>
+<span class="fc" id="L185">			dependencyTable[i++] = data;</span>
+<span class="fc" id="L186">		}</span>
+<span class="fc" id="L187">		return TableGenerator.generate(dependencyTable, this.maxColumnWidth);</span>
+	}
+
+	protected String generateTypeTable(InitializrMetadata metadata, String linkHeader, boolean addTags) {
+<span class="fc" id="L191">		String[][] typeTable = new String[metadata.getTypes().getContent().size() + 1][];</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		if (addTags) {</span>
+<span class="fc" id="L193">			typeTable[0] = new String[] { linkHeader, &quot;Description&quot;, &quot;Tags&quot; };</span>
+		}
+		else {
+<span class="fc" id="L196">			typeTable[0] = new String[] { linkHeader, &quot;Description&quot; };</span>
+		}
+<span class="fc" id="L198">		int i = 1;</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		for (Type type : metadata.getTypes()</span>
+<span class="fc" id="L200">			.getContent()</span>
+<span class="fc" id="L201">			.stream()</span>
+<span class="fc" id="L202">			.sorted(Comparator.comparing(MetadataElement::getId))</span>
+<span class="fc" id="L203">			.toList()) {</span>
+<span class="fc" id="L204">			String[] data = new String[typeTable[0].length];</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">			data[0] = (type.isDefault() ? type.getId() + &quot; *&quot; : type.getId());</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">			data[1] = (type.getDescription() != null) ? type.getDescription() : type.getName();</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">			if (addTags) {</span>
+<span class="fc" id="L208">				data[2] = buildTagRepresentation(type);</span>
+			}
+<span class="fc" id="L210">			typeTable[i++] = data;</span>
+<span class="fc" id="L211">		}</span>
+<span class="fc" id="L212">		return TableGenerator.generate(typeTable, this.maxColumnWidth);</span>
+	}
+
+	protected Map&lt;String, Object&gt; buildParametersDescription(InitializrMetadata metadata) {
+<span class="fc" id="L216">		Map&lt;String, Object&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L217">		BeanWrapperImpl wrapper = new BeanWrapperImpl(metadata);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		for (PropertyDescriptor descriptor : wrapper.getPropertyDescriptors()) {</span>
+<span class="fc" id="L219">			Object value = wrapper.getPropertyValue(descriptor.getName());</span>
+<span class="fc" id="L220">			BeanWrapperImpl nested = new BeanWrapperImpl(value);</span>
+<span class="fc bfc" id="L221" title="All 4 branches covered.">			if (nested.isReadableProperty(&quot;description&quot;) &amp;&amp; nested.isReadableProperty(&quot;id&quot;)) {</span>
+<span class="fc" id="L222">				result.put((String) nested.getPropertyValue(&quot;id&quot;), nested.getPropertyValue(&quot;description&quot;));</span>
+			}
+		}
+<span class="fc" id="L225">		result.put(&quot;applicationName&quot;, &quot;application name&quot;);</span>
+<span class="fc" id="L226">		result.put(&quot;baseDir&quot;, &quot;base directory to create in the archive&quot;);</span>
+<span class="fc" id="L227">		return result;</span>
+	}
+
+	private static String buildTagRepresentation(Type type) {
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		if (type.getTags().isEmpty()) {</span>
+<span class="nc" id="L232">			return &quot;&quot;;</span>
+		}
+<span class="fc" id="L234">		return String.join(&quot;,&quot;,</span>
+<span class="fc" id="L235">				type.getTags()</span>
+<span class="fc" id="L236">					.entrySet()</span>
+<span class="fc" id="L237">					.stream()</span>
+<span class="fc" id="L238">					.map((entry) -&gt; entry.getKey() + &quot;:&quot; + entry.getValue())</span>
+<span class="fc" id="L239">					.toArray(String[]::new));</span>
+	}
+
+	/**
+	 * Utility to generate a text table.
+	 */
+	private static final class TableGenerator {
+
+		/**
+		 * Generate a table description for the specified {@code content}.
+		 * &lt;p&gt;
+		 * The {@code content} is a two-dimensional array holding the rows of the table.
+		 * The first entry holds the header of the table.
+		 * @param content the table content
+		 * @param maxWidth the width bound for each column
+		 * @return the generated table
+		 */
+		static String generate(String[][] content, int maxWidth) {
+<span class="fc" id="L257">			StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L258">			boolean emptyRow = false;</span>
+<span class="fc" id="L259">			int[] columnsLength = computeColumnsLength(content, maxWidth);</span>
+<span class="fc" id="L260">			List&lt;List&lt;String[]&gt;&gt; formattedContent = new LinkedList&lt;&gt;();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">			for (int i = 0; i &lt; content.length; i++) {</span>
+<span class="fc" id="L262">				List&lt;String[]&gt; rows = computeRow(content, i, maxWidth);</span>
+<span class="fc" id="L263">				formattedContent.add(rows);</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">				if (rows.size() &gt; 1) {</span>
+<span class="fc" id="L265">					emptyRow = true;</span>
+				}
+			}
+<span class="fc" id="L268">			appendTableSeparation(sb, columnsLength);</span>
+<span class="fc" id="L269">			appendRow(sb, formattedContent, columnsLength, 0); // Headers</span>
+<span class="fc" id="L270">			appendTableSeparation(sb, columnsLength);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">			for (int i = 1; i &lt; formattedContent.size(); i++) {</span>
+<span class="fc" id="L272">				appendRow(sb, formattedContent, columnsLength, i);</span>
+<span class="fc bfc" id="L273" title="All 4 branches covered.">				if (emptyRow &amp;&amp; i &lt; content.length - 1) {</span>
+<span class="fc" id="L274">					appendEmptyRow(sb, columnsLength);</span>
+				}
+			}
+<span class="fc" id="L277">			appendTableSeparation(sb, columnsLength);</span>
+<span class="fc" id="L278">			return sb.toString();</span>
+		}
+
+		private static void appendRow(StringBuilder sb, List&lt;List&lt;String[]&gt;&gt; formattedContent, int[] columnsLength,
+				int rowIndex) {
+<span class="fc" id="L283">			List&lt;String[]&gt; rows = formattedContent.get(rowIndex);</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			for (String[] row : rows) {</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">				for (int i = 0; i &lt; row.length; i++) {</span>
+<span class="fc" id="L286">					sb.append(&quot;| &quot;).append(fill(row[i], columnsLength[i])).append(&quot; &quot;);</span>
+				}
+<span class="fc" id="L288">				sb.append(&quot;|&quot;);</span>
+<span class="fc" id="L289">				sb.append(NEW_LINE);</span>
+<span class="fc" id="L290">			}</span>
+<span class="fc" id="L291">		}</span>
+
+		private static List&lt;String[]&gt; computeRow(String[][] content, int rowIndex, int maxWidth) {
+<span class="fc" id="L294">			String[] line = content[rowIndex];</span>
+<span class="fc" id="L295">			return HelpFormatter.format(line, maxWidth);</span>
+		}
+
+		private static void appendEmptyRow(StringBuilder sb, int[] columnsLength) {
+<span class="fc bfc" id="L299" title="All 2 branches covered.">			for (int columnLength : columnsLength) {</span>
+<span class="fc" id="L300">				sb.append(&quot;| &quot;).append(fill(null, columnLength)).append(&quot; &quot;);</span>
+			}
+<span class="fc" id="L302">			sb.append(&quot;|&quot;);</span>
+<span class="fc" id="L303">			sb.append(NEW_LINE);</span>
+<span class="fc" id="L304">		}</span>
+
+		private static void appendTableSeparation(StringBuilder sb, int[] headersLength) {
+<span class="fc bfc" id="L307" title="All 2 branches covered.">			for (int headerLength : headersLength) {</span>
+<span class="fc" id="L308">				sb.append(&quot;+&quot;).append(multiply(&quot;-&quot;, headerLength + 2));</span>
+			}
+<span class="fc" id="L310">			sb.append(&quot;+&quot;);</span>
+<span class="fc" id="L311">			sb.append(NEW_LINE);</span>
+<span class="fc" id="L312">		}</span>
+
+		private static String fill(String data, int columnSize) {
+<span class="fc bfc" id="L315" title="All 2 branches covered.">			if (data == null) {</span>
+<span class="fc" id="L316">				return multiply(&quot; &quot;, columnSize);</span>
+			}
+			else {
+<span class="fc" id="L319">				int i = columnSize - data.length();</span>
+<span class="fc" id="L320">				return data + multiply(&quot; &quot;, i);</span>
+			}
+		}
+
+		private static String multiply(String value, int size) {
+<span class="fc" id="L325">			StringBuilder s = new StringBuilder();</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">			for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L327">				s.append(value);</span>
+			}
+<span class="fc" id="L329">			return s.toString();</span>
+		}
+
+		private static int[] computeColumnsLength(String[][] content, int maxWidth) {
+<span class="fc" id="L333">			int count = content[0].length;</span>
+<span class="fc" id="L334">			int[] result = new int[count];</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">			for (int i = 0; i &lt; count; i++) {</span>
+<span class="fc" id="L336">				result[i] = largest(content, i, maxWidth);</span>
+			}
+<span class="fc" id="L338">			return result;</span>
+		}
+
+		private static int largest(String[][] content, int column, int maxWidth) {
+<span class="fc" id="L342">			int max = 0;</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">			for (String[] rows : content) {</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">				if (rows != null) {</span>
+<span class="fc" id="L345">					String s = rows[column];</span>
+<span class="fc bfc" id="L346" title="All 4 branches covered.">					if (s != null &amp;&amp; s.length() &gt; max) {</span>
+<span class="fc" id="L347">						max = s.length();</span>
+					}
+				}
+			}
+<span class="fc" id="L351">			return Math.min(max, maxWidth);</span>
+		}
+
+	}
+
+	private static final class HelpFormatter {
+
+		/**
+		 * Formats a given content to a max width.
+		 * @param content the content to format.
+		 * @param maxWidth the max width of each column
+		 * @return the formatted rows.
+		 */
+		private static List&lt;String[]&gt; format(String[] content, int maxWidth) {
+<span class="fc" id="L365">			List&lt;String[]&gt; columns = lineWrap(content, maxWidth);</span>
+<span class="fc" id="L366">			List&lt;String[]&gt; rows = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">			for (int i = 0; i &lt; largest(columns); ++i) {</span>
+<span class="fc" id="L368">				rows.add(computeRow(columns, i));</span>
+			}
+<span class="fc" id="L370">			return rows;</span>
+		}
+
+		private static String[] computeRow(List&lt;String[]&gt; columns, int index) {
+<span class="fc" id="L374">			String[] line = new String[columns.size()];</span>
+<span class="fc" id="L375">			int position = 0;</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">			for (String[] column : columns) {</span>
+<span class="fc" id="L377">				line[position] = itemOrNull(column, index);</span>
+<span class="fc" id="L378">				position++;</span>
+<span class="fc" id="L379">			}</span>
+<span class="fc" id="L380">			return line;</span>
+		}
+
+		private static List&lt;String[]&gt; lineWrap(String[] content, int maxWidth) {
+<span class="fc" id="L384">			List&lt;String[]&gt; lineWrapped = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">			for (String column : content) {</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">				if (column == null) {</span>
+<span class="fc" id="L387">					lineWrapped.add(new String[0]);</span>
+				}
+				else {
+<span class="fc" id="L390">					lineWrapped.add(WordUtils.wrap(column, maxWidth).split(NEW_LINE));</span>
+				}
+			}
+<span class="fc" id="L393">			return lineWrapped;</span>
+		}
+
+		private static int largest(List&lt;String[]&gt; columns) {
+<span class="fc" id="L397">			int max = 0;</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">			for (String[] column : columns) {</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">				if (max &lt; column.length) {</span>
+<span class="fc" id="L400">					max = column.length;</span>
+				}
+<span class="fc" id="L402">			}</span>
+<span class="fc" id="L403">			return max;</span>
+		}
+
+		private static String itemOrNull(String[] column, int index) {
+<span class="fc bfc" id="L407" title="All 2 branches covered.">			return (index &gt;= column.length) ? null : column[index];</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

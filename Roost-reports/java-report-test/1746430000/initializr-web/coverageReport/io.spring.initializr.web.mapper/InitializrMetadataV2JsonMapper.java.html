@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrMetadataV2JsonMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.mapper</a> &gt; <span class="el_source">InitializrMetadataV2JsonMapper.java</span></div><h1>InitializrMetadataV2JsonMapper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.mapper;
+
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.Version.Format;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.metadata.DefaultMetadataElement;
+import io.spring.initializr.metadata.DependenciesCapability;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.DependencyGroup;
+import io.spring.initializr.metadata.Describable;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.MetadataElement;
+import io.spring.initializr.metadata.SingleSelectCapability;
+import io.spring.initializr.metadata.TextCapability;
+import io.spring.initializr.metadata.Type;
+import io.spring.initializr.metadata.TypeCapability;
+
+import org.springframework.hateoas.TemplateVariable;
+import org.springframework.hateoas.TemplateVariables;
+import org.springframework.hateoas.UriTemplate;
+import org.springframework.util.StringUtils;
+
+/**
+ * A {@link InitializrMetadataJsonMapper} handling the metadata format for v2.
+ *
+ * @author Stephane Nicoll
+ * @author Guillaume Gerbaud
+ * @author Moritz Halbritter
+ */
+public class InitializrMetadataV2JsonMapper implements InitializrMetadataJsonMapper {
+
+<span class="fc" id="L56">	private static final JsonNodeFactory nodeFactory = JsonNodeFactory.instance;</span>
+
+	private final TemplateVariables templateVariables;
+
+	/**
+	 * Create a new instance.
+	 */
+<span class="fc" id="L63">	public InitializrMetadataV2JsonMapper() {</span>
+<span class="fc" id="L64">		this.templateVariables = new TemplateVariables(</span>
+				new TemplateVariable(&quot;dependencies&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;packaging&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;javaVersion&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;language&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;bootVersion&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;groupId&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;artifactId&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;version&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;name&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;description&quot;, TemplateVariable.VariableType.REQUEST_PARAM),
+				new TemplateVariable(&quot;packageName&quot;, TemplateVariable.VariableType.REQUEST_PARAM));
+<span class="fc" id="L76">	}</span>
+
+	protected JsonNodeFactory nodeFactory() {
+<span class="fc" id="L79">		return nodeFactory;</span>
+	}
+
+	@Override
+	public String write(InitializrMetadata metadata, String appUrl) {
+<span class="fc" id="L84">		ObjectNode parent = nodeFactory.objectNode();</span>
+<span class="fc" id="L85">		links(parent, metadata.getTypes().getContent(), appUrl);</span>
+<span class="fc" id="L86">		dependencies(parent, metadata.getDependencies());</span>
+<span class="fc" id="L87">		type(parent, metadata.getTypes());</span>
+<span class="fc" id="L88">		singleSelect(parent, metadata.getPackagings());</span>
+<span class="fc" id="L89">		singleSelect(parent, metadata.getJavaVersions());</span>
+<span class="fc" id="L90">		singleSelect(parent, metadata.getLanguages());</span>
+<span class="fc" id="L91">		singleSelect(parent, metadata.getBootVersions(), this::mapVersionMetadata, this::formatVersion);</span>
+<span class="fc" id="L92">		text(parent, metadata.getGroupId());</span>
+<span class="fc" id="L93">		text(parent, metadata.getArtifactId());</span>
+<span class="fc" id="L94">		text(parent, metadata.getVersion());</span>
+<span class="fc" id="L95">		text(parent, metadata.getName());</span>
+<span class="fc" id="L96">		text(parent, metadata.getDescription());</span>
+<span class="fc" id="L97">		text(parent, metadata.getPackageName());</span>
+<span class="fc" id="L98">		customizeParent(parent, metadata);</span>
+<span class="fc" id="L99">		return parent.toString();</span>
+	}
+
+	/**
+	 * Customizes the parent.
+	 * @param parent the parent
+	 * @param metadata the metadata
+	 */
+	protected void customizeParent(ObjectNode parent, InitializrMetadata metadata) {
+<span class="fc" id="L108">	}</span>
+
+	protected ObjectNode links(ObjectNode parent, List&lt;Type&gt; types, String appUrl) {
+<span class="fc" id="L111">		ObjectNode content = nodeFactory.objectNode();</span>
+<span class="fc" id="L112">		types.forEach((it) -&gt; content.set(it.getId(), link(appUrl, it)));</span>
+<span class="fc" id="L113">		parent.set(&quot;_links&quot;, content);</span>
+<span class="fc" id="L114">		return content;</span>
+	}
+
+	protected ObjectNode link(String appUrl, Type type) {
+<span class="fc" id="L118">		ObjectNode result = nodeFactory.objectNode();</span>
+<span class="fc" id="L119">		result.put(&quot;href&quot;, generateTemplatedUri(appUrl, type));</span>
+<span class="fc" id="L120">		result.put(&quot;templated&quot;, true);</span>
+<span class="fc" id="L121">		return result;</span>
+	}
+
+	protected String generateTemplatedUri(String appUrl, Type type) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		String uri = (appUrl != null) ? appUrl + type.getAction() : type.getAction();</span>
+<span class="fc" id="L126">		uri = uri + &quot;?type=&quot; + type.getId();</span>
+<span class="fc" id="L127">		UriTemplate uriTemplate = UriTemplate.of(uri, getTemplateVariables(type));</span>
+<span class="fc" id="L128">		return uriTemplate.toString();</span>
+	}
+
+	protected TemplateVariables getTemplateVariables(Type type) {
+<span class="fc" id="L132">		return this.templateVariables;</span>
+	}
+
+	protected void dependencies(ObjectNode parent, DependenciesCapability capability) {
+<span class="fc" id="L136">		ObjectNode dependencies = nodeFactory.objectNode();</span>
+<span class="fc" id="L137">		dependencies.put(&quot;type&quot;, capability.getType().getName());</span>
+<span class="fc" id="L138">		ArrayNode values = nodeFactory.arrayNode();</span>
+<span class="fc" id="L139">		values.addAll(capability.getContent().stream().map(this::mapDependencyGroup).collect(Collectors.toList()));</span>
+<span class="fc" id="L140">		dependencies.set(&quot;values&quot;, values);</span>
+<span class="fc" id="L141">		parent.set(capability.getId(), dependencies);</span>
+<span class="fc" id="L142">	}</span>
+
+	protected void type(ObjectNode parent, TypeCapability capability) {
+<span class="fc" id="L145">		ObjectNode type = nodeFactory.objectNode();</span>
+<span class="fc" id="L146">		type.put(&quot;type&quot;, capability.getType().getName());</span>
+<span class="fc" id="L147">		Type defaultType = capability.getDefault();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (defaultType != null) {</span>
+<span class="fc" id="L149">			type.put(&quot;default&quot;, defaultType.getId());</span>
+		}
+<span class="fc" id="L151">		ArrayNode values = nodeFactory.arrayNode();</span>
+<span class="fc" id="L152">		values.addAll(capability.getContent().stream().map(this::mapType).collect(Collectors.toList()));</span>
+<span class="fc" id="L153">		type.set(&quot;values&quot;, values);</span>
+<span class="fc" id="L154">		parent.set(&quot;type&quot;, type);</span>
+<span class="fc" id="L155">	}</span>
+
+	protected void singleSelect(ObjectNode parent, SingleSelectCapability capability) {
+<span class="fc" id="L158">		singleSelect(parent, capability, this::mapValue, (id) -&gt; id);</span>
+<span class="fc" id="L159">	}</span>
+
+	/**
+	 * Map a {@link SingleSelectCapability} invoking the specified {@code valueMapper}.
+	 * @param parent the parent node
+	 * @param capability the capability to map
+	 * @param valueMapper the function to invoke to transform one value of the capability
+	 * @deprecated in favor of
+	 * {@link #singleSelect(ObjectNode, SingleSelectCapability, Function, Function)}
+	 */
+	@Deprecated
+	protected void singleSelect(ObjectNode parent, SingleSelectCapability capability,
+			Function&lt;MetadataElement, ObjectNode&gt; valueMapper) {
+<span class="nc" id="L172">		singleSelect(parent, capability, valueMapper, (id) -&gt; id);</span>
+<span class="nc" id="L173">	}</span>
+
+	protected void singleSelect(ObjectNode parent, SingleSelectCapability capability,
+			Function&lt;MetadataElement, ObjectNode&gt; valueMapper, Function&lt;String, String&gt; defaultMapper) {
+<span class="fc" id="L177">		ObjectNode single = nodeFactory.objectNode();</span>
+<span class="fc" id="L178">		single.put(&quot;type&quot;, capability.getType().getName());</span>
+<span class="fc" id="L179">		DefaultMetadataElement defaultType = capability.getDefault();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		if (defaultType != null) {</span>
+<span class="fc" id="L181">			single.put(&quot;default&quot;, defaultMapper.apply(defaultType.getId()));</span>
+		}
+<span class="fc" id="L183">		ArrayNode values = nodeFactory.arrayNode();</span>
+<span class="fc" id="L184">		values.addAll(capability.getContent().stream().map(valueMapper).collect(Collectors.toList()));</span>
+<span class="fc" id="L185">		single.set(&quot;values&quot;, values);</span>
+<span class="fc" id="L186">		parent.set(capability.getId(), single);</span>
+<span class="fc" id="L187">	}</span>
+
+	protected void text(ObjectNode parent, TextCapability capability) {
+<span class="fc" id="L190">		ObjectNode text = nodeFactory.objectNode();</span>
+<span class="fc" id="L191">		text.put(&quot;type&quot;, capability.getType().getName());</span>
+<span class="fc" id="L192">		String defaultValue = capability.getContent();</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (StringUtils.hasText(defaultValue)) {</span>
+<span class="fc" id="L194">			text.put(&quot;default&quot;, defaultValue);</span>
+		}
+<span class="fc" id="L196">		parent.set(capability.getId(), text);</span>
+<span class="fc" id="L197">	}</span>
+
+	protected ObjectNode mapDependencyGroup(DependencyGroup group) {
+<span class="fc" id="L200">		ObjectNode result = nodeFactory.objectNode();</span>
+<span class="fc" id="L201">		result.put(&quot;name&quot;, group.getName());</span>
+<span class="pc bpc" id="L202" title="3 of 4 branches missed.">		if ((group instanceof Describable) &amp;&amp; ((Describable) group).getDescription() != null) {</span>
+<span class="nc" id="L203">			result.put(&quot;description&quot;, ((Describable) group).getDescription());</span>
+		}
+<span class="fc" id="L205">		ArrayNode items = nodeFactory.arrayNode();</span>
+<span class="fc" id="L206">		group.getContent().forEach((it) -&gt; {</span>
+<span class="fc" id="L207">			JsonNode dependency = mapDependency(it);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">			if (dependency != null) {</span>
+<span class="fc" id="L209">				items.add(dependency);</span>
+			}
+<span class="fc" id="L211">		});</span>
+<span class="fc" id="L212">		result.set(&quot;values&quot;, items);</span>
+<span class="fc" id="L213">		return result;</span>
+	}
+
+	protected ObjectNode mapDependency(Dependency dependency) {
+<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (dependency.getCompatibilityRange() == null) {</span>
+			// only map the dependency if no compatibilityRange is set
+<span class="fc" id="L219">			return mapValue(dependency);</span>
+		}
+<span class="fc" id="L221">		return null;</span>
+	}
+
+	protected ObjectNode mapType(Type type) {
+<span class="fc" id="L225">		ObjectNode result = mapValue(type);</span>
+<span class="fc" id="L226">		result.put(&quot;action&quot;, type.getAction());</span>
+<span class="fc" id="L227">		ObjectNode tags = nodeFactory.objectNode();</span>
+<span class="fc" id="L228">		type.getTags().forEach(tags::put);</span>
+<span class="fc" id="L229">		result.set(&quot;tags&quot;, tags);</span>
+<span class="fc" id="L230">		return result;</span>
+	}
+
+	private ObjectNode mapVersionMetadata(MetadataElement value) {
+<span class="fc" id="L234">		ObjectNode result = nodeFactory.objectNode();</span>
+<span class="fc" id="L235">		result.put(&quot;id&quot;, formatVersion(value.getId()));</span>
+<span class="fc" id="L236">		result.put(&quot;name&quot;, value.getName());</span>
+<span class="fc" id="L237">		return result;</span>
+	}
+
+	protected String formatVersion(String versionId) {
+<span class="fc" id="L241">		Version version = VersionParser.DEFAULT.safeParse(versionId);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		return (version != null) ? version.format(Format.V1).toString() : versionId;</span>
+	}
+
+	protected ObjectNode mapValue(MetadataElement value) {
+<span class="fc" id="L246">		ObjectNode result = nodeFactory.objectNode();</span>
+<span class="fc" id="L247">		result.put(&quot;id&quot;, value.getId());</span>
+<span class="fc" id="L248">		result.put(&quot;name&quot;, value.getName());</span>
+<span class="fc bfc" id="L249" title="All 4 branches covered.">		if ((value instanceof Describable) &amp;&amp; ((Describable) value).getDescription() != null) {</span>
+<span class="fc" id="L250">			result.put(&quot;description&quot;, ((Describable) value).getDescription());</span>
+		}
+<span class="fc" id="L252">		return result;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

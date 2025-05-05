@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleBuildWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleBuildWriter.java</span></div><h1>GradleBuildWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.BillOfMaterials;
+import io.spring.initializr.generator.buildsystem.Dependency;
+import io.spring.initializr.generator.buildsystem.DependencyComparator;
+import io.spring.initializr.generator.buildsystem.DependencyContainer;
+import io.spring.initializr.generator.buildsystem.DependencyScope;
+import io.spring.initializr.generator.buildsystem.MavenRepository;
+import io.spring.initializr.generator.buildsystem.PropertyContainer;
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.version.VersionProperty;
+
+/**
+ * {@link GradleBuild} writer abstraction.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ * @author Jean-Baptiste Nizet
+ * @author Moritz Halbritter
+ * @see GroovyDslGradleBuildWriter
+ * @see KotlinDslGradleBuildWriter
+ */
+<span class="fc" id="L55">public abstract class GradleBuildWriter {</span>
+
+	/**
+	 * Write a {@linkplain GradleBuild build.gradle} using the specified
+	 * {@linkplain IndentingWriter writer}.
+	 * @param writer the writer to use
+	 * @param build the gradle build to write
+	 */
+	public final void writeTo(IndentingWriter writer, GradleBuild build) {
+<span class="fc" id="L64">		GradleBuildSettings settings = build.getSettings();</span>
+<span class="fc" id="L65">		writeImports(writer, build.tasks(), build.snippets(), build.extensions());</span>
+<span class="fc" id="L66">		writeBuildscript(writer, build);</span>
+<span class="fc" id="L67">		writePlugins(writer, build);</span>
+<span class="fc" id="L68">		writeProperty(writer, &quot;group&quot;, settings.getGroup());</span>
+<span class="fc" id="L69">		writeProperty(writer, &quot;version&quot;, settings.getVersion());</span>
+<span class="fc" id="L70">		writer.println();</span>
+<span class="fc" id="L71">		writeJavaSourceCompatibility(writer, settings);</span>
+<span class="fc" id="L72">		writeToolchain(writer, settings);</span>
+<span class="fc" id="L73">		writeConfigurations(writer, build.configurations());</span>
+<span class="fc" id="L74">		writeRepositories(writer, build);</span>
+<span class="fc" id="L75">		writeProperties(writer, build.properties());</span>
+<span class="fc" id="L76">		writeDependencies(writer, build);</span>
+<span class="fc" id="L77">		writeBoms(writer, build);</span>
+<span class="fc" id="L78">		writeExtensions(writer, build.extensions());</span>
+<span class="fc" id="L79">		writeTasks(writer, build.tasks());</span>
+<span class="fc" id="L80">		writeSnippets(writer, build.snippets());</span>
+<span class="fc" id="L81">	}</span>
+
+	private void writeImports(IndentingWriter writer, GradleTaskContainer tasks, GradleSnippetContainer snippets,
+			GradleExtensionContainer extensions) {
+<span class="fc" id="L85">		List&lt;String&gt; imports = concat(tasks.importedTypes(), snippets.importedTypes(), extensions.importedTypes())</span>
+<span class="fc" id="L86">			.sorted()</span>
+<span class="fc" id="L87">			.toList();</span>
+<span class="fc" id="L88">		imports.forEach((importedType) -&gt; writer.println(&quot;import &quot; + importedType));</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (!imports.isEmpty()) {</span>
+<span class="fc" id="L90">			writer.println();</span>
+		}
+<span class="fc" id="L92">	}</span>
+
+	protected abstract void writeBuildscript(IndentingWriter writer, GradleBuild build);
+
+	protected abstract void writePlugins(IndentingWriter writer, GradleBuild build);
+
+	protected List&lt;StandardGradlePlugin&gt; extractStandardPlugin(GradleBuild build) {
+<span class="fc" id="L99">		return build.plugins()</span>
+<span class="fc" id="L100">			.values()</span>
+<span class="fc" id="L101">			.filter(StandardGradlePlugin.class::isInstance)</span>
+<span class="fc" id="L102">			.map(StandardGradlePlugin.class::cast)</span>
+<span class="fc" id="L103">			.collect(Collectors.toList());</span>
+	}
+
+	/**
+	 * Writes the source compatibility for Java.
+	 * @param writer the writer
+	 * @param settings the settings
+	 * @deprecated for removal in favor of Gradle toolchains
+	 */
+	@Deprecated(forRemoval = true)
+	protected void writeJavaSourceCompatibility(IndentingWriter writer, GradleBuildSettings settings) {
+<span class="fc" id="L114">	}</span>
+
+	protected abstract void writeConfigurations(IndentingWriter writer, GradleConfigurationContainer configurations);
+
+	private void writeToolchain(IndentingWriter writer, GradleBuildSettings settings) {
+<span class="fc" id="L119">		writer.println(&quot;java {&quot;);</span>
+<span class="fc" id="L120">		writer.indented(() -&gt; {</span>
+<span class="fc" id="L121">			writer.println(&quot;toolchain {&quot;);</span>
+<span class="fc" id="L122">			writer.indented(() -&gt; writer.println(</span>
+<span class="fc" id="L123">					&quot;languageVersion = JavaLanguageVersion.of(%s)&quot;.formatted(sourceCompatibilityAsNumber(settings))));</span>
+<span class="fc" id="L124">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L125">		});</span>
+<span class="fc" id="L126">		writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L127">		writer.println(&quot;&quot;);</span>
+<span class="fc" id="L128">	}</span>
+
+	private static String sourceCompatibilityAsNumber(GradleBuildSettings settings) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		String version = (settings.getSourceCompatibility() != null) ? settings.getSourceCompatibility()</span>
+<span class="fc" id="L132">				: Language.DEFAULT_JVM_VERSION;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (version.startsWith(&quot;1.&quot;)) {</span>
+<span class="fc" id="L134">			return version.substring(&quot;1.&quot;.length());</span>
+		}
+<span class="fc" id="L136">		return version;</span>
+	}
+
+	protected final void writeRepositories(IndentingWriter writer, GradleBuild build) {
+<span class="fc" id="L140">		writeNestedCollection(writer, &quot;repositories&quot;, build.repositories().items().collect(Collectors.toList()),</span>
+				this::repositoryAsString);
+<span class="fc" id="L142">	}</span>
+
+	protected abstract String repositoryAsString(MavenRepository repository);
+
+	private void writeProperties(IndentingWriter writer, PropertyContainer properties) {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (properties.isEmpty()) {</span>
+<span class="fc" id="L148">			return;</span>
+		}
+<span class="fc" id="L150">		Map&lt;String, String&gt; allProperties = new LinkedHashMap&lt;&gt;(properties.values()</span>
+<span class="pc" id="L151">			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -&gt; newValue,</span>
+					TreeMap::new)));
+<span class="fc" id="L153">		properties.versions(this::getVersionPropertyKey)</span>
+<span class="fc" id="L154">			.forEach((entry) -&gt; allProperties.put(entry.getKey(), &quot;\&quot;&quot; + entry.getValue() + &quot;\&quot;&quot;));</span>
+<span class="fc" id="L155">		writeExtraProperties(writer, allProperties);</span>
+<span class="fc" id="L156">	}</span>
+
+	protected abstract void writeExtraProperties(IndentingWriter writer, Map&lt;String, String&gt; allProperties);
+
+	private String getVersionPropertyKey(VersionProperty versionProperty) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		return versionProperty.isInternal() ? versionProperty.toCamelCaseFormat() : versionProperty.toStandardFormat();</span>
+	}
+
+	private void writeDependencies(IndentingWriter writer, GradleBuild build) {
+<span class="fc" id="L165">		Set&lt;Dependency&gt; sortedDependencies = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L166">		DependencyContainer dependencies = build.dependencies();</span>
+<span class="fc" id="L167">		sortedDependencies</span>
+<span class="fc bfc" id="L168" title="All 4 branches covered.">			.addAll(filterDependencies(dependencies, (scope) -&gt; scope == null || scope == DependencyScope.COMPILE));</span>
+<span class="fc" id="L169">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.COMPILE_ONLY)));</span>
+<span class="fc" id="L170">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.RUNTIME)));</span>
+<span class="fc" id="L171">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.ANNOTATION_PROCESSOR)));</span>
+<span class="fc" id="L172">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.PROVIDED_RUNTIME)));</span>
+<span class="fc" id="L173">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.TEST_COMPILE)));</span>
+<span class="fc" id="L174">		sortedDependencies.addAll(filterDependencies(dependencies, hasScope(DependencyScope.TEST_RUNTIME)));</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (!sortedDependencies.isEmpty()) {</span>
+<span class="fc" id="L176">			writer.println();</span>
+<span class="fc" id="L177">			writer.println(&quot;dependencies&quot; + &quot; {&quot;);</span>
+<span class="fc" id="L178">			writer.indented(() -&gt; sortedDependencies.forEach((dependency) -&gt; writeDependency(writer, dependency)));</span>
+<span class="fc" id="L179">			writer.println(&quot;}&quot;);</span>
+		}
+<span class="fc" id="L181">	}</span>
+
+	private Predicate&lt;DependencyScope&gt; hasScope(DependencyScope... validScopes) {
+<span class="fc" id="L184">		return (scope) -&gt; Arrays.asList(validScopes).contains(scope);</span>
+	}
+
+	/**
+	 * Return the {@link Comparator} to use to sort dependencies.
+	 * @return a dependency comparator
+	 */
+	protected Comparator&lt;Dependency&gt; getDependencyComparator() {
+<span class="fc" id="L192">		return DependencyComparator.INSTANCE;</span>
+	}
+
+	protected abstract void writeDependency(IndentingWriter writer, Dependency dependency);
+
+	protected String configurationForDependency(Dependency dependency) {
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		if (dependency instanceof GradleDependency) {</span>
+<span class="fc" id="L199">			String configuration = ((GradleDependency) dependency).getConfiguration();</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			if (configuration != null) {</span>
+<span class="fc" id="L201">				return configuration;</span>
+			}
+		}
+<span class="fc" id="L204">		DependencyScope type = dependency.getScope();</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		if (type == null) {</span>
+<span class="fc" id="L206">			return &quot;implementation&quot;;</span>
+		}
+<span class="fc bfc" id="L208" title="All 7 branches covered.">		return switch (type) {</span>
+<span class="fc" id="L209">			case ANNOTATION_PROCESSOR -&gt; &quot;annotationProcessor&quot;;</span>
+<span class="fc" id="L210">			case COMPILE -&gt; &quot;implementation&quot;;</span>
+<span class="fc" id="L211">			case COMPILE_ONLY -&gt; &quot;compileOnly&quot;;</span>
+<span class="fc" id="L212">			case PROVIDED_RUNTIME -&gt; &quot;providedRuntime&quot;;</span>
+<span class="fc" id="L213">			case RUNTIME -&gt; &quot;runtimeOnly&quot;;</span>
+<span class="fc" id="L214">			case TEST_COMPILE -&gt; &quot;testImplementation&quot;;</span>
+<span class="fc" id="L215">			case TEST_RUNTIME -&gt; &quot;testRuntimeOnly&quot;;</span>
+		};
+	}
+
+	private void writeBoms(IndentingWriter writer, GradleBuild build) {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (build.boms().isEmpty()) {</span>
+<span class="fc" id="L221">			return;</span>
+		}
+<span class="fc" id="L223">		List&lt;BillOfMaterials&gt; boms = build.boms()</span>
+<span class="fc" id="L224">			.items()</span>
+<span class="fc" id="L225">			.sorted(Comparator.comparingInt(BillOfMaterials::getOrder).reversed())</span>
+<span class="fc" id="L226">			.collect(Collectors.toList());</span>
+<span class="fc" id="L227">		writer.println();</span>
+<span class="fc" id="L228">		writer.println(&quot;dependencyManagement {&quot;);</span>
+<span class="fc" id="L229">		writer.indented(() -&gt; writeNestedCollection(writer, &quot;imports&quot;, boms, this::bomAsString));</span>
+<span class="fc" id="L230">		writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L231">	}</span>
+
+	protected abstract String bomAsString(BillOfMaterials bom);
+
+	protected abstract void writeTasks(IndentingWriter writer, GradleTaskContainer tasks);
+
+	private void writeExtensions(IndentingWriter writer, GradleExtensionContainer extensions) {
+<span class="fc" id="L238">		extensions.values().forEach((extension) -&gt; {</span>
+<span class="fc" id="L239">			writer.println();</span>
+<span class="fc" id="L240">			writer.println(extension.getName() + &quot; {&quot;);</span>
+<span class="fc" id="L241">			writer.indented(() -&gt; writeExtensionCustomization(writer, extension));</span>
+<span class="fc" id="L242">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L243">		});</span>
+
+<span class="fc" id="L245">	}</span>
+
+	private void writeExtensionCustomization(IndentingWriter writer, GradleExtension extension) {
+<span class="fc" id="L248">		writeCollection(writer, extension.getInvocations(), this::invocationAsString);</span>
+<span class="fc" id="L249">		writeCollection(writer, extension.getAttributes(), this::attributeAsString);</span>
+<span class="fc" id="L250">		extension.getNested().forEach((ignored, nested) -&gt; {</span>
+<span class="fc" id="L251">			writer.println(nested.getName() + &quot; {&quot;);</span>
+<span class="fc" id="L252">			writer.indented(() -&gt; writeExtensionCustomization(writer, nested));</span>
+<span class="fc" id="L253">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L254">		});</span>
+<span class="fc" id="L255">	}</span>
+
+	protected final void writeTaskCustomization(IndentingWriter writer, GradleTask task) {
+<span class="fc" id="L258">		writeCollection(writer, task.getInvocations(), this::invocationAsString);</span>
+<span class="fc" id="L259">		writeCollection(writer, task.getAttributes(), this::attributeAsString);</span>
+<span class="fc" id="L260">		task.getNested().forEach((property, nestedCustomization) -&gt; {</span>
+<span class="fc" id="L261">			writer.println(property + &quot; {&quot;);</span>
+<span class="fc" id="L262">			writer.indented(() -&gt; writeTaskCustomization(writer, nestedCustomization));</span>
+<span class="fc" id="L263">			writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L264">		});</span>
+<span class="fc" id="L265">	}</span>
+
+	private String attributeAsString(Attribute attribute) {
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">		String separator = (attribute.getType() == Attribute.Type.SET) ? &quot;=&quot; : &quot;+=&quot;;</span>
+<span class="fc" id="L269">		return String.format(&quot;%s %s %s&quot;, attribute.getName(), separator, attribute.getValue());</span>
+	}
+
+	protected abstract String invocationAsString(Invocation invocation);
+
+	private void writeSnippets(IndentingWriter writer, GradleSnippetContainer snippets) {
+<span class="fc bfc" id="L275" title="All 2 branches covered.">		if (!snippets.isEmpty()) {</span>
+<span class="fc" id="L276">			writer.println();</span>
+		}
+<span class="fc" id="L278">		snippets.values().forEach((snippet) -&gt; {</span>
+<span class="fc" id="L279">			snippet.apply(writer);</span>
+<span class="fc" id="L280">			writer.println();</span>
+<span class="fc" id="L281">		});</span>
+<span class="fc" id="L282">	}</span>
+
+	protected final &lt;T&gt; void writeNestedCollection(IndentingWriter writer, String name, Collection&lt;T&gt; collection,
+			Function&lt;T, String&gt; itemToStringConverter) {
+<span class="fc" id="L286">		this.writeNestedCollection(writer, name, collection, itemToStringConverter, null);</span>
+<span class="fc" id="L287">	}</span>
+
+	protected final &lt;T&gt; void writeNestedCollection(IndentingWriter writer, String name, Collection&lt;T&gt; collection,
+			Function&lt;T, String&gt; converter, Runnable beforeWriting) {
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		if (!collection.isEmpty()) {</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">			if (beforeWriting != null) {</span>
+<span class="fc" id="L293">				beforeWriting.run();</span>
+			}
+<span class="fc" id="L295">			writer.println(name + &quot; {&quot;);</span>
+<span class="fc" id="L296">			writer.indented(() -&gt; writeCollection(writer, collection, converter));</span>
+<span class="fc" id="L297">			writer.println(&quot;}&quot;);</span>
+
+		}
+<span class="fc" id="L300">	}</span>
+
+	protected final &lt;T&gt; void writeCollection(IndentingWriter writer, Collection&lt;T&gt; collection,
+			Function&lt;T, String&gt; converter) {
+<span class="fc" id="L304">		writeCollection(writer, collection, converter, null);</span>
+<span class="fc" id="L305">	}</span>
+
+	protected final &lt;T&gt; void writeCollection(IndentingWriter writer, Collection&lt;T&gt; collection,
+			Function&lt;T, String&gt; itemToStringConverter, Runnable beforeWriting) {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">		if (!collection.isEmpty()) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">			if (beforeWriting != null) {</span>
+<span class="fc" id="L311">				beforeWriting.run();</span>
+			}
+<span class="fc" id="L313">			collection.stream().map(itemToStringConverter).forEach(writer::println);</span>
+		}
+<span class="fc" id="L315">	}</span>
+
+	protected final &lt;T, U&gt; void writeMap(IndentingWriter writer, Map&lt;T, U&gt; map, BiFunction&lt;T, U, String&gt; converter) {
+<span class="fc" id="L318">		map.forEach((key, value) -&gt; writer.println(converter.apply(key, value)));</span>
+<span class="fc" id="L319">	}</span>
+
+	protected abstract void writeProperty(IndentingWriter writer, String name, String value);
+
+	private Collection&lt;Dependency&gt; filterDependencies(DependencyContainer dependencies,
+			Predicate&lt;DependencyScope&gt; filter) {
+<span class="fc" id="L325">		return dependencies.items()</span>
+<span class="fc" id="L326">			.filter((dep) -&gt; filter.test(dep.getScope()))</span>
+<span class="fc" id="L327">			.sorted(getDependencyComparator())</span>
+<span class="fc" id="L328">			.collect(Collectors.toList());</span>
+	}
+
+	@SafeVarargs
+	private static Stream&lt;String&gt; concat(Stream&lt;String&gt;... streams) {
+<span class="fc" id="L333">		Stream&lt;String&gt; result = Stream.empty();</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">		for (Stream&lt;String&gt; stream : streams) {</span>
+<span class="fc" id="L335">			result = Stream.concat(result, stream);</span>
+		}
+<span class="fc" id="L337">		return result;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

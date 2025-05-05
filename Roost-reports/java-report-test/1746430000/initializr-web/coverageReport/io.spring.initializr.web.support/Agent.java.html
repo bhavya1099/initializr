@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Agent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.support</a> &gt; <span class="el_source">Agent.java</span></div><h1>Agent.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.support;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Defines the agent that submitted a request.
+ *
+ * @author Stephane Nicoll
+ */
+public class Agent {
+
+	/**
+	 * The {@link AgentId}.
+	 */
+	private final AgentId id;
+
+	/**
+	 * The version of the agent, if any.
+	 */
+	private final String version;
+
+<span class="fc" id="L39">	public Agent(AgentId id, String version) {</span>
+<span class="fc" id="L40">		this.id = id;</span>
+<span class="fc" id="L41">		this.version = version;</span>
+<span class="fc" id="L42">	}</span>
+
+	public AgentId getId() {
+<span class="fc" id="L45">		return this.id;</span>
+	}
+
+	public String getVersion() {
+<span class="fc" id="L49">		return this.version;</span>
+	}
+
+	/**
+	 * Create an {@link Agent} based on the specified {@code User-Agent} header.
+	 * @param userAgent the user agent
+	 * @return an {@link Agent} instance or {@code null}
+	 */
+	public static Agent fromUserAgent(String userAgent) {
+<span class="fc" id="L58">		return UserAgentHandler.parse(userAgent);</span>
+	}
+
+	/**
+	 * Defines the various known agents.
+	 */
+<span class="fc" id="L64">	public enum AgentId {</span>
+
+		/**
+		 * CURL.
+		 */
+<span class="fc" id="L69">		CURL(&quot;curl&quot;, &quot;curl&quot;),</span>
+
+		/**
+		 * HTTPie.
+		 */
+<span class="fc" id="L74">		HTTPIE(&quot;httpie&quot;, &quot;HTTPie&quot;),</span>
+
+		/**
+		 * JBoss Forge.
+		 */
+<span class="fc" id="L79">		JBOSS_FORGE(&quot;jbossforge&quot;, &quot;SpringBootForgeCli&quot;),</span>
+
+		/**
+		 * The Spring Boot CLI.
+		 */
+<span class="fc" id="L84">		SPRING_BOOT_CLI(&quot;spring&quot;, &quot;SpringBootCli&quot;),</span>
+
+		/**
+		 * Spring Tools Suite.
+		 */
+<span class="fc" id="L89">		STS(&quot;sts&quot;, &quot;STS&quot;),</span>
+
+		/**
+		 * IntelliJ IDEA.
+		 */
+<span class="fc" id="L94">		INTELLIJ_IDEA(&quot;intellijidea&quot;, &quot;IntelliJ IDEA&quot;),</span>
+
+		/**
+		 * Netbeans.
+		 */
+<span class="fc" id="L99">		NETBEANS(&quot;netbeans&quot;, &quot;NetBeans&quot;),</span>
+
+		/**
+		 * Visual Studio Code.
+		 */
+<span class="fc" id="L104">		VSCODE(&quot;vscode&quot;, &quot;vscode&quot;),</span>
+
+		/**
+		 * Jenkins X.
+		 */
+<span class="fc" id="L109">		JENKINSX(&quot;jenkinsx&quot;, &quot;jx&quot;),</span>
+
+		/**
+		 * NX.
+		 */
+<span class="fc" id="L114">		NX(&quot;nx&quot;, &quot;@nxrocks_nx-spring-boot&quot;),</span>
+
+		/**
+		 * A generic browser.
+		 */
+<span class="fc" id="L119">		BROWSER(&quot;browser&quot;, &quot;Browser&quot;);</span>
+
+		final String id;
+
+		final String name;
+
+		public String getId() {
+<span class="nc" id="L126">			return this.id;</span>
+		}
+
+		public String getName() {
+<span class="nc" id="L130">			return this.name;</span>
+		}
+
+<span class="fc" id="L133">		AgentId(String id, String name) {</span>
+<span class="fc" id="L134">			this.id = id;</span>
+<span class="fc" id="L135">			this.name = name;</span>
+<span class="fc" id="L136">		}</span>
+
+	}
+
+	private static final class UserAgentHandler {
+
+<span class="fc" id="L142">		private static final Pattern TOOL_REGEX = Pattern.compile(&quot;([^\\/]*)\\/([^ ]*).*&quot;);</span>
+
+<span class="fc" id="L144">		private static final Pattern STS_REGEX = Pattern.compile(&quot;STS (.*)&quot;);</span>
+
+<span class="fc" id="L146">		private static final Pattern NETBEANS_REGEX = Pattern.compile(&quot;nb-springboot-plugin\\/(.*)&quot;);</span>
+
+		static Agent parse(String userAgent) {
+<span class="fc" id="L149">			Matcher matcher = TOOL_REGEX.matcher(userAgent);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">			if (matcher.matches()) {</span>
+<span class="fc" id="L151">				String name = matcher.group(1);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">				for (AgentId id : AgentId.values()) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">					if (name.equals(id.name)) {</span>
+<span class="fc" id="L154">						String version = matcher.group(2);</span>
+<span class="fc" id="L155">						return new Agent(id, version);</span>
+					}
+				}
+			}
+<span class="fc" id="L159">			matcher = STS_REGEX.matcher(userAgent);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (matcher.matches()) {</span>
+<span class="fc" id="L161">				return new Agent(AgentId.STS, matcher.group(1));</span>
+			}
+<span class="fc" id="L163">			matcher = NETBEANS_REGEX.matcher(userAgent);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">			if (matcher.matches()) {</span>
+<span class="fc" id="L165">				return new Agent(AgentId.NETBEANS, matcher.group(1));</span>
+			}
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (userAgent.equals(AgentId.INTELLIJ_IDEA.name)) {</span>
+<span class="fc" id="L169">				return new Agent(AgentId.INTELLIJ_IDEA, null);</span>
+			}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			if (userAgent.contains(&quot;Mozilla/5.0&quot;)) { // Super heuristics</span>
+<span class="fc" id="L172">				return new Agent(AgentId.BROWSER, null);</span>
+			}
+<span class="fc" id="L174">			return null;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

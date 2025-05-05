@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrMetadataV21JsonMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.mapper</a> &gt; <span class="el_source">InitializrMetadataV21JsonMapper.java</span></div><h1>InitializrMetadataV21JsonMapper.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.mapper;
+
+import java.util.List;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.spring.initializr.generator.version.Version.Format;
+import io.spring.initializr.generator.version.VersionRange;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.Type;
+
+import org.springframework.hateoas.TemplateVariable;
+import org.springframework.hateoas.TemplateVariables;
+import org.springframework.hateoas.UriTemplate;
+
+/**
+ * A {@link InitializrMetadataJsonMapper} handling the metadata format for v2.1
+ * &lt;p&gt;
+ * Version 2.1 brings the &quot;compatibilityRange&quot; attribute for a dependency to restrict the
+ * Spring Boot versions that can be used against it. That version also adds an additional
+ * `dependencies` endpoint.
+ *
+ * @author Stephane Nicoll
+ */
+public class InitializrMetadataV21JsonMapper extends InitializrMetadataV2JsonMapper {
+
+	private final TemplateVariables dependenciesVariables;
+
+	/**
+	 * Create a new instance.
+	 */
+<span class="fc" id="L47">	public InitializrMetadataV21JsonMapper() {</span>
+<span class="fc" id="L48">		this.dependenciesVariables = new TemplateVariables(</span>
+				new TemplateVariable(&quot;bootVersion&quot;, TemplateVariable.VariableType.REQUEST_PARAM));
+<span class="fc" id="L50">	}</span>
+
+	@Override
+	protected ObjectNode links(ObjectNode parent, List&lt;Type&gt; types, String appUrl) {
+<span class="fc" id="L54">		ObjectNode links = super.links(parent, types, appUrl);</span>
+<span class="fc" id="L55">		links.set(&quot;dependencies&quot;, dependenciesLink(appUrl));</span>
+<span class="fc" id="L56">		parent.set(&quot;_links&quot;, links);</span>
+<span class="fc" id="L57">		return links;</span>
+	}
+
+	@Override
+	protected ObjectNode mapDependency(Dependency dependency) {
+<span class="fc" id="L62">		ObjectNode content = mapValue(dependency);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (dependency.getRange() != null) {</span>
+<span class="fc" id="L64">			content.put(&quot;versionRange&quot;, formatVersionRange(dependency.getRange()));</span>
+		}
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">		if (dependency.getLinks() != null &amp;&amp; !dependency.getLinks().isEmpty()) {</span>
+<span class="fc" id="L67">			content.set(&quot;_links&quot;, LinkMapper.mapLinks(dependency.getLinks()));</span>
+		}
+<span class="fc" id="L69">		return content;</span>
+	}
+
+	protected String formatVersionRange(VersionRange versionRange) {
+<span class="fc" id="L73">		return versionRange.format(Format.V1).toRangeString();</span>
+	}
+
+	protected ObjectNode dependenciesLink(String appUrl) {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		String uri = (appUrl != null) ? appUrl + &quot;/dependencies&quot; : &quot;/dependencies&quot;;</span>
+<span class="fc" id="L78">		UriTemplate uriTemplate = UriTemplate.of(uri, getDependenciesVariables());</span>
+<span class="fc" id="L79">		ObjectNode result = nodeFactory().objectNode();</span>
+<span class="fc" id="L80">		result.put(&quot;href&quot;, uriTemplate.toString());</span>
+<span class="fc" id="L81">		result.put(&quot;templated&quot;, true);</span>
+<span class="fc" id="L82">		return result;</span>
+	}
+
+	protected TemplateVariables getDependenciesVariables() {
+<span class="fc" id="L86">		return this.dependenciesVariables;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

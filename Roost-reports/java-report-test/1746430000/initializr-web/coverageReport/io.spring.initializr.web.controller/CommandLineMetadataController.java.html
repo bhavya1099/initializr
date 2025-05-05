@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommandLineMetadataController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.controller</a> &gt; <span class="el_source">CommandLineMetadataController.java</span></div><h1>CommandLineMetadataController.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.controller;
+
+import java.io.IOException;
+
+import io.spring.initializr.generator.io.template.TemplateRenderer;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.web.support.Agent;
+import io.spring.initializr.web.support.Agent.AgentId;
+import io.spring.initializr.web.support.CommandLineHelpGenerator;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * {@link RestController} that handles assistance for CLI support using a
+ * {@link CommandLineHelpGenerator}.
+ *
+ * @author Stephane Nicoll
+ */
+@RestController
+public class CommandLineMetadataController extends AbstractMetadataController {
+
+	private final CommandLineHelpGenerator commandLineHelpGenerator;
+
+	public CommandLineMetadataController(InitializrMetadataProvider metadataProvider,
+			TemplateRenderer templateRenderer) {
+<span class="fc" id="L49">		super(metadataProvider);</span>
+<span class="fc" id="L50">		this.commandLineHelpGenerator = new CommandLineHelpGenerator(templateRenderer);</span>
+<span class="fc" id="L51">	}</span>
+
+	@GetMapping(path = &quot;/&quot;, produces = &quot;text/plain&quot;)
+	public ResponseEntity&lt;String&gt; serviceCapabilitiesText(
+			@RequestHeader(value = HttpHeaders.USER_AGENT, required = false) String userAgent) throws IOException {
+<span class="fc" id="L56">		String appUrl = generateAppUrl();</span>
+<span class="fc" id="L57">		InitializrMetadata metadata = this.metadataProvider.get();</span>
+
+<span class="fc" id="L59">		BodyBuilder builder = ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">		if (userAgent != null) {</span>
+<span class="fc" id="L61">			Agent agent = Agent.fromUserAgent(userAgent);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">			if (agent != null) {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">				if (AgentId.CURL.equals(agent.getId())) {</span>
+<span class="fc" id="L64">					String content = this.commandLineHelpGenerator.generateCurlCapabilities(metadata, appUrl);</span>
+<span class="fc" id="L65">					return builder.eTag(createUniqueId(content)).body(content);</span>
+				}
+<span class="fc bfc" id="L67" title="All 2 branches covered.">				if (AgentId.HTTPIE.equals(agent.getId())) {</span>
+<span class="fc" id="L68">					String content = this.commandLineHelpGenerator.generateHttpieCapabilities(metadata, appUrl);</span>
+<span class="fc" id="L69">					return builder.eTag(createUniqueId(content)).body(content);</span>
+				}
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">				if (AgentId.SPRING_BOOT_CLI.equals(agent.getId())) {</span>
+<span class="fc" id="L72">					String content = this.commandLineHelpGenerator.generateSpringBootCliCapabilities(metadata, appUrl);</span>
+<span class="fc" id="L73">					return builder.eTag(createUniqueId(content)).body(content);</span>
+				}
+			}
+		}
+<span class="fc" id="L77">		String content = this.commandLineHelpGenerator.generateGenericCapabilities(metadata, appUrl);</span>
+<span class="fc" id="L78">		return builder.eTag(createUniqueId(content)).body(content);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

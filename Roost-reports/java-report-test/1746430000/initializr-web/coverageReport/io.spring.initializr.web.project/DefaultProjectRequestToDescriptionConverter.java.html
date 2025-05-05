@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultProjectRequestToDescriptionConverter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.project</a> &gt; <span class="el_source">DefaultProjectRequestToDescriptionConverter.java</span></div><h1>DefaultProjectRequestToDescriptionConverter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.project;
+
+import java.text.Normalizer;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.buildsystem.BuildSystem;
+import io.spring.initializr.generator.language.Language;
+import io.spring.initializr.generator.packaging.Packaging;
+import io.spring.initializr.generator.project.MutableProjectDescription;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.metadata.DefaultMetadataElement;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.InitializrConfiguration.Platform;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.Type;
+import io.spring.initializr.metadata.support.MetadataBuildItemMapper;
+
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+/**
+ * A default {@link ProjectRequestToDescriptionConverter} implementation that uses the
+ * {@link InitializrMetadata metadata} to set default values for missing attributes if
+ * necessary. Transparently transform the platform version if necessary using a
+ * {@link ProjectRequestPlatformVersionTransformer}.
+ *
+ * @author Madhura Bhave
+ * @author HaiTao Zhang
+ * @author Stephane Nicoll
+ * @author Nirbhay Mishra
+ */
+public class DefaultProjectRequestToDescriptionConverter
+		implements ProjectRequestToDescriptionConverter&lt;ProjectRequest&gt; {
+
+	private final ProjectRequestPlatformVersionTransformer platformVersionTransformer;
+
+	public DefaultProjectRequestToDescriptionConverter() {
+<span class="fc" id="L57">		this((version, metadata) -&gt; version);</span>
+<span class="fc" id="L58">	}</span>
+
+	public DefaultProjectRequestToDescriptionConverter(
+<span class="fc" id="L61">			ProjectRequestPlatformVersionTransformer platformVersionTransformer) {</span>
+<span class="fc" id="L62">		Assert.notNull(platformVersionTransformer, &quot;PlatformVersionTransformer must not be null&quot;);</span>
+<span class="fc" id="L63">		this.platformVersionTransformer = platformVersionTransformer;</span>
+<span class="fc" id="L64">	}</span>
+
+	@Override
+	public ProjectDescription convert(ProjectRequest request, InitializrMetadata metadata) {
+<span class="fc" id="L68">		MutableProjectDescription description = new MutableProjectDescription();</span>
+<span class="fc" id="L69">		convert(request, description, metadata);</span>
+<span class="fc" id="L70">		return description;</span>
+	}
+
+	/**
+	 * Validate the specified {@link ProjectRequest request} and initialize the specified
+	 * {@link ProjectDescription description}. Override any attribute of the description
+	 * that are managed by this instance.
+	 * @param request the request to validate
+	 * @param description the description to initialize
+	 * @param metadata the metadata instance to use to apply defaults if necessary
+	 */
+	public void convert(ProjectRequest request, MutableProjectDescription description, InitializrMetadata metadata) {
+<span class="fc" id="L82">		validate(request, metadata);</span>
+<span class="fc" id="L83">		Version platformVersion = getPlatformVersion(request, metadata);</span>
+<span class="fc" id="L84">		List&lt;Dependency&gt; resolvedDependencies = getResolvedDependencies(request, platformVersion, metadata);</span>
+<span class="fc" id="L85">		validateDependencyRange(platformVersion, resolvedDependencies);</span>
+
+<span class="fc" id="L87">		description.setApplicationName(request.getApplicationName());</span>
+<span class="fc" id="L88">		description.setArtifactId(cleanInputValue(request.getArtifactId()));</span>
+<span class="fc" id="L89">		description.setBaseDirectory(request.getBaseDir());</span>
+<span class="fc" id="L90">		description.setBuildSystem(getBuildSystem(request, metadata));</span>
+<span class="fc" id="L91">		description.setDescription(request.getDescription());</span>
+<span class="fc" id="L92">		description.setGroupId(cleanInputValue(request.getGroupId()));</span>
+<span class="fc" id="L93">		description.setLanguage(Language.forId(request.getLanguage(), request.getJavaVersion()));</span>
+<span class="fc" id="L94">		description.setName(cleanInputValue(request.getName()));</span>
+<span class="fc" id="L95">		description.setPackageName(cleanInputValue(request.getPackageName()));</span>
+<span class="fc" id="L96">		description.setPackaging(Packaging.forId(request.getPackaging()));</span>
+<span class="fc" id="L97">		description.setPlatformVersion(platformVersion);</span>
+<span class="fc" id="L98">		description.setVersion(request.getVersion());</span>
+<span class="fc" id="L99">		resolvedDependencies.forEach((dependency) -&gt; description.addDependency(dependency.getId(),</span>
+<span class="fc" id="L100">				MetadataBuildItemMapper.toDependency(dependency)));</span>
+<span class="fc" id="L101">	}</span>
+
+	/**
+	 * Clean input value to rely on US-ascii character as much as possible.
+	 * @param value the input value to clean
+	 * @return a value that can be used as part of an identifier
+	 */
+	protected String cleanInputValue(String value) {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		return StringUtils.hasText(value) ? Normalizer.normalize(value, Normalizer.Form.NFKD).replaceAll(&quot;\\p{M}&quot;, &quot;&quot;)</span>
+<span class="nc" id="L110">				: value;</span>
+	}
+
+	private void validate(ProjectRequest request, InitializrMetadata metadata) {
+<span class="fc" id="L114">		validatePlatformVersion(request, metadata);</span>
+<span class="fc" id="L115">		validateType(request.getType(), metadata);</span>
+<span class="fc" id="L116">		validateLanguage(request.getLanguage(), metadata);</span>
+<span class="fc" id="L117">		validatePackaging(request.getPackaging(), metadata);</span>
+<span class="fc" id="L118">		validateDependencies(request, metadata);</span>
+<span class="fc" id="L119">	}</span>
+
+	private void validatePlatformVersion(ProjectRequest request, InitializrMetadata metadata) {
+<span class="fc" id="L122">		Version platformVersion = Version.safeParse(request.getBootVersion());</span>
+<span class="fc" id="L123">		Platform platform = metadata.getConfiguration().getEnv().getPlatform();</span>
+<span class="pc bpc" id="L124" title="1 of 4 branches missed.">		if (platformVersion != null &amp;&amp; !platform.isCompatibleVersion(platformVersion)) {</span>
+<span class="fc" id="L125">			throw new InvalidProjectRequestException(&quot;Invalid Spring Boot version '&quot; + platformVersion</span>
+<span class="fc" id="L126">					+ &quot;', Spring Boot compatibility range is &quot; + platform.determineCompatibilityRangeRequirement());</span>
+		}
+<span class="fc" id="L128">	}</span>
+
+	private void validateType(String type, InitializrMetadata metadata) {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (type != null) {</span>
+<span class="fc" id="L132">			Type typeFromMetadata = metadata.getTypes().get(type);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">			if (typeFromMetadata == null) {</span>
+<span class="fc" id="L134">				throw new InvalidProjectRequestException(&quot;Unknown type '&quot; + type + &quot;' check project metadata&quot;);</span>
+			}
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (!typeFromMetadata.getTags().containsKey(&quot;build&quot;)) {</span>
+<span class="fc" id="L137">				throw new InvalidProjectRequestException(</span>
+						&quot;Invalid type '&quot; + type + &quot;' (missing build tag) check project metadata&quot;);
+			}
+		}
+<span class="fc" id="L141">	}</span>
+
+	private void validateLanguage(String language, InitializrMetadata metadata) {
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (language != null) {</span>
+<span class="fc" id="L145">			DefaultMetadataElement languageFromMetadata = metadata.getLanguages().get(language);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (languageFromMetadata == null) {</span>
+<span class="fc" id="L147">				throw new InvalidProjectRequestException(&quot;Unknown language '&quot; + language + &quot;' check project metadata&quot;);</span>
+			}
+		}
+<span class="fc" id="L150">	}</span>
+
+	private void validatePackaging(String packaging, InitializrMetadata metadata) {
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (packaging != null) {</span>
+<span class="fc" id="L154">			DefaultMetadataElement packagingFromMetadata = metadata.getPackagings().get(packaging);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">			if (packagingFromMetadata == null) {</span>
+<span class="fc" id="L156">				throw new InvalidProjectRequestException(</span>
+						&quot;Unknown packaging '&quot; + packaging + &quot;' check project metadata&quot;);
+			}
+		}
+<span class="fc" id="L160">	}</span>
+
+	private void validateDependencies(ProjectRequest request, InitializrMetadata metadata) {
+<span class="fc" id="L163">		List&lt;String&gt; dependencies = request.getDependencies();</span>
+<span class="fc" id="L164">		dependencies.forEach((dep) -&gt; {</span>
+<span class="fc" id="L165">			Dependency dependency = metadata.getDependencies().get(dep);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">			if (dependency == null) {</span>
+<span class="fc" id="L167">				throw new InvalidProjectRequestException(&quot;Unknown dependency '&quot; + dep + &quot;' check project metadata&quot;);</span>
+			}
+<span class="fc" id="L169">		});</span>
+<span class="fc" id="L170">	}</span>
+
+	private void validateDependencyRange(Version platformVersion, List&lt;Dependency&gt; resolvedDependencies) {
+<span class="fc" id="L173">		resolvedDependencies.forEach((dep) -&gt; {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			if (!dep.match(platformVersion)) {</span>
+<span class="fc" id="L175">				throw new InvalidProjectRequestException(</span>
+<span class="fc" id="L176">						&quot;Dependency '&quot; + dep.getId() + &quot;' is not compatible &quot; + &quot;with Spring Boot &quot; + platformVersion);</span>
+			}
+<span class="fc" id="L178">		});</span>
+<span class="fc" id="L179">	}</span>
+
+	private BuildSystem getBuildSystem(ProjectRequest request, InitializrMetadata metadata) {
+<span class="fc" id="L182">		Map&lt;String, String&gt; typeTags = metadata.getTypes().get(request.getType()).getTags();</span>
+<span class="fc" id="L183">		String id = typeTags.get(&quot;build&quot;);</span>
+<span class="fc" id="L184">		String dialect = typeTags.get(&quot;dialect&quot;);</span>
+<span class="fc" id="L185">		return BuildSystem.forIdAndDialect(id, dialect);</span>
+	}
+
+	private Version getPlatformVersion(ProjectRequest request, InitializrMetadata metadata) {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		String versionText = (request.getBootVersion() != null) ? request.getBootVersion()</span>
+<span class="pc" id="L190">				: metadata.getBootVersions().getDefault().getId();</span>
+<span class="fc" id="L191">		Version version = Version.parse(versionText);</span>
+<span class="fc" id="L192">		return this.platformVersionTransformer.transform(version, metadata);</span>
+	}
+
+	private List&lt;Dependency&gt; getResolvedDependencies(ProjectRequest request, Version platformVersion,
+			InitializrMetadata metadata) {
+<span class="fc" id="L197">		List&lt;String&gt; depIds = request.getDependencies();</span>
+<span class="fc" id="L198">		return depIds.stream().map((it) -&gt; {</span>
+<span class="fc" id="L199">			Dependency dependency = metadata.getDependencies().get(it);</span>
+<span class="fc" id="L200">			return dependency.resolve(platformVersion);</span>
+<span class="fc" id="L201">		}).collect(Collectors.toList());</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

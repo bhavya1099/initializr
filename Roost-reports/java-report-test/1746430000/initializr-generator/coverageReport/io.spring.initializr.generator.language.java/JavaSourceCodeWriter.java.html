@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JavaSourceCodeWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language.java</a> &gt; <span class="el_source">JavaSourceCodeWriter.java</span></div><h1>JavaSourceCodeWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language.java;
+
+import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.io.IndentingWriterFactory;
+import io.spring.initializr.generator.language.Annotatable;
+import io.spring.initializr.generator.language.Annotation;
+import io.spring.initializr.generator.language.CodeBlock;
+import io.spring.initializr.generator.language.CompilationUnit;
+import io.spring.initializr.generator.language.Parameter;
+import io.spring.initializr.generator.language.SourceCode;
+import io.spring.initializr.generator.language.SourceCodeWriter;
+import io.spring.initializr.generator.language.SourceStructure;
+
+import org.springframework.util.CollectionUtils;
+
+/**
+ * A {@link SourceCodeWriter} that writes {@link SourceCode} in Java.
+ *
+ * @author Andy Wilkinson
+ * @author Matt Berteaux
+ * @author Moritz Halbritter
+ */
+public class JavaSourceCodeWriter implements SourceCodeWriter&lt;JavaSourceCode&gt; {
+
+	private static final Map&lt;Predicate&lt;Integer&gt;, String&gt; TYPE_MODIFIERS;
+
+	private static final Map&lt;Predicate&lt;Integer&gt;, String&gt; FIELD_MODIFIERS;
+
+	private static final Map&lt;Predicate&lt;Integer&gt;, String&gt; METHOD_MODIFIERS;
+
+	static {
+<span class="fc" id="L66">		Map&lt;Predicate&lt;Integer&gt;, String&gt; typeModifiers = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L67">		typeModifiers.put(Modifier::isPublic, &quot;public&quot;);</span>
+<span class="fc" id="L68">		typeModifiers.put(Modifier::isProtected, &quot;protected&quot;);</span>
+<span class="fc" id="L69">		typeModifiers.put(Modifier::isPrivate, &quot;private&quot;);</span>
+<span class="fc" id="L70">		typeModifiers.put(Modifier::isAbstract, &quot;abstract&quot;);</span>
+<span class="fc" id="L71">		typeModifiers.put(Modifier::isStatic, &quot;static&quot;);</span>
+<span class="fc" id="L72">		typeModifiers.put(Modifier::isFinal, &quot;final&quot;);</span>
+<span class="fc" id="L73">		typeModifiers.put(Modifier::isStrict, &quot;strictfp&quot;);</span>
+<span class="fc" id="L74">		TYPE_MODIFIERS = typeModifiers;</span>
+<span class="fc" id="L75">		Map&lt;Predicate&lt;Integer&gt;, String&gt; fieldModifiers = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L76">		fieldModifiers.put(Modifier::isPublic, &quot;public&quot;);</span>
+<span class="fc" id="L77">		fieldModifiers.put(Modifier::isProtected, &quot;protected&quot;);</span>
+<span class="fc" id="L78">		fieldModifiers.put(Modifier::isPrivate, &quot;private&quot;);</span>
+<span class="fc" id="L79">		fieldModifiers.put(Modifier::isStatic, &quot;static&quot;);</span>
+<span class="fc" id="L80">		fieldModifiers.put(Modifier::isFinal, &quot;final&quot;);</span>
+<span class="fc" id="L81">		fieldModifiers.put(Modifier::isTransient, &quot;transient&quot;);</span>
+<span class="fc" id="L82">		fieldModifiers.put(Modifier::isVolatile, &quot;volatile&quot;);</span>
+<span class="fc" id="L83">		FIELD_MODIFIERS = fieldModifiers;</span>
+<span class="fc" id="L84">		Map&lt;Predicate&lt;Integer&gt;, String&gt; methodModifiers = new LinkedHashMap&lt;&gt;(typeModifiers);</span>
+<span class="fc" id="L85">		methodModifiers.put(Modifier::isSynchronized, &quot;synchronized&quot;);</span>
+<span class="fc" id="L86">		methodModifiers.put(Modifier::isNative, &quot;native&quot;);</span>
+<span class="fc" id="L87">		METHOD_MODIFIERS = methodModifiers;</span>
+<span class="fc" id="L88">	}</span>
+
+	private final IndentingWriterFactory indentingWriterFactory;
+
+	/**
+	 * Creates a new instance.
+	 * @param indentingWriterFactory the {@link IndentingWriterFactory} to use
+	 */
+<span class="fc" id="L96">	public JavaSourceCodeWriter(IndentingWriterFactory indentingWriterFactory) {</span>
+<span class="fc" id="L97">		this.indentingWriterFactory = indentingWriterFactory;</span>
+<span class="fc" id="L98">	}</span>
+
+	@Override
+	public void writeTo(SourceStructure structure, JavaSourceCode sourceCode) throws IOException {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (JavaCompilationUnit compilationUnit : sourceCode.getCompilationUnits()) {</span>
+<span class="fc" id="L103">			writeTo(structure, compilationUnit);</span>
+<span class="fc" id="L104">		}</span>
+<span class="fc" id="L105">	}</span>
+
+	private void writeTo(SourceStructure structure, JavaCompilationUnit compilationUnit) throws IOException {
+<span class="fc" id="L108">		Path output = structure.createSourceFile(compilationUnit.getPackageName(), compilationUnit.getName());</span>
+<span class="fc" id="L109">		Files.createDirectories(output.getParent());</span>
+<span class="fc" id="L110">		try (IndentingWriter writer = this.indentingWriterFactory.createIndentingWriter(&quot;java&quot;,</span>
+<span class="fc" id="L111">				Files.newBufferedWriter(output))) {</span>
+<span class="fc" id="L112">			writer.println(&quot;package &quot; + compilationUnit.getPackageName() + &quot;;&quot;);</span>
+<span class="fc" id="L113">			writer.println();</span>
+<span class="fc" id="L114">			Set&lt;String&gt; imports = determineImports(compilationUnit);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (!imports.isEmpty()) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">				for (String importedType : imports) {</span>
+<span class="fc" id="L117">					writer.println(&quot;import &quot; + importedType + &quot;;&quot;);</span>
+<span class="fc" id="L118">				}</span>
+<span class="fc" id="L119">				writer.println();</span>
+			}
+<span class="fc bfc" id="L121" title="All 2 branches covered.">			for (JavaTypeDeclaration type : compilationUnit.getTypeDeclarations()) {</span>
+<span class="fc" id="L122">				writeAnnotations(writer, type, writer::println);</span>
+<span class="fc" id="L123">				writeModifiers(writer, TYPE_MODIFIERS, type.getModifiers());</span>
+<span class="fc" id="L124">				writer.print(&quot;class &quot; + type.getName());</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">				if (type.getExtends() != null) {</span>
+<span class="fc" id="L126">					writer.print(&quot; extends &quot; + getUnqualifiedName(type.getExtends()));</span>
+				}
+<span class="fc bfc" id="L128" title="All 2 branches covered.">				if (!CollectionUtils.isEmpty(type.getImplements())) {</span>
+<span class="fc" id="L129">					writeImplements(type, writer);</span>
+				}
+<span class="fc" id="L131">				writer.println(&quot; {&quot;);</span>
+<span class="fc" id="L132">				writer.println();</span>
+<span class="fc" id="L133">				List&lt;JavaFieldDeclaration&gt; fieldDeclarations = type.getFieldDeclarations();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">				if (!fieldDeclarations.isEmpty()) {</span>
+<span class="fc" id="L135">					writer.indented(() -&gt; {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">						for (JavaFieldDeclaration fieldDeclaration : fieldDeclarations) {</span>
+<span class="fc" id="L137">							writeFieldDeclaration(writer, fieldDeclaration);</span>
+<span class="fc" id="L138">						}</span>
+<span class="fc" id="L139">					});</span>
+				}
+<span class="fc" id="L141">				List&lt;JavaMethodDeclaration&gt; methodDeclarations = type.getMethodDeclarations();</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">				if (!methodDeclarations.isEmpty()) {</span>
+<span class="fc" id="L143">					writer.indented(() -&gt; {</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">						for (JavaMethodDeclaration methodDeclaration : methodDeclarations) {</span>
+<span class="fc" id="L145">							writeMethodDeclaration(writer, methodDeclaration);</span>
+<span class="fc" id="L146">						}</span>
+<span class="fc" id="L147">					});</span>
+				}
+<span class="fc" id="L149">				writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L150">			}</span>
+		}
+<span class="fc" id="L152">	}</span>
+
+	private void writeImplements(JavaTypeDeclaration type, IndentingWriter writer) {
+<span class="fc" id="L155">		writer.print(&quot; implements &quot;);</span>
+<span class="fc" id="L156">		Iterator&lt;String&gt; iterator = type.getImplements().iterator();</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		while (iterator.hasNext()) {</span>
+<span class="fc" id="L158">			String name = iterator.next();</span>
+<span class="fc" id="L159">			writer.print(getUnqualifiedName(name));</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (iterator.hasNext()) {</span>
+<span class="fc" id="L161">				writer.print(&quot;, &quot;);</span>
+			}
+<span class="fc" id="L163">		}</span>
+<span class="fc" id="L164">	}</span>
+
+	private void writeAnnotations(IndentingWriter writer, Annotatable annotatable, Runnable separator) {
+<span class="fc" id="L167">		annotatable.annotations().values().forEach((annotation) -&gt; {</span>
+<span class="fc" id="L168">			annotation.write(writer, CodeBlock.JAVA_FORMATTING_OPTIONS);</span>
+<span class="fc" id="L169">			separator.run();</span>
+<span class="fc" id="L170">		});</span>
+<span class="fc" id="L171">	}</span>
+
+	private void writeAnnotations(IndentingWriter writer, Annotatable annotatable) {
+<span class="fc" id="L174">		writeAnnotations(writer, annotatable, writer::println);</span>
+<span class="fc" id="L175">	}</span>
+
+	private void writeFieldDeclaration(IndentingWriter writer, JavaFieldDeclaration fieldDeclaration) {
+<span class="fc" id="L178">		writeAnnotations(writer, fieldDeclaration);</span>
+<span class="fc" id="L179">		writeModifiers(writer, FIELD_MODIFIERS, fieldDeclaration.getModifiers());</span>
+<span class="fc" id="L180">		writer.print(getUnqualifiedName(fieldDeclaration.getReturnType()));</span>
+<span class="fc" id="L181">		writer.print(&quot; &quot;);</span>
+<span class="fc" id="L182">		writer.print(fieldDeclaration.getName());</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (fieldDeclaration.isInitialized()) {</span>
+<span class="fc" id="L184">			writer.print(&quot; = &quot;);</span>
+<span class="fc" id="L185">			writer.print(String.valueOf(fieldDeclaration.getValue()));</span>
+		}
+<span class="fc" id="L187">		writer.println(&quot;;&quot;);</span>
+<span class="fc" id="L188">		writer.println();</span>
+<span class="fc" id="L189">	}</span>
+
+	private void writeMethodDeclaration(IndentingWriter writer, JavaMethodDeclaration methodDeclaration) {
+<span class="fc" id="L192">		writeAnnotations(writer, methodDeclaration);</span>
+<span class="fc" id="L193">		writeModifiers(writer, METHOD_MODIFIERS, methodDeclaration.getModifiers());</span>
+<span class="fc" id="L194">		writer.print(getUnqualifiedName(methodDeclaration.getReturnType()) + &quot; &quot; + methodDeclaration.getName() + &quot;(&quot;);</span>
+<span class="fc" id="L195">		writeParameters(writer, methodDeclaration.getParameters());</span>
+<span class="fc" id="L196">		writer.println(&quot;) {&quot;);</span>
+<span class="fc" id="L197">		writer.indented(() -&gt; methodDeclaration.getCode().write(writer, CodeBlock.JAVA_FORMATTING_OPTIONS));</span>
+<span class="fc" id="L198">		writer.println(&quot;}&quot;);</span>
+<span class="fc" id="L199">		writer.println();</span>
+<span class="fc" id="L200">	}</span>
+
+	private void writeParameters(IndentingWriter writer, List&lt;Parameter&gt; parameters) {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		if (parameters.isEmpty()) {</span>
+<span class="fc" id="L204">			return;</span>
+		}
+<span class="fc" id="L206">		Iterator&lt;Parameter&gt; it = parameters.iterator();</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		while (it.hasNext()) {</span>
+<span class="fc" id="L208">			Parameter parameter = it.next();</span>
+<span class="fc" id="L209">			writeAnnotations(writer, parameter, () -&gt; writer.print(&quot; &quot;));</span>
+<span class="fc" id="L210">			writer.print(getUnqualifiedName(parameter.getType()) + &quot; &quot; + parameter.getName());</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			if (it.hasNext()) {</span>
+<span class="nc" id="L212">				writer.print(&quot;, &quot;);</span>
+			}
+<span class="fc" id="L214">		}</span>
+<span class="fc" id="L215">	}</span>
+
+	private void writeModifiers(IndentingWriter writer, Map&lt;Predicate&lt;Integer&gt;, String&gt; availableModifiers,
+			int declaredModifiers) {
+<span class="fc" id="L219">		String modifiers = availableModifiers.entrySet()</span>
+<span class="fc" id="L220">			.stream()</span>
+<span class="fc" id="L221">			.filter((entry) -&gt; entry.getKey().test(declaredModifiers))</span>
+<span class="fc" id="L222">			.map(Entry::getValue)</span>
+<span class="fc" id="L223">			.collect(Collectors.joining(&quot; &quot;));</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (!modifiers.isEmpty()) {</span>
+<span class="fc" id="L225">			writer.print(modifiers);</span>
+<span class="fc" id="L226">			writer.print(&quot; &quot;);</span>
+		}
+<span class="fc" id="L228">	}</span>
+
+	private Set&lt;String&gt; determineImports(JavaCompilationUnit compilationUnit) {
+<span class="fc" id="L231">		List&lt;String&gt; imports = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">		for (JavaTypeDeclaration typeDeclaration : compilationUnit.getTypeDeclarations()) {</span>
+<span class="fc" id="L233">			imports.add(typeDeclaration.getExtends());</span>
+<span class="fc" id="L234">			imports.addAll(typeDeclaration.getImplements());</span>
+<span class="fc" id="L235">			imports.addAll(appendImports(typeDeclaration.annotations().values(), Annotation::getImports));</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">			for (JavaFieldDeclaration fieldDeclaration : typeDeclaration.getFieldDeclarations()) {</span>
+<span class="fc" id="L237">				imports.add(fieldDeclaration.getReturnType());</span>
+<span class="fc" id="L238">				imports.addAll(appendImports(fieldDeclaration.annotations().values(), Annotation::getImports));</span>
+<span class="fc" id="L239">			}</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">			for (JavaMethodDeclaration methodDeclaration : typeDeclaration.getMethodDeclarations()) {</span>
+<span class="fc" id="L241">				imports.add(methodDeclaration.getReturnType());</span>
+<span class="fc" id="L242">				imports.addAll(appendImports(methodDeclaration.annotations().values(), Annotation::getImports));</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">				for (Parameter parameter : methodDeclaration.getParameters()) {</span>
+<span class="fc" id="L244">					imports.add(parameter.getType());</span>
+<span class="fc" id="L245">					imports.addAll(appendImports(parameter.annotations().values(), Annotation::getImports));</span>
+<span class="fc" id="L246">				}</span>
+<span class="fc" id="L247">				imports.addAll(methodDeclaration.getCode().getImports());</span>
+<span class="fc" id="L248">			}</span>
+<span class="fc" id="L249">		}</span>
+<span class="fc" id="L250">		return imports.stream()</span>
+<span class="fc" id="L251">			.filter((candidate) -&gt; isImportCandidate(compilationUnit, candidate))</span>
+<span class="fc" id="L252">			.sorted()</span>
+<span class="fc" id="L253">			.collect(Collectors.toCollection(LinkedHashSet::new));</span>
+	}
+
+	private &lt;T&gt; List&lt;String&gt; appendImports(Stream&lt;T&gt; candidates, Function&lt;T, Collection&lt;String&gt;&gt; mapping) {
+<span class="fc" id="L257">		return candidates.map(mapping).flatMap(Collection::stream).collect(Collectors.toList());</span>
+	}
+
+	private String getUnqualifiedName(String name) {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">		if (!name.contains(&quot;.&quot;)) {</span>
+<span class="fc" id="L262">			return name;</span>
+		}
+<span class="fc" id="L264">		return name.substring(name.lastIndexOf(&quot;.&quot;) + 1);</span>
+	}
+
+	private boolean isImportCandidate(CompilationUnit&lt;?&gt; compilationUnit, String name) {
+<span class="fc bfc" id="L268" title="All 4 branches covered.">		if (name == null || !name.contains(&quot;.&quot;)) {</span>
+<span class="fc" id="L269">			return false;</span>
+		}
+<span class="fc" id="L271">		String packageName = name.substring(0, name.lastIndexOf('.'));</span>
+<span class="fc bfc" id="L272" title="All 4 branches covered.">		return !&quot;java.lang&quot;.equals(packageName) &amp;&amp; !compilationUnit.getPackageName().equals(packageName);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

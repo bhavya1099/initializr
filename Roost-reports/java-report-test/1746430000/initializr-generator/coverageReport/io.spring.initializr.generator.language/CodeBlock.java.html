@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodeBlock.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language</a> &gt; <span class="el_source">CodeBlock.java</span></div><h1>CodeBlock.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.StreamSupport;
+
+import io.spring.initializr.generator.io.IndentingWriter;
+
+import org.springframework.util.ClassUtils;
+
+/**
+ * A fragment of code, potentially containing declarations, or statements. CodeBlocks are
+ * not validated.
+ * &lt;p&gt;
+ * Code blocks support placeholders identified by {@code $}. The following placeholders
+ * are supported:
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code $L} emits a literal value. Arguments for literals may be plain String,
+ * primitives, another {@code CodeBlock}, or any type where the {@code toString()}
+ * representation can be used.
+ * &lt;li&gt;{@code $S} escapes the value as a string, wraps it with double quotes, and emits
+ * that. Emit {@code &quot;null&quot;} if the value is {@code null}. Does not handle multi-line
+ * strings.
+ * &lt;li&gt;{@code $T} emits a type reference. Arguments for types may be plain
+ * {@linkplain Class classes}, {@linkplain ClassName class names}, fully qualified class
+ * names, and fully qualified functions.&lt;/li&gt;
+ * &lt;li&gt;{@code $$} emits a dollar sign.
+ * &lt;li&gt;{@code $]} ends a statement and emits the configured
+ * {@linkplain FormattingOptions#statementSeparator() statement separator}.
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * Code blocks can be {@linkplain #write(IndentingWriter, FormattingOptions) rendered}
+ * using an {@link IndentingWriter} and {@link FormattingOptions}.
+ * &lt;p&gt;
+ * This class is heavily inspired by JavaPoet.
+ *
+ * @author Stephane Nicoll
+ */
+public final class CodeBlock {
+
+	/**
+	 * Standard {@link FormattingOptions} for Java.
+	 */
+<span class="fc" id="L62">	public static final FormattingOptions JAVA_FORMATTING_OPTIONS = new JavaFormattingOptions();</span>
+
+	private final List&lt;String&gt; parts;
+
+	private final List&lt;Object&gt; args;
+
+	private final List&lt;String&gt; imports;
+
+<span class="fc" id="L70">	private CodeBlock(Builder builder) {</span>
+<span class="fc" id="L71">		this.parts = List.copyOf(builder.parts);</span>
+<span class="fc" id="L72">		this.args = List.copyOf(builder.args);</span>
+<span class="fc" id="L73">		this.imports = List.copyOf(builder.imports);</span>
+<span class="fc" id="L74">	}</span>
+
+	/**
+	 * Return the imports this instance contributes.
+	 * @return the imports.
+	 */
+	public List&lt;String&gt; getImports() {
+<span class="fc" id="L81">		return this.imports;</span>
+	}
+
+	/**
+	 * Write this instance using the specified writer.
+	 * @param writer the writer to use
+	 * @param options the formatting options to use
+	 */
+	public void write(IndentingWriter writer, FormattingOptions options) {
+<span class="fc" id="L90">		int argIndex = 0;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (String part : this.parts) {</span>
+<span class="fc bfc" id="L92" title="All 6 branches covered.">			switch (part) {</span>
+				case &quot;$L&quot; -&gt; {
+<span class="fc" id="L94">					Object value = this.args.get(argIndex++);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">					if (value instanceof CodeBlock code) {</span>
+<span class="fc" id="L96">						code.write(writer, options);</span>
+					}
+					else {
+<span class="fc" id="L99">						writer.print(String.valueOf(value));</span>
+					}
+<span class="fc" id="L101">				}</span>
+				case &quot;$S&quot; -&gt; {
+<span class="fc" id="L103">					String value = (String) this.args.get(argIndex++);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">					String valueToEmit = (value != null) ? quote(value) : &quot;null&quot;;</span>
+<span class="fc" id="L105">					writer.print(valueToEmit);</span>
+<span class="fc" id="L106">				}</span>
+				case &quot;$T&quot; -&gt; {
+<span class="fc" id="L108">					String className = (String) this.args.get(argIndex++);</span>
+<span class="fc" id="L109">					writer.print(className);</span>
+<span class="fc" id="L110">				}</span>
+<span class="fc" id="L111">				case &quot;$]&quot; -&gt; writer.println(options.statementSeparator());</span>
+<span class="fc" id="L112">				case &quot;$$&quot; -&gt; writer.print(&quot;$&quot;);</span>
+<span class="fc" id="L113">				default -&gt; writer.print(part);</span>
+			}
+<span class="fc" id="L115">		}</span>
+<span class="fc" id="L116">	}</span>
+
+	private static String quote(String value) {
+<span class="fc" id="L119">		StringBuilder result = new StringBuilder(value.length() + 2);</span>
+<span class="fc" id="L120">		result.append('&quot;');</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		for (int i = 0; i &lt; value.length(); i++) {</span>
+<span class="fc" id="L122">			char c = value.charAt(i);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (c == '\'') {</span>
+<span class="fc" id="L124">				result.append(&quot;'&quot;);</span>
+<span class="fc" id="L125">				continue;</span>
+			}
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			if (c == '\&quot;') {</span>
+<span class="fc" id="L128">				result.append(&quot;\\\&quot;&quot;);</span>
+<span class="fc" id="L129">				continue;</span>
+			}
+<span class="fc" id="L131">			result.append(c);</span>
+		}
+<span class="fc" id="L133">		result.append('&quot;');</span>
+<span class="fc" id="L134">		return result.toString();</span>
+	}
+
+	/**
+	 * Create a code block using the specified code and optional arguments. To create a
+	 * single statement, consider {@link #ofStatement(String, Object...)} instead.
+	 * @param format the code
+	 * @param args the arguments, if any
+	 * @return a new instance
+	 * @see #builder()
+	 */
+	public static CodeBlock of(String format, Object... args) {
+<span class="fc" id="L146">		return new Builder().add(format, args).build();</span>
+	}
+
+	/**
+	 * Create a code block with a single statement using the specified code and optional
+	 * arguments.
+	 * @param format the statement
+	 * @param args the arguments, if any
+	 * @return a new instance
+	 * @see #builder()
+	 */
+	public static CodeBlock ofStatement(String format, Object... args) {
+<span class="fc" id="L158">		return new Builder().addStatement(format, args).build();</span>
+	}
+
+	/**
+	 * Joins {@code codeBlocks} into a single {@link CodeBlock}, each separated by
+	 * {@code separator}. For example, joining {@code String s}, {@code Object o} and
+	 * {@code int i} using {@code &quot;, &quot;} would produce {@code String s, Object o, int i}.
+	 * @param codeBlocks the code blocks to join
+	 * @param separator the separator to use
+	 * @return a code block joining the specified code blocks
+	 */
+	public static CodeBlock join(Iterable&lt;CodeBlock&gt; codeBlocks, String separator) {
+<span class="fc" id="L170">		return StreamSupport.stream(codeBlocks.spliterator(), false).collect(joining(separator));</span>
+	}
+
+	/**
+	 * A {@link Collector} implementation that joins {@link CodeBlock} instances together
+	 * into one separated by {@code separator}. For example, joining {@code String s},
+	 * {@code Object o} and {@code int i} using {@code &quot;, &quot;} would produce
+	 * {@code String s, Object o, int i}.
+	 * @param separator the separator to use
+	 * @return a collector using the specified separator
+	 */
+	public static Collector&lt;CodeBlock, ?, CodeBlock&gt; joining(String separator) {
+<span class="fc" id="L182">		return Collector.of(() -&gt; new CodeBlockJoiner(separator, builder()), CodeBlockJoiner::add,</span>
+				CodeBlockJoiner::merge, CodeBlockJoiner::join);
+	}
+
+	/**
+	 * Initialize a new builder.
+	 * @return a code block builder
+	 */
+	public static Builder builder() {
+<span class="fc" id="L191">		return new Builder();</span>
+	}
+
+	public static final class Builder {
+
+<span class="fc" id="L196">		private final List&lt;String&gt; parts = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L198">		private final List&lt;Object&gt; args = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L200">		private final List&lt;String&gt; imports = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L202">		private Builder() {</span>
+<span class="fc" id="L203">		}</span>
+
+		/**
+		 * Add the specified {@link CodeBlock}, without any extra line or statement
+		 * separator.
+		 * @param codeBlock the code to add
+		 * @return this for method chaining
+		 */
+		public Builder add(CodeBlock codeBlock) {
+<span class="fc" id="L212">			this.parts.addAll(codeBlock.parts);</span>
+<span class="fc" id="L213">			this.args.addAll(codeBlock.args);</span>
+<span class="fc" id="L214">			this.imports.addAll(codeBlock.imports);</span>
+<span class="fc" id="L215">			return this;</span>
+		}
+
+		/**
+		 * Add more code using the specified code and optional arguments.
+		 * @param format the code
+		 * @param args the arguments, if any
+		 * @return this for method chaining
+		 */
+		public Builder add(String format, Object... args) {
+<span class="fc" id="L225">			int relativeParameterCount = 0;</span>
+
+<span class="fc bfc" id="L227" title="All 2 branches covered.">			for (int p = 0; p &lt; format.length();) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">				if (format.charAt(p) != '$') {</span>
+<span class="fc" id="L229">					int nextP = format.indexOf('$', p + 1);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">					nextP = (nextP != -1) ? nextP : format.length();</span>
+<span class="fc" id="L231">					this.parts.add(format.substring(p, nextP));</span>
+<span class="fc" id="L232">					p = nextP;</span>
+<span class="fc" id="L233">					continue;</span>
+				}
+<span class="fc" id="L235">				p++; // placeholder</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">				if (p &gt;= format.length()) {</span>
+<span class="fc" id="L237">					throw new IllegalArgumentException(&quot;Should not end with '$': '%s'&quot;.formatted(format));</span>
+				}
+<span class="fc" id="L239">				char placeHolderType = format.charAt(p++);</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">				if (!isNoArgPlaceholder(placeHolderType)) {</span>
+<span class="fc" id="L241">					int index = relativeParameterCount;</span>
+<span class="fc" id="L242">					relativeParameterCount++;</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">					if (index &gt;= args.length) {</span>
+<span class="fc" id="L244">						throw new IllegalArgumentException(&quot;Argument mismatch for '%s', expected at least %s %s, got %s&quot;</span>
+<span class="fc" id="L245">							.formatted(format, relativeParameterCount,</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">									(relativeParameterCount &gt; 1) ? &quot;arguments&quot; : &quot;argument&quot;, args.length));</span>
+					}
+<span class="fc" id="L248">					addArgument(format, placeHolderType, args[index]);</span>
+				}
+<span class="fc" id="L250">				this.parts.add(&quot;$&quot; + placeHolderType);</span>
+<span class="fc" id="L251">			}</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">			if (relativeParameterCount != args.length) {</span>
+<span class="fc" id="L253">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L254">						&quot;Argument mismatch for '%s', expected %s %s, got %s&quot;.formatted(format, relativeParameterCount,</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">								(relativeParameterCount &gt; 1) ? &quot;arguments&quot; : &quot;argument&quot;, args.length));</span>
+			}
+<span class="fc" id="L257">			return this;</span>
+
+		}
+
+		private boolean isNoArgPlaceholder(char c) {
+<span class="fc bfc" id="L262" title="All 4 branches covered.">			return c == '$' || c == ']';</span>
+		}
+
+		private void addArgument(String format, char c, Object arg) {
+<span class="fc bfc" id="L266" title="All 4 branches covered.">			switch (c) {</span>
+<span class="fc" id="L267">				case 'L' -&gt; this.args.add(arg(arg));</span>
+<span class="fc" id="L268">				case 'S' -&gt; this.args.add(argToString(arg));</span>
+<span class="fc" id="L269">				case 'T' -&gt; this.args.add(argToType(arg));</span>
+<span class="fc" id="L270">				default -&gt; throw new IllegalArgumentException(</span>
+<span class="fc" id="L271">						String.format(&quot;Unsupported placeholder '$%s' for '%s'&quot;, c, format));</span>
+			}
+<span class="fc" id="L273">		}</span>
+
+		private Object arg(Object arg) {
+<span class="fc bfc" id="L276" title="All 2 branches covered.">			if (arg instanceof CodeBlock code) {</span>
+<span class="fc" id="L277">				this.imports.addAll(code.getImports());</span>
+			}
+<span class="fc" id="L279">			return arg;</span>
+		}
+
+		private String argToString(Object arg) {
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">			return (arg != null) ? String.valueOf(arg) : null;</span>
+		}
+
+		private String argToType(Object arg) {
+<span class="fc bfc" id="L287" title="All 2 branches covered.">			if (arg instanceof Class type) {</span>
+<span class="fc" id="L288">				this.imports.add(type.getName());</span>
+<span class="fc" id="L289">				return type.getSimpleName();</span>
+			}
+<span class="fc bfc" id="L291" title="All 2 branches covered.">			if (arg instanceof ClassName className) {</span>
+<span class="fc" id="L292">				this.imports.add(className.getName());</span>
+<span class="fc" id="L293">				return className.getSimpleName();</span>
+			}
+<span class="fc bfc" id="L295" title="All 2 branches covered.">			if (arg instanceof String fqName) {</span>
+<span class="fc" id="L296">				this.imports.add(fqName);</span>
+<span class="fc" id="L297">				return ClassUtils.getShortName(fqName);</span>
+			}
+<span class="fc" id="L299">			throw new IllegalArgumentException(&quot;Failed to extract type from '%s'&quot;.formatted(arg));</span>
+		}
+
+		/**
+		 * Add the specified {@link CodeBlock} as a statement.
+		 * @param codeBlock the code to add
+		 * @return this for method chaining
+		 */
+		public Builder addStatement(CodeBlock codeBlock) {
+<span class="fc" id="L308">			add(codeBlock);</span>
+<span class="fc" id="L309">			this.parts.add(&quot;$]&quot;);</span>
+<span class="fc" id="L310">			return this;</span>
+		}
+
+		/**
+		 * Add more code using the specified code and optional arguments and indicate that
+		 * this statement is finished.
+		 * @param format the code
+		 * @param args the arguments, if any
+		 * @return this for method chaining
+		 */
+		public Builder addStatement(String format, Object... args) {
+<span class="fc" id="L321">			add(format, args);</span>
+<span class="fc" id="L322">			this.parts.add(&quot;$]&quot;);</span>
+<span class="fc" id="L323">			return this;</span>
+		}
+
+		/**
+		 * Build a {@link CodeBlock} with the current state of this builder.
+		 * @return a {@link CodeBlock}
+		 */
+		public CodeBlock build() {
+<span class="fc" id="L331">			return new CodeBlock(this);</span>
+		}
+
+	}
+
+	/**
+	 * Strategy interface to customize formatting of generated code block.
+	 */
+	public interface FormattingOptions {
+
+		/**
+		 * Return the separator to use to end a statement.
+		 * @return the statement separator
+		 */
+		String statementSeparator();
+
+		/**
+		 * Return the code that represents an array for the specified values.
+		 * @param values the values of the array
+		 * @return an array defining the specified values
+		 */
+		CodeBlock arrayOf(CodeBlock... values);
+
+		/**
+		 * Return the code that represents a reference to the specified {@link ClassName}.
+		 * For instance with java, a reference to {@code com.example.Test} would be
+		 * {@code Test.class}.
+		 * @param className the class name to handle
+		 * @return a class reference to the specified class name
+		 */
+		CodeBlock classReference(ClassName className);
+
+	}
+
+	private static final class JavaFormattingOptions implements FormattingOptions {
+
+		@Override
+		public String statementSeparator() {
+<span class="fc" id="L369">			return &quot;;&quot;;</span>
+		}
+
+		@Override
+		public CodeBlock arrayOf(CodeBlock... values) {
+<span class="fc" id="L374">			return CodeBlock.of(&quot;{ $L }&quot;, CodeBlock.join(Arrays.asList(values), &quot;, &quot;));</span>
+		}
+
+		@Override
+		public CodeBlock classReference(ClassName className) {
+<span class="fc" id="L379">			return CodeBlock.of(&quot;$T.class&quot;, className);</span>
+		}
+
+	}
+
+	private static final class CodeBlockJoiner {
+
+		private final String delimiter;
+
+		private final CodeBlock.Builder builder;
+
+<span class="fc" id="L390">		private boolean first = true;</span>
+
+<span class="fc" id="L392">		CodeBlockJoiner(String delimiter, CodeBlock.Builder builder) {</span>
+<span class="fc" id="L393">			this.delimiter = delimiter;</span>
+<span class="fc" id="L394">			this.builder = builder;</span>
+<span class="fc" id="L395">		}</span>
+
+		CodeBlockJoiner add(CodeBlock codeBlock) {
+<span class="fc bfc" id="L398" title="All 2 branches covered.">			if (!this.first) {</span>
+<span class="fc" id="L399">				this.builder.add(this.delimiter);</span>
+			}
+<span class="fc" id="L401">			this.first = false;</span>
+
+<span class="fc" id="L403">			this.builder.add(codeBlock);</span>
+<span class="fc" id="L404">			return this;</span>
+		}
+
+		CodeBlock.CodeBlockJoiner merge(CodeBlockJoiner other) {
+<span class="nc" id="L408">			CodeBlock otherBlock = other.builder.build();</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">			if (!otherBlock.parts.isEmpty()) {</span>
+<span class="nc" id="L410">				add(otherBlock);</span>
+			}
+<span class="nc" id="L412">			return this;</span>
+		}
+
+		CodeBlock join() {
+<span class="fc" id="L416">			return this.builder.build();</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

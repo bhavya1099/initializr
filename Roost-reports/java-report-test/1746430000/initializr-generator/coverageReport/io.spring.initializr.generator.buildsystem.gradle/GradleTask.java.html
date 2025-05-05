@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleTask.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleTask.java</span></div><h1>GradleTask.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+/**
+ * A customization for a Gradle task.
+ *
+ * @author Stephane Nicoll
+ */
+public class GradleTask {
+
+	private final String name;
+
+	private final String type;
+
+	private final List&lt;Attribute&gt; attributes;
+
+	private final List&lt;Invocation&gt; invocations;
+
+	private final Map&lt;String, GradleTask&gt; nested;
+
+<span class="fc" id="L44">	protected GradleTask(Builder builder) {</span>
+<span class="fc" id="L45">		this.name = builder.name;</span>
+<span class="fc" id="L46">		this.type = builder.type;</span>
+<span class="fc" id="L47">		this.attributes = List.copyOf(builder.attributes.values());</span>
+<span class="fc" id="L48">		this.invocations = List.copyOf(builder.invocations);</span>
+<span class="fc" id="L49">		this.nested = Collections.unmodifiableMap(resolve(builder.nested));</span>
+<span class="fc" id="L50">	}</span>
+
+	private static Map&lt;String, GradleTask&gt; resolve(Map&lt;String, Builder&gt; tasks) {
+<span class="fc" id="L53">		Map&lt;String, GradleTask&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L54">		tasks.forEach((name, builder) -&gt; result.put(name, builder.build()));</span>
+<span class="fc" id="L55">		return result;</span>
+	}
+
+	/**
+	 * Return the name of the task.
+	 * @return the task name
+	 */
+	public String getName() {
+<span class="fc" id="L63">		return this.name;</span>
+	}
+
+	/**
+	 * Return the type that this task is associated with or {@code null} if this task has
+	 * no type.
+	 * @return the associated task type or {@code null}
+	 */
+	public String getType() {
+<span class="fc" id="L72">		return this.type;</span>
+	}
+
+	/**
+	 * Return the attributes that should be configured for this task.
+	 * @return task attributes
+	 */
+	public List&lt;Attribute&gt; getAttributes() {
+<span class="fc" id="L80">		return this.attributes;</span>
+	}
+
+	/**
+	 * Return the {@link Invocation invocations} of this task.
+	 * @return task invocations
+	 */
+	public List&lt;Invocation&gt; getInvocations() {
+<span class="fc" id="L88">		return this.invocations;</span>
+	}
+
+	/**
+	 * Return nested {@link GradleTask tasks}.
+	 * @return nested tasks
+	 */
+	public Map&lt;String, GradleTask&gt; getNested() {
+<span class="fc" id="L96">		return this.nested;</span>
+	}
+
+	/**
+	 * Builder for {@link GradleTask}.
+	 */
+	public static class Builder {
+
+		private final String name;
+
+		private final String type;
+
+<span class="fc" id="L108">		private final Map&lt;String, Attribute&gt; attributes = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L110">		private final List&lt;Invocation&gt; invocations = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L112">		private final Map&lt;String, Builder&gt; nested = new LinkedHashMap&lt;&gt;();</span>
+
+		/**
+		 * Creates a new instance.
+		 * @param name the name of the task
+		 * @param type the type of the task
+		 */
+<span class="fc" id="L119">		protected Builder(String name, String type) {</span>
+<span class="fc" id="L120">			this.name = name;</span>
+<span class="fc" id="L121">			this.type = type;</span>
+<span class="fc" id="L122">		}</span>
+
+		protected Builder(String name) {
+<span class="fc" id="L125">			this(name, null);</span>
+<span class="fc" id="L126">		}</span>
+
+		/**
+		 * Set a task attribute.
+		 * @param target the name of the attribute
+		 * @param value the value
+		 */
+		public void attribute(String target, String value) {
+<span class="fc" id="L134">			this.attributes.put(target, Attribute.set(target, value));</span>
+<span class="fc" id="L135">		}</span>
+
+		/**
+		 * Configure a task attribute by appending the specified value.
+		 * @param target the name of the attribute
+		 * @param value the value to append
+		 */
+		public void append(String target, String value) {
+<span class="fc" id="L143">			this.attributes.put(target, Attribute.append(target, value));</span>
+<span class="fc" id="L144">		}</span>
+
+		/**
+		 * Invoke a task method.
+		 * @param target the name of the method
+		 * @param arguments the arguments
+		 */
+		public void invoke(String target, String... arguments) {
+<span class="fc" id="L152">			this.invocations.add(new Invocation(target, Arrays.asList(arguments)));</span>
+<span class="fc" id="L153">		}</span>
+
+		/**
+		 * Customize a nested task for the specified property. If such nested task has
+		 * already been added, the consumer can be used to further tune the existing task
+		 * configuration.
+		 * @param property a task property
+		 * @param customizer a {@link Consumer} to customize the nested task
+		 */
+		public void nested(String property, Consumer&lt;Builder&gt; customizer) {
+<span class="fc" id="L163">			customizer.accept(this.nested.computeIfAbsent(property, (name) -&gt; new Builder(property)));</span>
+<span class="fc" id="L164">		}</span>
+
+		/**
+		 * Build a {@link GradleTask} with the current state of this builder.
+		 * @return a {@link GradleTask}
+		 */
+		public GradleTask build() {
+<span class="fc" id="L171">			return new GradleTask(this);</span>
+		}
+
+	}
+
+	/**
+	 * An invocation of a method that customizes a task.
+	 *
+	 * @deprecated in favor of
+	 * {@link io.spring.initializr.generator.buildsystem.gradle.Invocation}
+	 */
+	@Deprecated(forRemoval = true)
+	public static class Invocation extends io.spring.initializr.generator.buildsystem.gradle.Invocation {
+
+		Invocation(String target, List&lt;String&gt; arguments) {
+<span class="fc" id="L186">			super(target, arguments);</span>
+<span class="fc" id="L187">		}</span>
+
+	}
+
+	/**
+	 * An attribute of a task.
+	 *
+	 * @deprecated in favor of
+	 * {@link io.spring.initializr.generator.buildsystem.gradle.Attribute}
+	 */
+	@Deprecated(forRemoval = true)
+	public static final class Attribute extends io.spring.initializr.generator.buildsystem.gradle.Attribute {
+
+		private Attribute(String name, String value,
+				io.spring.initializr.generator.buildsystem.gradle.Attribute.Type type) {
+<span class="fc" id="L202">			super(name, value, type);</span>
+<span class="fc" id="L203">		}</span>
+
+		private static io.spring.initializr.generator.buildsystem.gradle.Attribute.Type toType(Type type) {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">			return switch (type) {</span>
+<span class="nc" id="L207">				case SET -&gt; io.spring.initializr.generator.buildsystem.gradle.Attribute.Type.SET;</span>
+<span class="nc" id="L208">				case APPEND -&gt; io.spring.initializr.generator.buildsystem.gradle.Attribute.Type.APPEND;</span>
+			};
+		}
+
+		/**
+		 * Create an attribute that
+		 * {@linkplain io.spring.initializr.generator.buildsystem.gradle.Attribute.Type#SET
+		 * sets} the specified value.
+		 * @param name the name of the attribute
+		 * @param value the value to set
+		 * @return an attribute
+		 */
+		public static Attribute set(String name, String value) {
+<span class="fc" id="L221">			return new Attribute(name, value, io.spring.initializr.generator.buildsystem.gradle.Attribute.Type.SET);</span>
+		}
+
+		/**
+		 * Create an attribute that
+		 * {@linkplain io.spring.initializr.generator.buildsystem.gradle.Attribute.Type#APPEND
+		 * appends} the specified value.
+		 * @param name the name of the attribute
+		 * @param value the value to append
+		 * @return an attribute
+		 */
+		public static Attribute append(String name, String value) {
+<span class="fc" id="L233">			return new Attribute(name, value, io.spring.initializr.generator.buildsystem.gradle.Attribute.Type.APPEND);</span>
+		}
+
+<span class="nc" id="L236">		public enum Type {</span>
+
+			/**
+			 * Set the value of the attribute.
+			 */
+<span class="nc" id="L241">			SET,</span>
+
+			/**
+			 * Append the value to the attribute.
+			 */
+<span class="nc" id="L246">			APPEND</span>
+
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

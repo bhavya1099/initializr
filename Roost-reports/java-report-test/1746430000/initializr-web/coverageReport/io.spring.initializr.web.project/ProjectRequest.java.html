@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.project</a> &gt; <span class="el_source">ProjectRequest.java</span></div><h1>ProjectRequest.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.project;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * The base settings of a project request. Only these can be bound by user's input.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L29">public class ProjectRequest {</span>
+
+<span class="fc" id="L31">	private List&lt;String&gt; dependencies = new ArrayList&lt;&gt;();</span>
+
+	private String name;
+
+	private String type;
+
+	private String description;
+
+	private String groupId;
+
+	private String artifactId;
+
+	private String version;
+
+	private String bootVersion;
+
+	private String packaging;
+
+	private String applicationName;
+
+	private String language;
+
+	private String packageName;
+
+	private String javaVersion;
+
+	// The base directory to create in the archive - no baseDir by default
+	private String baseDir;
+
+	public List&lt;String&gt; getDependencies() {
+<span class="fc" id="L61">		return this.dependencies;</span>
+	}
+
+	public void setDependencies(List&lt;String&gt; dependencies) {
+<span class="fc" id="L65">		this.dependencies = dependencies;</span>
+<span class="fc" id="L66">	}</span>
+
+	public String getName() {
+<span class="fc" id="L69">		return this.name;</span>
+	}
+
+	public void setName(String name) {
+<span class="fc" id="L73">		this.name = name;</span>
+<span class="fc" id="L74">	}</span>
+
+	public String getType() {
+<span class="fc" id="L77">		return this.type;</span>
+	}
+
+	public void setType(String type) {
+<span class="fc" id="L81">		this.type = type;</span>
+<span class="fc" id="L82">	}</span>
+
+	public String getDescription() {
+<span class="fc" id="L85">		return this.description;</span>
+	}
+
+	public void setDescription(String description) {
+<span class="fc" id="L89">		this.description = description;</span>
+<span class="fc" id="L90">	}</span>
+
+	public String getGroupId() {
+<span class="fc" id="L93">		return this.groupId;</span>
+	}
+
+	public void setGroupId(String groupId) {
+<span class="fc" id="L97">		this.groupId = groupId;</span>
+<span class="fc" id="L98">	}</span>
+
+	public String getArtifactId() {
+<span class="fc" id="L101">		return this.artifactId;</span>
+	}
+
+	public void setArtifactId(String artifactId) {
+<span class="fc" id="L105">		this.artifactId = artifactId;</span>
+<span class="fc" id="L106">	}</span>
+
+	public String getVersion() {
+<span class="fc" id="L109">		return this.version;</span>
+	}
+
+	public void setVersion(String version) {
+<span class="fc" id="L113">		this.version = version;</span>
+<span class="fc" id="L114">	}</span>
+
+	public String getBootVersion() {
+<span class="fc" id="L117">		return this.bootVersion;</span>
+	}
+
+	public void setBootVersion(String bootVersion) {
+<span class="fc" id="L121">		this.bootVersion = bootVersion;</span>
+<span class="fc" id="L122">	}</span>
+
+	public String getPackaging() {
+<span class="fc" id="L125">		return this.packaging;</span>
+	}
+
+	public void setPackaging(String packaging) {
+<span class="fc" id="L129">		this.packaging = packaging;</span>
+<span class="fc" id="L130">	}</span>
+
+	public String getApplicationName() {
+<span class="fc" id="L133">		return this.applicationName;</span>
+	}
+
+	public void setApplicationName(String applicationName) {
+<span class="fc" id="L137">		this.applicationName = applicationName;</span>
+<span class="fc" id="L138">	}</span>
+
+	public String getLanguage() {
+<span class="fc" id="L141">		return this.language;</span>
+	}
+
+	public void setLanguage(String language) {
+<span class="fc" id="L145">		this.language = language;</span>
+<span class="fc" id="L146">	}</span>
+
+	public String getPackageName() {
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (StringUtils.hasText(this.packageName)) {</span>
+<span class="fc" id="L150">			return this.packageName;</span>
+		}
+<span class="pc bpc" id="L152" title="2 of 4 branches missed.">		if (StringUtils.hasText(this.groupId) &amp;&amp; StringUtils.hasText(this.artifactId)) {</span>
+<span class="fc" id="L153">			return getGroupId() + &quot;.&quot; + getArtifactId();</span>
+		}
+<span class="nc" id="L155">		return null;</span>
+	}
+
+	public void setPackageName(String packageName) {
+<span class="fc" id="L159">		this.packageName = packageName;</span>
+<span class="fc" id="L160">	}</span>
+
+	public String getJavaVersion() {
+<span class="fc" id="L163">		return this.javaVersion;</span>
+	}
+
+	public void setJavaVersion(String javaVersion) {
+<span class="fc" id="L167">		this.javaVersion = javaVersion;</span>
+<span class="fc" id="L168">	}</span>
+
+	public String getBaseDir() {
+<span class="fc" id="L171">		return this.baseDir;</span>
+	}
+
+	public void setBaseDir(String baseDir) {
+<span class="fc" id="L175">		this.baseDir = baseDir;</span>
+<span class="fc" id="L176">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

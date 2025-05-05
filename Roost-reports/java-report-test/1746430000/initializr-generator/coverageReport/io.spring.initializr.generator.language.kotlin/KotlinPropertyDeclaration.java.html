@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KotlinPropertyDeclaration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language.kotlin</a> &gt; <span class="el_source">KotlinPropertyDeclaration.java</span></div><h1>KotlinPropertyDeclaration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language.kotlin;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
+import io.spring.initializr.generator.language.Annotatable;
+import io.spring.initializr.generator.language.Annotation;
+import io.spring.initializr.generator.language.AnnotationContainer;
+import io.spring.initializr.generator.language.ClassName;
+import io.spring.initializr.generator.language.CodeBlock;
+
+/**
+ * Declaration of a property written in Kotlin.
+ *
+ * @author Matt Berteaux
+ */
+public final class KotlinPropertyDeclaration implements Annotatable {
+
+<span class="fc" id="L37">	private final AnnotationContainer annotations = new AnnotationContainer();</span>
+
+	private final boolean isVal;
+
+	private final String name;
+
+	private final String returnType;
+
+	private final List&lt;KotlinModifier&gt; modifiers;
+
+	private final CodeBlock valueCode;
+
+	private final Accessor getter;
+
+	private final Accessor setter;
+
+<span class="fc" id="L53">	private KotlinPropertyDeclaration(Builder&lt;?&gt; builder) {</span>
+<span class="fc" id="L54">		this.name = builder.name;</span>
+<span class="fc" id="L55">		this.returnType = builder.returnType;</span>
+<span class="fc" id="L56">		this.modifiers = new ArrayList&lt;&gt;(builder.modifiers);</span>
+<span class="fc" id="L57">		this.isVal = builder.isVal;</span>
+<span class="fc" id="L58">		this.valueCode = builder.valueCode;</span>
+<span class="fc" id="L59">		this.getter = builder.getter;</span>
+<span class="fc" id="L60">		this.setter = builder.setter;</span>
+<span class="fc" id="L61">	}</span>
+
+	/**
+	 * Returns a builder for a {@code val} property with the given name.
+	 * @param name the name
+	 * @return the builder
+	 */
+	public static ValBuilder val(String name) {
+<span class="fc" id="L69">		return new ValBuilder(name);</span>
+	}
+
+	/**
+	 * Returns a builder for a {@code var} property with the given name.
+	 * @param name the name
+	 * @return the builder
+	 */
+	public static VarBuilder var(String name) {
+<span class="fc" id="L78">		return new VarBuilder(name);</span>
+	}
+
+	boolean isVal() {
+<span class="fc" id="L82">		return this.isVal;</span>
+	}
+
+	String getName() {
+<span class="fc" id="L86">		return this.name;</span>
+	}
+
+	String getReturnType() {
+<span class="fc" id="L90">		return this.returnType;</span>
+	}
+
+	/**
+	 * Returns the modifiers.
+	 * @return the modifiers
+	 */
+	public List&lt;KotlinModifier&gt; getModifiers() {
+<span class="fc" id="L98">		return this.modifiers;</span>
+	}
+
+	CodeBlock getValueCode() {
+<span class="fc" id="L102">		return this.valueCode;</span>
+	}
+
+	Accessor getGetter() {
+<span class="fc" id="L106">		return this.getter;</span>
+	}
+
+	Accessor getSetter() {
+<span class="fc" id="L110">		return this.setter;</span>
+	}
+
+	@Override
+	public AnnotationContainer annotations() {
+<span class="nc" id="L115">		return this.annotations;</span>
+	}
+
+	/**
+	 * Builder for creating a {@link KotlinPropertyDeclaration}.
+	 *
+	 * @param &lt;T&gt; a {@link Builder} subclass.
+	 */
+	public abstract static class Builder&lt;T extends Builder&lt;T&gt;&gt; {
+
+		private final boolean isVal;
+
+		private final String name;
+
+		private String returnType;
+
+<span class="fc" id="L131">		private List&lt;KotlinModifier&gt; modifiers = new ArrayList&lt;&gt;();</span>
+
+		private CodeBlock valueCode;
+
+		private Accessor getter;
+
+		private Accessor setter;
+
+<span class="fc" id="L139">		private Builder(String name, boolean isVal) {</span>
+<span class="fc" id="L140">			this.name = name;</span>
+<span class="fc" id="L141">			this.isVal = isVal;</span>
+<span class="fc" id="L142">		}</span>
+
+		/**
+		 * Returns {@code this} instance.
+		 * @return this instance
+		 */
+		protected abstract T self();
+
+		/**
+		 * Returns the getter.
+		 * @return the getter
+		 */
+		@SuppressWarnings(&quot;unchecked&quot;)
+		public AccessorBuilder&lt;T&gt; getter() {
+<span class="fc" id="L156">			return new AccessorBuilder&lt;&gt;((T) this, (created) -&gt; this.getter = created);</span>
+		}
+
+		/**
+		 * Returns the setter.
+		 * @return setter
+		 */
+		@SuppressWarnings(&quot;unchecked&quot;)
+		public AccessorBuilder&lt;T&gt; setter() {
+<span class="fc" id="L165">			return new AccessorBuilder&lt;&gt;((T) this, (created) -&gt; this.setter = created);</span>
+		}
+
+		/**
+		 * Sets the return type.
+		 * @param returnType the return type
+		 * @return this for method chaining
+		 */
+		public T returning(String returnType) {
+<span class="fc" id="L174">			this.returnType = returnType;</span>
+<span class="fc" id="L175">			return self();</span>
+		}
+
+		/**
+		 * Sets the modifiers.
+		 * @param modifiers the modifiers
+		 * @return this for method chaining
+		 */
+		public T modifiers(KotlinModifier... modifiers) {
+<span class="fc" id="L184">			this.modifiers = Arrays.asList(modifiers);</span>
+<span class="fc" id="L185">			return self();</span>
+		}
+
+		/**
+		 * Sets no value.
+		 * @return the property declaration
+		 */
+		public KotlinPropertyDeclaration emptyValue() {
+<span class="fc" id="L193">			return new KotlinPropertyDeclaration(this);</span>
+		}
+
+		/**
+		 * Sets the given value.
+		 * @param valueCode the code for the value
+		 * @return the property declaration
+		 */
+		public KotlinPropertyDeclaration value(CodeBlock valueCode) {
+<span class="fc" id="L202">			this.valueCode = valueCode;</span>
+<span class="fc" id="L203">			return new KotlinPropertyDeclaration(this);</span>
+		}
+
+	}
+
+	/**
+	 * Builder for {@code val} properties.
+	 */
+	public static final class ValBuilder extends Builder&lt;ValBuilder&gt; {
+
+		private ValBuilder(String name) {
+<span class="fc" id="L214">			super(name, true);</span>
+<span class="fc" id="L215">		}</span>
+
+		@Override
+		protected ValBuilder self() {
+<span class="fc" id="L219">			return this;</span>
+		}
+
+	}
+
+	/**
+	 * Builder for {@code val} properties.
+	 */
+	public static final class VarBuilder extends Builder&lt;VarBuilder&gt; {
+
+		private VarBuilder(String name) {
+<span class="fc" id="L230">			super(name, false);</span>
+<span class="fc" id="L231">		}</span>
+
+		/**
+		 * Sets no value.
+		 * @return the property declaration
+		 */
+		public KotlinPropertyDeclaration empty() {
+<span class="fc" id="L238">			return new KotlinPropertyDeclaration(this);</span>
+		}
+
+		@Override
+		protected VarBuilder self() {
+<span class="fc" id="L243">			return this;</span>
+		}
+
+	}
+
+	/**
+	 * Builder for a property accessor.
+	 *
+	 * @param &lt;T&gt; the type of builder
+	 */
+	public static final class AccessorBuilder&lt;T extends Builder&lt;T&gt;&gt; {
+
+<span class="fc" id="L255">		private final AnnotationContainer annotations = new AnnotationContainer();</span>
+
+		private CodeBlock code;
+
+		private final T parent;
+
+		private final Consumer&lt;Accessor&gt; accessorFunction;
+
+<span class="fc" id="L263">		private AccessorBuilder(T parent, Consumer&lt;Accessor&gt; accessorFunction) {</span>
+<span class="fc" id="L264">			this.parent = parent;</span>
+<span class="fc" id="L265">			this.accessorFunction = accessorFunction;</span>
+<span class="fc" id="L266">		}</span>
+
+		/**
+		 * Adds an annotation.
+		 * @param className the class name of the annotation
+		 * @return this for method chaining
+		 */
+		public AccessorBuilder&lt;?&gt; withAnnotation(ClassName className) {
+<span class="fc" id="L274">			return withAnnotation(className, null);</span>
+		}
+
+		/**
+		 * Adds an annotation.
+		 * @param className the class name of the annotation
+		 * @param annotation configurer for the annotation
+		 * @return this for method chaining
+		 */
+		public AccessorBuilder&lt;?&gt; withAnnotation(ClassName className, Consumer&lt;Annotation.Builder&gt; annotation) {
+<span class="fc" id="L284">			this.annotations.add(className, annotation);</span>
+<span class="fc" id="L285">			return this;</span>
+		}
+
+		/**
+		 * Sets the body.
+		 * @param code the code for the body
+		 * @return this for method chaining
+		 */
+		public AccessorBuilder&lt;?&gt; withBody(CodeBlock code) {
+<span class="fc" id="L294">			this.code = code;</span>
+<span class="fc" id="L295">			return this;</span>
+		}
+
+		/**
+		 * Builds the accessor.
+		 * @return the parent getter / setter
+		 */
+		public T buildAccessor() {
+<span class="fc" id="L303">			this.accessorFunction.accept(new Accessor(this));</span>
+<span class="fc" id="L304">			return this.parent;</span>
+		}
+
+	}
+
+	static final class Accessor implements Annotatable {
+
+		private final AnnotationContainer annotations;
+
+		private final CodeBlock code;
+
+<span class="fc" id="L315">		Accessor(AccessorBuilder&lt;?&gt; builder) {</span>
+<span class="fc" id="L316">			this.annotations = builder.annotations.deepCopy();</span>
+<span class="fc" id="L317">			this.code = builder.code;</span>
+<span class="fc" id="L318">		}</span>
+
+		CodeBlock getCode() {
+<span class="fc" id="L321">			return this.code;</span>
+		}
+
+		@Override
+		public AnnotationContainer annotations() {
+<span class="fc" id="L326">			return this.annotations;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

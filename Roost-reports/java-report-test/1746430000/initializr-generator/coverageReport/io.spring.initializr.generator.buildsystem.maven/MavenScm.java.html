@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenScm.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenScm.java</span></div><h1>MavenScm.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+/**
+ * A version control section of a {@link MavenBuild}.
+ *
+ * @author Joachim Pasquali
+ */
+public class MavenScm {
+
+	private final String connection;
+
+	private final String developerConnection;
+
+	private final String tag;
+
+	private final String url;
+
+<span class="fc" id="L34">	MavenScm(Builder builder) {</span>
+<span class="fc" id="L35">		this.connection = builder.connection;</span>
+<span class="fc" id="L36">		this.developerConnection = builder.developerConnection;</span>
+<span class="fc" id="L37">		this.tag = builder.tag;</span>
+<span class="fc" id="L38">		this.url = builder.url;</span>
+<span class="fc" id="L39">	}</span>
+
+	public boolean isEmpty() {
+<span class="pc bpc" id="L42" title="3 of 8 branches missed.">		return this.connection == null &amp;&amp; this.developerConnection == null &amp;&amp; this.tag == null &amp;&amp; this.url == null;</span>
+	}
+
+	/**
+	 * Return the source control management system URL that describes the repository and
+	 * how to connect to the repository.
+	 * @return the source control management system URL
+	 */
+	public String getConnection() {
+<span class="fc" id="L51">		return this.connection;</span>
+	}
+
+	/**
+	 *
+	 * Just like &lt;code&gt;connection&lt;/code&gt;, but for developers, i.e. this scm connection
+	 * will not be read only.
+	 * @return the source control management system URL for developers
+	 */
+	public String getDeveloperConnection() {
+<span class="fc" id="L61">		return this.developerConnection;</span>
+	}
+
+	/**
+	 * The tag of current code. By default, it's set to HEAD during development.
+	 * @return the tag of current code
+	 */
+	public String getTag() {
+<span class="fc" id="L69">		return this.tag;</span>
+	}
+
+	/**
+	 * The URL to the project's browsable SCM repository.
+	 * @return the URL to the project's browsable SCM repository
+	 */
+	public String getUrl() {
+<span class="fc" id="L77">		return this.url;</span>
+	}
+
+<span class="fc" id="L80">	public static class Builder {</span>
+
+		private String connection;
+
+		private String developerConnection;
+
+		private String tag;
+
+		private String url;
+
+		/**
+		 * Specify the source control management system URL that describes the repository
+		 * and how to connect to the repository.
+		 * @param connection the source control management system URL
+		 * @return this for method chaining
+		 */
+		public Builder connection(String connection) {
+<span class="fc" id="L97">			this.connection = connection;</span>
+<span class="fc" id="L98">			return this;</span>
+		}
+
+		/**
+		 * Specify the source control management system URL for developers that describes
+		 * the repository and how to connect to the repository.
+		 * @param developerConnection the source control management system URL for
+		 * developers
+		 * @return this for method chaining
+		 */
+		public Builder developerConnection(String developerConnection) {
+<span class="fc" id="L109">			this.developerConnection = developerConnection;</span>
+<span class="fc" id="L110">			return this;</span>
+		}
+
+		/**
+		 * Specify the tag of current code. By default, it's set to HEAD during
+		 * development.
+		 * @param tag the tag of current code
+		 * @return this for method chaining
+		 */
+		public Builder tag(String tag) {
+<span class="fc" id="L120">			this.tag = tag;</span>
+<span class="fc" id="L121">			return this;</span>
+		}
+
+		/**
+		 * Specify the URL to the project's browsable SCM repository.
+		 * @param url the URL to the project's browsable SCM repository
+		 * @return this for method chaining
+		 */
+		public Builder url(String url) {
+<span class="fc" id="L130">			this.url = url;</span>
+<span class="fc" id="L131">			return this;</span>
+		}
+
+		public MavenScm build() {
+<span class="fc" id="L135">			return new MavenScm(this);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
