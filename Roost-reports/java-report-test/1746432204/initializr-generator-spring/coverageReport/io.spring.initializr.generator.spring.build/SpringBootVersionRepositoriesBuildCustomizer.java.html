@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpringBootVersionRepositoriesBuildCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.build</a> &gt; <span class="el_source">SpringBootVersionRepositoriesBuildCustomizer.java</span></div><h1>SpringBootVersionRepositoriesBuildCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.build;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.buildsystem.MavenRepository;
+import io.spring.initializr.generator.version.Version;
+
+/**
+ * A {@link BuildCustomizer} that configures the build's repositories based on the version
+ * of Spring Boot being used.
+ *
+ * @author Andy Wilkinson
+ * @author Moritz Halbritter
+ */
+class SpringBootVersionRepositoriesBuildCustomizer implements BuildCustomizer&lt;Build&gt; {
+
+<span class="fc" id="L32">	static final MavenRepository SPRING_MILESTONES = MavenRepository</span>
+<span class="fc" id="L33">		.withIdAndUrl(&quot;spring-milestones&quot;, &quot;https://repo.spring.io/milestone&quot;)</span>
+<span class="fc" id="L34">		.name(&quot;Spring Milestones&quot;)</span>
+<span class="fc" id="L35">		.onlyReleases()</span>
+<span class="fc" id="L36">		.build();</span>
+
+<span class="fc" id="L38">	static final MavenRepository SPRING_SNAPSHOTS = MavenRepository</span>
+<span class="fc" id="L39">		.withIdAndUrl(&quot;spring-snapshots&quot;, &quot;https://repo.spring.io/snapshot&quot;)</span>
+<span class="fc" id="L40">		.name(&quot;Spring Snapshots&quot;)</span>
+<span class="fc" id="L41">		.onlySnapshots()</span>
+<span class="fc" id="L42">		.build();</span>
+
+	private final Version springBootVersion;
+
+<span class="fc" id="L46">	SpringBootVersionRepositoriesBuildCustomizer(Version springBootVersion) {</span>
+<span class="fc" id="L47">		this.springBootVersion = springBootVersion;</span>
+<span class="fc" id="L48">	}</span>
+
+	@Override
+	public void customize(Build build) {
+<span class="fc" id="L52">		build.repositories().add(&quot;maven-central&quot;);</span>
+<span class="fc bfc" id="L53" title="All 3 branches covered.">		switch (getReleaseType()) {</span>
+<span class="fc" id="L54">			case MILESTONE -&gt; addMilestoneRepository(build);</span>
+			case SNAPSHOT -&gt; {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">				if (isMaintenanceRelease()) {</span>
+<span class="fc" id="L57">					addSnapshotRepository(build);</span>
+				}
+				else {
+<span class="fc" id="L60">					addMilestoneRepository(build);</span>
+<span class="fc" id="L61">					addSnapshotRepository(build);</span>
+				}
+			}
+		}
+<span class="fc" id="L65">	}</span>
+
+	private ReleaseType getReleaseType() {
+<span class="fc" id="L68">		Version.Qualifier qualifier = this.springBootVersion.getQualifier();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (qualifier == null) {</span>
+<span class="fc" id="L70">			return ReleaseType.GA;</span>
+		}
+<span class="fc" id="L72">		String id = qualifier.getId();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (&quot;RELEASE&quot;.equals(id)) {</span>
+<span class="fc" id="L74">			return ReleaseType.GA;</span>
+		}
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (id.contains(&quot;SNAPSHOT&quot;)) {</span>
+<span class="fc" id="L77">			return ReleaseType.SNAPSHOT;</span>
+		}
+<span class="fc" id="L79">		return ReleaseType.MILESTONE;</span>
+	}
+
+	private boolean isMaintenanceRelease() {
+<span class="fc" id="L83">		Integer patch = this.springBootVersion.getPatch();</span>
+<span class="pc bpc" id="L84" title="1 of 4 branches missed.">		return patch != null &amp;&amp; patch &gt; 0;</span>
+	}
+
+	private void addSnapshotRepository(Build build) {
+<span class="fc" id="L88">		build.repositories().add(SPRING_SNAPSHOTS);</span>
+<span class="fc" id="L89">		build.pluginRepositories().add(SPRING_SNAPSHOTS);</span>
+<span class="fc" id="L90">	}</span>
+
+	private void addMilestoneRepository(Build build) {
+<span class="fc" id="L93">		build.repositories().add(SPRING_MILESTONES);</span>
+<span class="fc" id="L94">		build.pluginRepositories().add(SPRING_MILESTONES);</span>
+<span class="fc" id="L95">	}</span>
+
+<span class="fc" id="L97">	private enum ReleaseType {</span>
+
+<span class="fc" id="L99">		GA, MILESTONE, SNAPSHOT</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

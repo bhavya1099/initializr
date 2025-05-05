@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KotlinFunctionDeclaration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language.kotlin</a> &gt; <span class="el_source">KotlinFunctionDeclaration.java</span></div><h1>KotlinFunctionDeclaration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language.kotlin;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import io.spring.initializr.generator.language.Annotatable;
+import io.spring.initializr.generator.language.AnnotationContainer;
+import io.spring.initializr.generator.language.CodeBlock;
+import io.spring.initializr.generator.language.Parameter;
+
+/**
+ * Declaration of a function written in Kotlin.
+ *
+ * @author Stephane Nicoll
+ */
+public final class KotlinFunctionDeclaration implements Annotatable {
+
+<span class="fc" id="L35">	private final AnnotationContainer annotations = new AnnotationContainer();</span>
+
+	private final String name;
+
+	private final String returnType;
+
+	private final List&lt;KotlinModifier&gt; modifiers;
+
+	private final List&lt;Parameter&gt; parameters;
+
+	private final CodeBlock code;
+
+<span class="fc" id="L47">	private KotlinFunctionDeclaration(Builder builder, CodeBlock code) {</span>
+<span class="fc" id="L48">		this.name = builder.name;</span>
+<span class="fc" id="L49">		this.returnType = builder.returnType;</span>
+<span class="fc" id="L50">		this.modifiers = builder.modifiers;</span>
+<span class="fc" id="L51">		this.parameters = List.copyOf(builder.parameters);</span>
+<span class="fc" id="L52">		this.code = code;</span>
+<span class="fc" id="L53">	}</span>
+
+	/**
+	 * Creates a new builder for the function with the given name.
+	 * @param name the name
+	 * @return the builder
+	 */
+	public static Builder function(String name) {
+<span class="fc" id="L61">		return new Builder(name);</span>
+	}
+
+	String getName() {
+<span class="fc" id="L65">		return this.name;</span>
+	}
+
+	String getReturnType() {
+<span class="fc" id="L69">		return this.returnType;</span>
+	}
+
+	List&lt;Parameter&gt; getParameters() {
+<span class="fc" id="L73">		return this.parameters;</span>
+	}
+
+	List&lt;KotlinModifier&gt; getModifiers() {
+<span class="fc" id="L77">		return this.modifiers;</span>
+	}
+
+	CodeBlock getCode() {
+<span class="fc" id="L81">		return this.code;</span>
+	}
+
+	@Override
+	public AnnotationContainer annotations() {
+<span class="fc" id="L86">		return this.annotations;</span>
+	}
+
+	/**
+	 * Builder for creating a {@link KotlinFunctionDeclaration}.
+	 */
+	public static final class Builder {
+
+		private final String name;
+
+<span class="fc" id="L96">		private List&lt;Parameter&gt; parameters = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L98">		private List&lt;KotlinModifier&gt; modifiers = new ArrayList&lt;&gt;();</span>
+
+		private String returnType;
+
+<span class="fc" id="L102">		private Builder(String name) {</span>
+<span class="fc" id="L103">			this.name = name;</span>
+<span class="fc" id="L104">		}</span>
+
+		/**
+		 * Sets the modifiers.
+		 * @param modifiers the modifiers
+		 * @return this for method chaining
+		 */
+		public Builder modifiers(KotlinModifier... modifiers) {
+<span class="fc" id="L112">			this.modifiers = Arrays.asList(modifiers);</span>
+<span class="fc" id="L113">			return this;</span>
+		}
+
+		/**
+		 * Sets the return type.
+		 * @param returnType the return type
+		 * @return this for method chaining
+		 */
+		public Builder returning(String returnType) {
+<span class="fc" id="L122">			this.returnType = returnType;</span>
+<span class="fc" id="L123">			return this;</span>
+		}
+
+		/**
+		 * Sets the parameters.
+		 * @param parameters the parameters
+		 * @return this for method chaining
+		 */
+		public Builder parameters(Parameter... parameters) {
+<span class="fc" id="L132">			this.parameters = Arrays.asList(parameters);</span>
+<span class="fc" id="L133">			return this;</span>
+		}
+
+		/**
+		 * Sets the body.
+		 * @param code the code for the body
+		 * @return the function declaration containing the body
+		 */
+		public KotlinFunctionDeclaration body(CodeBlock code) {
+<span class="fc" id="L142">			return new KotlinFunctionDeclaration(this, code);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpringBootMetadataReader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.support</a> &gt; <span class="el_source">SpringBootMetadataReader.java</span></div><h1>SpringBootMetadataReader.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.support;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.Version.Qualifier;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.metadata.DefaultMetadataElement;
+
+import org.springframework.web.client.RestTemplate;
+
+/**
+ * Reads metadata from the main spring.io website. This is a stateful service: create a
+ * new instance whenever you need to refresh the content.
+ *
+ * @author Stephane Nicoll
+ */
+class SpringBootMetadataReader {
+
+<span class="fc" id="L42">	private static final Comparator&lt;DefaultMetadataElement&gt; VERSION_METADATA_ELEMENT_COMPARATOR = new VersionMetadataElementComparator();</span>
+
+	private final JsonNode content;
+
+	/**
+	 * Parse the content of the metadata at the specified url.
+	 * @param objectMapper the object mapper
+	 * @param restTemplate the rest template
+	 * @param url the metadata URL
+	 * @throws IOException on load error
+	 */
+<span class="fc" id="L53">	SpringBootMetadataReader(ObjectMapper objectMapper, RestTemplate restTemplate, String url) throws IOException {</span>
+<span class="fc" id="L54">		this.content = objectMapper.readTree(restTemplate.getForObject(url, String.class));</span>
+<span class="fc" id="L55">	}</span>
+
+	/**
+	 * Return the boot versions parsed by this instance.
+	 * @return the versions
+	 */
+	List&lt;DefaultMetadataElement&gt; getBootVersions() {
+<span class="fc" id="L62">		ArrayNode releases = (ArrayNode) this.content.get(&quot;_embedded&quot;).get(&quot;releases&quot;);</span>
+<span class="fc" id="L63">		List&lt;DefaultMetadataElement&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (JsonNode node : releases) {</span>
+<span class="fc" id="L65">			DefaultMetadataElement versionMetadata = parseVersionMetadata(node);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">			if (versionMetadata != null) {</span>
+<span class="fc" id="L67">				list.add(versionMetadata);</span>
+			}
+<span class="fc" id="L69">		}</span>
+<span class="fc" id="L70">		list.sort(VERSION_METADATA_ELEMENT_COMPARATOR.reversed());</span>
+<span class="fc" id="L71">		return list;</span>
+	}
+
+	private DefaultMetadataElement parseVersionMetadata(JsonNode node) {
+<span class="fc" id="L75">		String versionId = node.get(&quot;version&quot;).textValue();</span>
+<span class="fc" id="L76">		Version version = VersionParser.DEFAULT.safeParse(versionId);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (version == null) {</span>
+<span class="fc" id="L78">			return null;</span>
+		}
+<span class="fc" id="L80">		DefaultMetadataElement versionMetadata = new DefaultMetadataElement();</span>
+<span class="fc" id="L81">		versionMetadata.setId(versionId);</span>
+<span class="fc" id="L82">		versionMetadata.setName(determineDisplayName(version));</span>
+<span class="fc" id="L83">		versionMetadata.setDefault(node.get(&quot;current&quot;).booleanValue());</span>
+<span class="fc" id="L84">		return versionMetadata;</span>
+	}
+
+	private String determineDisplayName(Version version) {
+<span class="fc" id="L88">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L89">		sb.append(version.getMajor()).append(&quot;.&quot;).append(version.getMinor()).append(&quot;.&quot;).append(version.getPatch());</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (version.getQualifier() != null) {</span>
+<span class="fc" id="L91">			sb.append(determineSuffix(version.getQualifier()));</span>
+		}
+<span class="fc" id="L93">		return sb.toString();</span>
+	}
+
+	private String determineSuffix(Qualifier qualifier) {
+<span class="fc" id="L97">		String id = qualifier.getId();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (id.equals(&quot;RELEASE&quot;)) {</span>
+<span class="nc" id="L99">			return &quot;&quot;;</span>
+		}
+<span class="fc" id="L101">		StringBuilder sb = new StringBuilder(&quot; (&quot;);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (id.contains(&quot;SNAPSHOT&quot;)) {</span>
+<span class="fc" id="L103">			sb.append(&quot;SNAPSHOT&quot;);</span>
+		}
+		else {
+<span class="nc" id="L106">			sb.append(id);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">			if (qualifier.getVersion() != null) {</span>
+<span class="nc" id="L108">				sb.append(qualifier.getVersion());</span>
+			}
+		}
+<span class="fc" id="L111">		sb.append(&quot;)&quot;);</span>
+<span class="fc" id="L112">		return sb.toString();</span>
+	}
+
+	private static final class VersionMetadataElementComparator implements Comparator&lt;DefaultMetadataElement&gt; {
+
+<span class="fc" id="L117">		private static final VersionParser versionParser = VersionParser.DEFAULT;</span>
+
+		@Override
+		public int compare(DefaultMetadataElement o1, DefaultMetadataElement o2) {
+<span class="fc" id="L121">			Version o1Version = versionParser.parse(o1.getId());</span>
+<span class="fc" id="L122">			Version o2Version = versionParser.parse(o2.getId());</span>
+<span class="fc" id="L123">			return o1Version.compareTo(o2Version);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

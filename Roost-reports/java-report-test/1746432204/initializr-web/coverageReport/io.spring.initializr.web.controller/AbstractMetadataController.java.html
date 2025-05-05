@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractMetadataController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.controller</a> &gt; <span class="el_source">AbstractMetadataController.java</span></div><h1>AbstractMetadataController.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.controller;
+
+import java.nio.charset.StandardCharsets;
+
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+
+import org.springframework.util.DigestUtils;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+/**
+ * A base controller that uses a {@link InitializrMetadataProvider}.
+ *
+ * @author Stephane Nicoll
+ */
+public abstract class AbstractMetadataController {
+
+	protected final InitializrMetadataProvider metadataProvider;
+
+	private Boolean forceSsl;
+
+<span class="fc" id="L37">	protected AbstractMetadataController(InitializrMetadataProvider metadataProvider) {</span>
+<span class="fc" id="L38">		this.metadataProvider = metadataProvider;</span>
+<span class="fc" id="L39">	}</span>
+
+	/**
+	 * Generate a full URL of the service, mostly for use in templates.
+	 * @return the app URL
+	 * @see io.spring.initializr.metadata.InitializrConfiguration.Env#isForceSsl()
+	 */
+	protected String generateAppUrl() {
+<span class="fc" id="L47">		ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentServletMapping();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		if (isForceSsl()) {</span>
+<span class="fc" id="L49">			builder.scheme(&quot;https&quot;);</span>
+		}
+<span class="fc" id="L51">		return builder.build().toString();</span>
+	}
+
+	protected String createUniqueId(String content) {
+<span class="fc" id="L55">		StringBuilder builder = new StringBuilder();</span>
+<span class="fc" id="L56">		DigestUtils.appendMd5DigestAsHex(content.getBytes(StandardCharsets.UTF_8), builder);</span>
+<span class="fc" id="L57">		return builder.toString();</span>
+	}
+
+	private boolean isForceSsl() {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (this.forceSsl == null) {</span>
+<span class="fc" id="L62">			this.forceSsl = this.metadataProvider.get().getConfiguration().getEnv().isForceSsl();</span>
+		}
+<span class="fc" id="L64">		return this.forceSsl;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,687 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenBuildWriter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenBuildWriter.java</span></div><h1>MavenBuildWriter.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.BillOfMaterials;
+import io.spring.initializr.generator.buildsystem.BomContainer;
+import io.spring.initializr.generator.buildsystem.Dependency;
+import io.spring.initializr.generator.buildsystem.Dependency.Exclusion;
+import io.spring.initializr.generator.buildsystem.DependencyComparator;
+import io.spring.initializr.generator.buildsystem.DependencyContainer;
+import io.spring.initializr.generator.buildsystem.DependencyScope;
+import io.spring.initializr.generator.buildsystem.MavenRepository;
+import io.spring.initializr.generator.buildsystem.MavenRepositoryContainer;
+import io.spring.initializr.generator.buildsystem.PropertyContainer;
+import io.spring.initializr.generator.buildsystem.maven.MavenDistributionManagement.DeploymentRepository;
+import io.spring.initializr.generator.buildsystem.maven.MavenDistributionManagement.Relocation;
+import io.spring.initializr.generator.buildsystem.maven.MavenDistributionManagement.Site;
+import io.spring.initializr.generator.buildsystem.maven.MavenPlugin.Configuration;
+import io.spring.initializr.generator.buildsystem.maven.MavenPlugin.Execution;
+import io.spring.initializr.generator.buildsystem.maven.MavenPlugin.Setting;
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.version.VersionProperty;
+import io.spring.initializr.generator.version.VersionReference;
+
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
+
+/**
+ * A {@link MavenBuild} writer for {@code pom.xml}.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ * @author Olga Maciaszek-Sharma
+ * @author Jafer Khan Shamshad
+ * @author Joachim Pasquali
+ * @author Niklas Herder
+ * @author Maurice Zeijen
+ */
+<span class="fc" id="L66">public class MavenBuildWriter {</span>
+
+	/**
+	 * Write a {@linkplain MavenBuild pom.xml} using the specified
+	 * {@linkplain IndentingWriter writer}.
+	 * @param writer the writer to use
+	 * @param build the maven build to write
+	 */
+	public void writeTo(IndentingWriter writer, MavenBuild build) {
+<span class="fc" id="L75">		MavenBuildSettings settings = build.getSettings();</span>
+<span class="fc" id="L76">		writeProject(writer, () -&gt; {</span>
+<span class="fc" id="L77">			writeParent(writer, build);</span>
+<span class="fc" id="L78">			writeProjectCoordinates(writer, settings);</span>
+<span class="fc" id="L79">			writePackaging(writer, settings);</span>
+<span class="fc" id="L80">			writeProjectName(writer, settings);</span>
+<span class="fc" id="L81">			writeUrl(writer, settings);</span>
+<span class="fc" id="L82">			writeLicenses(writer, settings);</span>
+<span class="fc" id="L83">			writeDevelopers(writer, settings);</span>
+<span class="fc" id="L84">			writeScm(writer, settings);</span>
+<span class="fc" id="L85">			writeProperties(writer, build.properties());</span>
+<span class="fc" id="L86">			writeDependencies(writer, build.dependencies());</span>
+<span class="fc" id="L87">			writeDependencyManagement(writer, build.boms());</span>
+<span class="fc" id="L88">			writeBuild(writer, build);</span>
+<span class="fc" id="L89">			writeRepositories(writer, build.repositories(), build.pluginRepositories());</span>
+<span class="fc" id="L90">			writeDistributionManagement(writer, build.getDistributionManagement());</span>
+<span class="fc" id="L91">			writeProfiles(writer, build);</span>
+<span class="fc" id="L92">		});</span>
+<span class="fc" id="L93">	}</span>
+
+	/**
+	 * Return the {@link Comparator} to use to sort dependencies.
+	 * @return a dependency comparator
+	 */
+	protected Comparator&lt;Dependency&gt; getDependencyComparator() {
+<span class="fc" id="L100">		return DependencyComparator.INSTANCE;</span>
+	}
+
+	private void writeProject(IndentingWriter writer, Runnable whenWritten) {
+<span class="fc" id="L104">		writer.println(&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;&quot;);</span>
+<span class="fc" id="L105">		writer.println(</span>
+				&quot;&lt;project xmlns=\&quot;http://maven.apache.org/POM/4.0.0\&quot; xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;&quot;);
+<span class="fc" id="L107">		writer.indented(() -&gt; {</span>
+<span class="fc" id="L108">			writer.println(</span>
+					&quot;xsi:schemaLocation=\&quot;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\&quot;&gt;&quot;);
+<span class="fc" id="L110">			writeSingleElement(writer, &quot;modelVersion&quot;, &quot;4.0.0&quot;);</span>
+<span class="fc" id="L111">			whenWritten.run();</span>
+<span class="fc" id="L112">		});</span>
+<span class="fc" id="L113">		writer.println();</span>
+<span class="fc" id="L114">		writer.println(&quot;&lt;/project&gt;&quot;);</span>
+<span class="fc" id="L115">	}</span>
+
+	private void writeParent(IndentingWriter writer, MavenBuild build) {
+<span class="fc" id="L118">		MavenParent parent = build.getSettings().getParent();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		if (parent == null) {</span>
+<span class="fc" id="L120">			return;</span>
+		}
+<span class="fc" id="L122">		writer.println(&quot;&lt;parent&gt;&quot;);</span>
+<span class="fc" id="L123">		writer.indented(() -&gt; {</span>
+<span class="fc" id="L124">			writeSingleElement(writer, &quot;groupId&quot;, parent.getGroupId());</span>
+<span class="fc" id="L125">			writeSingleElement(writer, &quot;artifactId&quot;, parent.getArtifactId());</span>
+<span class="fc" id="L126">			writeSingleElement(writer, &quot;version&quot;, parent.getVersion());</span>
+<span class="fc" id="L127">			String relativePath = parent.getRelativePath();</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			if (relativePath != null) {</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				if (StringUtils.hasText(relativePath)) {</span>
+<span class="fc" id="L130">					writeSingleElement(writer, &quot;relativePath&quot;, relativePath);</span>
+				}
+				else {
+<span class="fc" id="L133">					writer.println(&quot;&lt;relativePath/&gt; &lt;!-- lookup parent from repository --&gt;&quot;);</span>
+				}
+			}
+<span class="fc" id="L136">		});</span>
+<span class="fc" id="L137">		writer.println(&quot;&lt;/parent&gt;&quot;);</span>
+<span class="fc" id="L138">	}</span>
+
+	private void writeProjectCoordinates(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L141">		writeSingleElement(writer, &quot;groupId&quot;, settings.getGroup());</span>
+<span class="fc" id="L142">		writeSingleElement(writer, &quot;artifactId&quot;, settings.getArtifact());</span>
+<span class="fc" id="L143">		writeSingleElement(writer, &quot;version&quot;, settings.getVersion());</span>
+<span class="fc" id="L144">	}</span>
+
+	private void writePackaging(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L147">		String packaging = settings.getPackaging();</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (!&quot;jar&quot;.equals(packaging)) {</span>
+<span class="fc" id="L149">			writeSingleElement(writer, &quot;packaging&quot;, packaging);</span>
+		}
+<span class="fc" id="L151">	}</span>
+
+	private void writeProjectName(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L154">		writeSingleElement(writer, &quot;name&quot;, settings.getName());</span>
+<span class="fc" id="L155">		writeSingleElement(writer, &quot;description&quot;, settings.getDescription());</span>
+<span class="fc" id="L156">	}</span>
+
+	private void writeUrl(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L159">		String url = settings.getUrl();</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">		if (url == null &amp;&amp; settings.isAddOverrideIfEmpty()) {</span>
+<span class="nc" id="L161">			url = &quot;&quot;;</span>
+		}
+<span class="fc" id="L163">		writeSingleElement(writer, &quot;url&quot;, url);</span>
+<span class="fc" id="L164">	}</span>
+
+	private void writeProperties(IndentingWriter writer, PropertyContainer properties) {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (properties.isEmpty()) {</span>
+<span class="fc" id="L168">			return;</span>
+		}
+<span class="fc" id="L170">		writeElement(writer, &quot;properties&quot;, () -&gt; {</span>
+<span class="fc" id="L171">			properties.values().forEach((entry) -&gt; writeSingleElement(writer, entry.getKey(), entry.getValue()));</span>
+<span class="fc" id="L172">			properties.versions((VersionProperty::toStandardFormat))</span>
+<span class="fc" id="L173">				.forEach((entry) -&gt; writeSingleElement(writer, entry.getKey(), entry.getValue()));</span>
+<span class="fc" id="L174">		});</span>
+<span class="fc" id="L175">	}</span>
+
+	private void writeLicense(IndentingWriter writer, MavenLicense license) {
+<span class="fc" id="L178">		writeElement(writer, &quot;license&quot;, () -&gt; {</span>
+<span class="fc" id="L179">			writeSingleElement(writer, &quot;name&quot;, license.getName());</span>
+<span class="fc" id="L180">			writeSingleElement(writer, &quot;url&quot;, license.getUrl());</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			if (license.getDistribution() != null) {</span>
+<span class="fc" id="L182">				writeSingleElement(writer, &quot;distribution&quot;,</span>
+<span class="fc" id="L183">						license.getDistribution().name().toLowerCase(Locale.ENGLISH));</span>
+			}
+<span class="fc" id="L185">			writeSingleElement(writer, &quot;comments&quot;, license.getComments());</span>
+<span class="fc" id="L186">		});</span>
+<span class="fc" id="L187">	}</span>
+
+	private void writeDeveloper(IndentingWriter writer, MavenDeveloper developer) {
+<span class="fc" id="L190">		writeElement(writer, &quot;developer&quot;, () -&gt; {</span>
+<span class="fc" id="L191">			writeSingleElement(writer, &quot;id&quot;, developer.getId());</span>
+<span class="fc" id="L192">			writeSingleElement(writer, &quot;name&quot;, developer.getName());</span>
+<span class="fc" id="L193">			writeSingleElement(writer, &quot;email&quot;, developer.getEmail());</span>
+<span class="fc" id="L194">			writeSingleElement(writer, &quot;url&quot;, developer.getUrl());</span>
+<span class="fc" id="L195">			writeSingleElement(writer, &quot;organization&quot;, developer.getOrganization());</span>
+<span class="fc" id="L196">			writeSingleElement(writer, &quot;organizationUrl&quot;, developer.getOrganizationUrl());</span>
+<span class="fc" id="L197">			List&lt;String&gt; roles = developer.getRoles();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (!roles.isEmpty()) {</span>
+<span class="fc" id="L199">				writeElement(writer, &quot;roles&quot;, () -&gt; roles.forEach((role) -&gt; writeSingleElement(writer, &quot;role&quot;, role)));</span>
+			}
+<span class="fc" id="L201">			writeSingleElement(writer, &quot;timezone&quot;, developer.getTimezone());</span>
+<span class="fc" id="L202">			Map&lt;String, String&gt; properties = developer.getProperties();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">			if (!properties.isEmpty()) {</span>
+<span class="fc" id="L204">				writeElement(writer, &quot;properties&quot;,</span>
+<span class="fc" id="L205">						() -&gt; properties.forEach((key, value) -&gt; writeSingleElement(writer, key, value)));</span>
+			}
+<span class="fc" id="L207">		});</span>
+<span class="fc" id="L208">	}</span>
+
+	private void writeDevelopers(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L211">		List&lt;MavenDeveloper&gt; developers = settings.getDevelopers();</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		if (CollectionUtils.isEmpty(developers)) {</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">			if (settings.isAddOverrideIfEmpty()) {</span>
+<span class="nc" id="L214">				writeElement(writer, &quot;developers&quot;, () -&gt; writeSingleElement(writer, &quot;developer&quot;, &quot;&quot;));</span>
+			}
+		}
+		else {
+<span class="fc" id="L218">			writeCollectionElement(writer, &quot;developers&quot;, settings.getDevelopers(), this::writeDeveloper);</span>
+		}
+<span class="fc" id="L220">	}</span>
+
+	private void writeLicenses(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L223">		List&lt;MavenLicense&gt; licenses = settings.getLicenses();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (CollectionUtils.isEmpty(licenses)) {</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			if (settings.isAddOverrideIfEmpty()) {</span>
+<span class="nc" id="L226">				writeElement(writer, &quot;licenses&quot;, () -&gt; writeSingleElement(writer, &quot;license&quot;, &quot;&quot;));</span>
+			}
+		}
+		else {
+<span class="fc" id="L230">			writeCollectionElement(writer, &quot;licenses&quot;, licenses, this::writeLicense);</span>
+		}
+<span class="fc" id="L232">	}</span>
+
+	private void writeScm(IndentingWriter writer, MavenBuildSettings settings) {
+<span class="fc" id="L235">		MavenScm scm = settings.getScm();</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		if (scm.isEmpty()) {</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">			if (settings.isAddOverrideIfEmpty()) {</span>
+<span class="nc" id="L238">				writeElement(writer, &quot;scm&quot;, () -&gt; {</span>
+<span class="nc" id="L239">					writeSingleElement(writer, &quot;connection&quot;, &quot;&quot;);</span>
+<span class="nc" id="L240">					writeSingleElement(writer, &quot;developerConnection&quot;, &quot;&quot;);</span>
+<span class="nc" id="L241">					writeSingleElement(writer, &quot;tag&quot;, &quot;&quot;);</span>
+<span class="nc" id="L242">					writeSingleElement(writer, &quot;url&quot;, &quot;&quot;);</span>
+<span class="nc" id="L243">				});</span>
+			}
+		}
+		else {
+<span class="fc" id="L247">			writeElement(writer, &quot;scm&quot;, () -&gt; {</span>
+<span class="fc" id="L248">				writeSingleElement(writer, &quot;connection&quot;, scm.getConnection());</span>
+<span class="fc" id="L249">				writeSingleElement(writer, &quot;developerConnection&quot;, scm.getDeveloperConnection());</span>
+<span class="fc" id="L250">				writeSingleElement(writer, &quot;tag&quot;, scm.getTag());</span>
+<span class="fc" id="L251">				writeSingleElement(writer, &quot;url&quot;, scm.getUrl());</span>
+<span class="fc" id="L252">			});</span>
+		}
+<span class="fc" id="L254">	}</span>
+
+	private void writeDependencies(IndentingWriter writer, DependencyContainer dependencies) {
+<span class="fc bfc" id="L257" title="All 2 branches covered.">		if (dependencies.isEmpty()) {</span>
+<span class="fc" id="L258">			return;</span>
+		}
+<span class="fc" id="L260">		writeElement(writer, &quot;dependencies&quot;, () -&gt; {</span>
+<span class="fc" id="L261">			Collection&lt;Dependency&gt; compiledDependencies = writeDependencies(writer, dependencies,</span>
+<span class="fc bfc" id="L262" title="All 4 branches covered.">					(scope) -&gt; scope == null || scope == DependencyScope.COMPILE);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">			if (!compiledDependencies.isEmpty()) {</span>
+<span class="fc" id="L264">				writer.println();</span>
+			}
+<span class="fc" id="L266">			writeDependencies(writer, dependencies, hasScope(DependencyScope.RUNTIME));</span>
+<span class="fc" id="L267">			writeDependencies(writer, dependencies, hasScope(DependencyScope.COMPILE_ONLY));</span>
+<span class="fc" id="L268">			writeDependencies(writer, dependencies, hasScope(DependencyScope.ANNOTATION_PROCESSOR));</span>
+<span class="fc" id="L269">			writeDependencies(writer, dependencies, hasScope(DependencyScope.PROVIDED_RUNTIME));</span>
+<span class="fc" id="L270">			writeDependencies(writer, dependencies,</span>
+<span class="fc" id="L271">					hasScope(DependencyScope.TEST_COMPILE, DependencyScope.TEST_RUNTIME));</span>
+<span class="fc" id="L272">		});</span>
+<span class="fc" id="L273">	}</span>
+
+	private Predicate&lt;DependencyScope&gt; hasScope(DependencyScope... validScopes) {
+<span class="fc" id="L276">		return (scope) -&gt; Arrays.asList(validScopes).contains(scope);</span>
+	}
+
+	private Collection&lt;Dependency&gt; writeDependencies(IndentingWriter writer, DependencyContainer dependencies,
+			Predicate&lt;DependencyScope&gt; filter) {
+<span class="fc" id="L281">		Collection&lt;Dependency&gt; candidates = dependencies.items()</span>
+<span class="fc" id="L282">			.filter((dep) -&gt; filter.test(dep.getScope()))</span>
+<span class="fc" id="L283">			.sorted(getDependencyComparator())</span>
+<span class="fc" id="L284">			.toList();</span>
+<span class="fc" id="L285">		writeCollection(writer, candidates, this::writeDependency);</span>
+<span class="fc" id="L286">		return candidates;</span>
+	}
+
+	private void writeDependency(IndentingWriter writer, Dependency dependency) {
+<span class="fc" id="L290">		writeElement(writer, &quot;dependency&quot;, () -&gt; {</span>
+<span class="fc" id="L291">			writeSingleElement(writer, &quot;groupId&quot;, dependency.getGroupId());</span>
+<span class="fc" id="L292">			writeSingleElement(writer, &quot;artifactId&quot;, dependency.getArtifactId());</span>
+<span class="fc" id="L293">			writeSingleElement(writer, &quot;version&quot;, determineVersion(dependency.getVersion()));</span>
+<span class="fc" id="L294">			writeSingleElement(writer, &quot;scope&quot;, scopeForType(dependency.getScope()));</span>
+<span class="fc" id="L295">			writeSingleElement(writer, &quot;classifier&quot;, dependency.getClassifier());</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">			if (isOptional(dependency)) {</span>
+<span class="fc" id="L297">				writeSingleElement(writer, &quot;optional&quot;, Boolean.toString(true));</span>
+			}
+<span class="fc" id="L299">			writeSingleElement(writer, &quot;type&quot;, dependency.getType());</span>
+<span class="fc" id="L300">			writeCollectionElement(writer, &quot;exclusions&quot;, dependency.getExclusions(), this::writeDependencyExclusion);</span>
+<span class="fc" id="L301">		});</span>
+<span class="fc" id="L302">	}</span>
+
+	private void writeDependencyExclusion(IndentingWriter writer, Exclusion exclusion) {
+<span class="fc" id="L305">		writeElement(writer, &quot;exclusion&quot;, () -&gt; {</span>
+<span class="fc" id="L306">			writeSingleElement(writer, &quot;groupId&quot;, exclusion.getGroupId());</span>
+<span class="fc" id="L307">			writeSingleElement(writer, &quot;artifactId&quot;, exclusion.getArtifactId());</span>
+<span class="fc" id="L308">		});</span>
+<span class="fc" id="L309">	}</span>
+
+	private String scopeForType(DependencyScope type) {
+<span class="fc bfc" id="L312" title="All 2 branches covered.">		if (type == null) {</span>
+<span class="fc" id="L313">			return null;</span>
+		}
+<span class="fc bfc" id="L315" title="All 4 branches covered.">		return switch (type) {</span>
+<span class="fc" id="L316">			case ANNOTATION_PROCESSOR, COMPILE, COMPILE_ONLY -&gt; null;</span>
+<span class="fc" id="L317">			case PROVIDED_RUNTIME -&gt; &quot;provided&quot;;</span>
+<span class="fc" id="L318">			case RUNTIME -&gt; &quot;runtime&quot;;</span>
+<span class="fc" id="L319">			case TEST_COMPILE, TEST_RUNTIME -&gt; &quot;test&quot;;</span>
+		};
+	}
+
+	private boolean isOptional(Dependency dependency) {
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">		if (dependency instanceof MavenDependency mavenDependency &amp;&amp; mavenDependency.isOptional()) {</span>
+<span class="fc" id="L325">			return true;</span>
+		}
+<span class="fc bfc" id="L327" title="All 2 branches covered.">		return (dependency.getScope() == DependencyScope.ANNOTATION_PROCESSOR</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">				|| dependency.getScope() == DependencyScope.COMPILE_ONLY);</span>
+	}
+
+	private void writeDependencyManagement(IndentingWriter writer, BomContainer boms) {
+<span class="fc bfc" id="L332" title="All 2 branches covered.">		if (boms.isEmpty()) {</span>
+<span class="fc" id="L333">			return;</span>
+		}
+<span class="fc" id="L335">		writeElement(writer, &quot;dependencyManagement&quot;, () -&gt; writeCollectionElement(writer, &quot;dependencies&quot;,</span>
+<span class="fc" id="L336">				boms.items().sorted(Comparator.comparing(BillOfMaterials::getOrder)).collect(Collectors.toList()),</span>
+				this::writeBom));
+<span class="fc" id="L338">	}</span>
+
+	private void writeBom(IndentingWriter writer, BillOfMaterials bom) {
+<span class="fc" id="L341">		writeElement(writer, &quot;dependency&quot;, () -&gt; {</span>
+<span class="fc" id="L342">			writeSingleElement(writer, &quot;groupId&quot;, bom.getGroupId());</span>
+<span class="fc" id="L343">			writeSingleElement(writer, &quot;artifactId&quot;, bom.getArtifactId());</span>
+<span class="fc" id="L344">			writeSingleElement(writer, &quot;version&quot;, determineVersion(bom.getVersion()));</span>
+<span class="fc" id="L345">			writeSingleElement(writer, &quot;type&quot;, &quot;pom&quot;);</span>
+<span class="fc" id="L346">			writeSingleElement(writer, &quot;scope&quot;, &quot;import&quot;);</span>
+<span class="fc" id="L347">		});</span>
+<span class="fc" id="L348">	}</span>
+
+	private String determineVersion(VersionReference versionReference) {
+<span class="fc bfc" id="L351" title="All 2 branches covered.">		if (versionReference == null) {</span>
+<span class="fc" id="L352">			return null;</span>
+		}
+<span class="fc bfc" id="L354" title="All 2 branches covered.">		return (versionReference.isProperty()) ? &quot;${&quot; + versionReference.getProperty().toStandardFormat() + &quot;}&quot;</span>
+<span class="fc" id="L355">				: versionReference.getValue();</span>
+	}
+
+	private void writeBuild(IndentingWriter writer, MavenBuild build) {
+<span class="fc" id="L359">		MavenBuildSettings settings = build.getSettings();</span>
+<span class="fc bfc" id="L360" title="All 4 branches covered.">		if (settings.getDefaultGoal() == null &amp;&amp; settings.getFinalName() == null</span>
+<span class="pc bpc" id="L361" title="1 of 4 branches missed.">				&amp;&amp; settings.getSourceDirectory() == null &amp;&amp; settings.getTestSourceDirectory() == null</span>
+<span class="fc bfc" id="L362" title="All 4 branches covered.">				&amp;&amp; build.resources().isEmpty() &amp;&amp; build.testResources().isEmpty()</span>
+<span class="fc bfc" id="L363" title="All 4 branches covered.">				&amp;&amp; build.pluginManagementPlugins().isEmpty() &amp;&amp; build.plugins().isEmpty()</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">				&amp;&amp; build.extensions().isEmpty()) {</span>
+<span class="fc" id="L365">			return;</span>
+		}
+<span class="fc" id="L367">		writer.println();</span>
+<span class="fc" id="L368">		writeElement(writer, &quot;build&quot;, () -&gt; {</span>
+<span class="fc" id="L369">			writeSingleElement(writer, &quot;defaultGoal&quot;, settings.getDefaultGoal());</span>
+<span class="fc" id="L370">			writeSingleElement(writer, &quot;finalName&quot;, settings.getFinalName());</span>
+<span class="fc" id="L371">			writeSingleElement(writer, &quot;sourceDirectory&quot;, settings.getSourceDirectory());</span>
+<span class="fc" id="L372">			writeSingleElement(writer, &quot;testSourceDirectory&quot;, settings.getTestSourceDirectory());</span>
+<span class="fc" id="L373">			writeResources(writer, build.resources(), build.testResources());</span>
+<span class="fc" id="L374">			writePluginManagement(writer, build.pluginManagementPlugins());</span>
+<span class="fc" id="L375">			writeCollectionElement(writer, &quot;plugins&quot;, build.plugins().values(), this::writePlugin);</span>
+<span class="fc" id="L376">			writeCollectionElement(writer, &quot;extensions&quot;, build.extensions().values(), this::writeExtension);</span>
+<span class="fc" id="L377">		});</span>
+<span class="fc" id="L378">	}</span>
+
+	private void writeResources(IndentingWriter writer, MavenResourceContainer resources,
+			MavenResourceContainer testResources) {
+<span class="fc" id="L382">		writeCollectionElement(writer, &quot;resources&quot;, resources.values(), this::writeResource);</span>
+<span class="fc" id="L383">		writeCollectionElement(writer, &quot;testResources&quot;, testResources.values(), this::writeTestResource);</span>
+<span class="fc" id="L384">	}</span>
+
+	private void writeResource(IndentingWriter writer, MavenResource resource) {
+<span class="fc" id="L387">		writeResource(writer, resource, &quot;resource&quot;);</span>
+<span class="fc" id="L388">	}</span>
+
+	private void writeTestResource(IndentingWriter writer, MavenResource resource) {
+<span class="fc" id="L391">		writeResource(writer, resource, &quot;testResource&quot;);</span>
+<span class="fc" id="L392">	}</span>
+
+	private void writeResource(IndentingWriter writer, MavenResource resource, String resourceName) {
+<span class="fc" id="L395">		writeElement(writer, resourceName, () -&gt; {</span>
+<span class="fc" id="L396">			writeSingleElement(writer, &quot;directory&quot;, resource.getDirectory());</span>
+<span class="fc" id="L397">			writeSingleElement(writer, &quot;targetPath&quot;, resource.getTargetPath());</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">			if (resource.isFiltering()) {</span>
+<span class="fc" id="L399">				writeSingleElement(writer, &quot;filtering&quot;, &quot;true&quot;);</span>
+			}
+<span class="fc" id="L401">			writeCollectionElement(writer, &quot;includes&quot;, resource.getIncludes(), this::writeResourceInclude);</span>
+<span class="fc" id="L402">			writeCollectionElement(writer, &quot;excludes&quot;, resource.getExcludes(), this::writeResourceExclude);</span>
+<span class="fc" id="L403">		});</span>
+<span class="fc" id="L404">	}</span>
+
+	private void writeResourceInclude(IndentingWriter writer, String include) {
+<span class="fc" id="L407">		writeSingleElement(writer, &quot;include&quot;, include);</span>
+<span class="fc" id="L408">	}</span>
+
+	private void writeResourceExclude(IndentingWriter writer, String exclude) {
+<span class="fc" id="L411">		writeSingleElement(writer, &quot;exclude&quot;, exclude);</span>
+<span class="fc" id="L412">	}</span>
+
+	private void writePluginManagement(IndentingWriter writer, MavenPluginContainer pluginManagementContainer) {
+<span class="fc bfc" id="L415" title="All 2 branches covered.">		if (!pluginManagementContainer.isEmpty()) {</span>
+<span class="fc" id="L416">			writeElement(writer, &quot;pluginManagement&quot;, () -&gt; writeCollectionElement(writer, &quot;plugins&quot;,</span>
+<span class="fc" id="L417">					pluginManagementContainer.values(), this::writePlugin));</span>
+		}
+<span class="fc" id="L419">	}</span>
+
+	private void writePlugin(IndentingWriter writer, MavenPlugin plugin) {
+<span class="fc" id="L422">		writeElement(writer, &quot;plugin&quot;, () -&gt; {</span>
+<span class="fc" id="L423">			writeSingleElement(writer, &quot;groupId&quot;, plugin.getGroupId());</span>
+<span class="fc" id="L424">			writeSingleElement(writer, &quot;artifactId&quot;, plugin.getArtifactId());</span>
+<span class="fc" id="L425">			writeSingleElement(writer, &quot;version&quot;, determineVersion(plugin.getVersionReference()));</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">			if (!plugin.isInherited()) {</span>
+<span class="fc" id="L427">				writeSingleElement(writer, &quot;inherited&quot;, &quot;false&quot;);</span>
+			}
+<span class="fc bfc" id="L429" title="All 2 branches covered.">			if (plugin.isExtensions()) {</span>
+<span class="fc" id="L430">				writeSingleElement(writer, &quot;extensions&quot;, &quot;true&quot;);</span>
+			}
+<span class="fc" id="L432">			writePluginConfiguration(writer, plugin.getConfiguration());</span>
+<span class="fc" id="L433">			writeCollectionElement(writer, &quot;executions&quot;, plugin.getExecutions(), this::writePluginExecution);</span>
+<span class="fc" id="L434">			writeCollectionElement(writer, &quot;dependencies&quot;, plugin.getDependencies(), this::writePluginDependency);</span>
+<span class="fc" id="L435">		});</span>
+<span class="fc" id="L436">	}</span>
+
+	private void writePluginConfiguration(IndentingWriter writer, Configuration configuration) {
+<span class="pc bpc" id="L439" title="1 of 4 branches missed.">		if (configuration == null || configuration.getSettings().isEmpty()) {</span>
+<span class="fc" id="L440">			return;</span>
+		}
+<span class="fc" id="L442">		writeCollectionElement(writer, &quot;configuration&quot;, configuration.getSettings(), this::writeSetting);</span>
+<span class="fc" id="L443">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void writeSetting(IndentingWriter writer, Setting setting) {
+<span class="fc bfc" id="L447" title="All 2 branches covered.">		if (setting.getValue() instanceof String) {</span>
+<span class="fc" id="L448">			writeSingleElement(writer, setting.getName(), setting.getValue());</span>
+		}
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">		else if (setting.getValue() instanceof List) {</span>
+<span class="fc" id="L451">			writeCollectionElement(writer, setting.getName(), (List&lt;Setting&gt;) setting.getValue(), this::writeSetting);</span>
+		}
+<span class="fc" id="L453">	}</span>
+
+	private void writePluginExecution(IndentingWriter writer, Execution execution) {
+<span class="fc" id="L456">		writeElement(writer, &quot;execution&quot;, () -&gt; {</span>
+<span class="fc" id="L457">			writeSingleElement(writer, &quot;id&quot;, execution.getId());</span>
+<span class="fc" id="L458">			writeSingleElement(writer, &quot;phase&quot;, execution.getPhase());</span>
+<span class="fc" id="L459">			List&lt;String&gt; goals = execution.getGoals();</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">			if (!goals.isEmpty()) {</span>
+<span class="fc" id="L461">				writeElement(writer, &quot;goals&quot;, () -&gt; goals.forEach((goal) -&gt; writeSingleElement(writer, &quot;goal&quot;, goal)));</span>
+			}
+<span class="fc" id="L463">			writePluginConfiguration(writer, execution.getConfiguration());</span>
+<span class="fc" id="L464">		});</span>
+<span class="fc" id="L465">	}</span>
+
+	private void writePluginDependency(IndentingWriter writer, MavenPlugin.Dependency dependency) {
+<span class="fc" id="L468">		writeElement(writer, &quot;dependency&quot;, () -&gt; {</span>
+<span class="fc" id="L469">			writeSingleElement(writer, &quot;groupId&quot;, dependency.getGroupId());</span>
+<span class="fc" id="L470">			writeSingleElement(writer, &quot;artifactId&quot;, dependency.getArtifactId());</span>
+<span class="fc" id="L471">			writeSingleElement(writer, &quot;version&quot;, determineVersion(dependency.getVersionReference()));</span>
+<span class="fc" id="L472">		});</span>
+<span class="fc" id="L473">	}</span>
+
+	private void writeRepositories(IndentingWriter writer, MavenRepositoryContainer buildRepositories,
+			MavenRepositoryContainer buildPluginRepositories) {
+<span class="fc" id="L477">		List&lt;MavenRepository&gt; repositories = filterRepositories(buildRepositories.items());</span>
+<span class="fc" id="L478">		List&lt;MavenRepository&gt; pluginRepositories = filterRepositories(buildPluginRepositories.items());</span>
+<span class="fc bfc" id="L479" title="All 4 branches covered.">		if (repositories.isEmpty() &amp;&amp; pluginRepositories.isEmpty()) {</span>
+<span class="fc" id="L480">			return;</span>
+		}
+<span class="fc" id="L482">		writeCollectionElement(writer, &quot;repositories&quot;, repositories, this::writeRepository);</span>
+<span class="fc" id="L483">		writeCollectionElement(writer, &quot;pluginRepositories&quot;, pluginRepositories, this::writePluginRepository);</span>
+<span class="fc" id="L484">	}</span>
+
+	private List&lt;MavenRepository&gt; filterRepositories(Stream&lt;MavenRepository&gt; repositories) {
+<span class="fc bfc" id="L487" title="All 2 branches covered.">		return repositories.filter((repository) -&gt; !MavenRepository.MAVEN_CENTRAL.equals(repository)).toList();</span>
+	}
+
+	private void writeRepository(IndentingWriter writer, MavenRepository repository) {
+<span class="fc" id="L491">		writeRepository(writer, repository, &quot;repository&quot;);</span>
+<span class="fc" id="L492">	}</span>
+
+	private void writePluginRepository(IndentingWriter writer, MavenRepository repository) {
+<span class="fc" id="L495">		writeRepository(writer, repository, &quot;pluginRepository&quot;);</span>
+<span class="fc" id="L496">	}</span>
+
+	private void writeRepository(IndentingWriter writer, MavenRepository repository, String childName) {
+<span class="fc" id="L499">		writeElement(writer, childName, () -&gt; {</span>
+<span class="fc" id="L500">			writeSingleElement(writer, &quot;id&quot;, repository.getId());</span>
+<span class="fc" id="L501">			writeSingleElement(writer, &quot;name&quot;, repository.getName());</span>
+<span class="fc" id="L502">			writeSingleElement(writer, &quot;url&quot;, repository.getUrl());</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">			if (!repository.isReleasesEnabled()) {</span>
+<span class="fc" id="L504">				writeElement(writer, &quot;releases&quot;, () -&gt; writeSingleElement(writer, &quot;enabled&quot;, Boolean.toString(false)));</span>
+			}
+<span class="fc bfc" id="L506" title="All 2 branches covered.">			if (!repository.isSnapshotsEnabled()) {</span>
+<span class="fc" id="L507">				writeElement(writer, &quot;snapshots&quot;, () -&gt; writeSingleElement(writer, &quot;enabled&quot;, Boolean.toString(false)));</span>
+			}
+<span class="fc" id="L509">		});</span>
+<span class="fc" id="L510">	}</span>
+
+	private void writeDistributionManagement(IndentingWriter writer,
+			MavenDistributionManagement distributionManagement) {
+<span class="fc bfc" id="L514" title="All 2 branches covered.">		if (distributionManagement.isEmpty()) {</span>
+<span class="fc" id="L515">			return;</span>
+		}
+<span class="fc" id="L517">		writeElement(writer, &quot;distributionManagement&quot;, () -&gt; {</span>
+<span class="fc" id="L518">			writeSingleElement(writer, &quot;downloadUrl&quot;, distributionManagement.getDownloadUrl());</span>
+<span class="fc" id="L519">			writeDeploymentRepository(writer, &quot;repository&quot;, distributionManagement.getRepository());</span>
+<span class="fc" id="L520">			writeDeploymentRepository(writer, &quot;snapshotRepository&quot;, distributionManagement.getSnapshotRepository());</span>
+<span class="fc" id="L521">			Site site = distributionManagement.getSite();</span>
+<span class="fc bfc" id="L522" title="All 2 branches covered.">			if (!site.isEmpty()) {</span>
+<span class="fc" id="L523">				writeElement(writer, &quot;site&quot;, () -&gt; {</span>
+<span class="fc" id="L524">					writeSingleElement(writer, &quot;id&quot;, site.getId());</span>
+<span class="fc" id="L525">					writeSingleElement(writer, &quot;name&quot;, site.getName());</span>
+<span class="fc" id="L526">					writeSingleElement(writer, &quot;url&quot;, site.getUrl());</span>
+<span class="fc" id="L527">				});</span>
+			}
+<span class="fc" id="L529">			Relocation relocation = distributionManagement.getRelocation();</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">			if (!relocation.isEmpty()) {</span>
+<span class="fc" id="L531">				writeElement(writer, &quot;relocation&quot;, () -&gt; {</span>
+<span class="fc" id="L532">					writeSingleElement(writer, &quot;groupId&quot;, relocation.getGroupId());</span>
+<span class="fc" id="L533">					writeSingleElement(writer, &quot;artifactId&quot;, relocation.getArtifactId());</span>
+<span class="fc" id="L534">					writeSingleElement(writer, &quot;version&quot;, relocation.getVersion());</span>
+<span class="fc" id="L535">					writeSingleElement(writer, &quot;message&quot;, relocation.getMessage());</span>
+<span class="fc" id="L536">				});</span>
+			}
+<span class="fc" id="L538">		});</span>
+<span class="fc" id="L539">	}</span>
+
+	private void writeDeploymentRepository(IndentingWriter writer, String name, DeploymentRepository repository) {
+<span class="fc bfc" id="L542" title="All 2 branches covered.">		if (!repository.isEmpty()) {</span>
+<span class="fc" id="L543">			writeElement(writer, name, () -&gt; {</span>
+<span class="fc" id="L544">				writeSingleElement(writer, &quot;id&quot;, repository.getId());</span>
+<span class="fc" id="L545">				writeSingleElement(writer, &quot;name&quot;, repository.getName());</span>
+<span class="fc" id="L546">				writeSingleElement(writer, &quot;url&quot;, repository.getUrl());</span>
+<span class="fc" id="L547">				writeSingleElement(writer, &quot;layout&quot;, repository.getLayout());</span>
+<span class="fc bfc" id="L548" title="All 2 branches covered.">				if (repository.getUniqueVersion() != null) {</span>
+<span class="fc" id="L549">					writeSingleElement(writer, &quot;uniqueVersion&quot;, Boolean.toString(repository.getUniqueVersion()));</span>
+				}
+<span class="fc" id="L551">			});</span>
+		}
+<span class="fc" id="L553">	}</span>
+
+	private void writeExtension(IndentingWriter writer, MavenExtension extension) {
+<span class="fc" id="L556">		writeElement(writer, &quot;extension&quot;, () -&gt; {</span>
+<span class="fc" id="L557">			writeSingleElement(writer, &quot;groupId&quot;, extension.getGroupId());</span>
+<span class="fc" id="L558">			writeSingleElement(writer, &quot;artifactId&quot;, extension.getArtifactId());</span>
+<span class="fc" id="L559">			writeSingleElement(writer, &quot;version&quot;, determineVersion(extension.getVersionReference()));</span>
+<span class="fc" id="L560">		});</span>
+<span class="fc" id="L561">	}</span>
+
+	private void writeProfiles(IndentingWriter writer, MavenBuild build) {
+<span class="fc" id="L564">		MavenProfileContainer profiles = build.profiles();</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">		if (profiles.isEmpty()) {</span>
+<span class="fc" id="L566">			return;</span>
+		}
+<span class="fc" id="L568">		writer.println();</span>
+<span class="fc" id="L569">		writeElement(writer, &quot;profiles&quot;, () -&gt; profiles.values().forEach((profile) -&gt; writeProfile(writer, profile)));</span>
+<span class="fc" id="L570">	}</span>
+
+	private void writeProfile(IndentingWriter writer, MavenProfile profile) {
+<span class="fc" id="L573">		writeElement(writer, &quot;profile&quot;, () -&gt; {</span>
+<span class="fc" id="L574">			writeSingleElement(writer, &quot;id&quot;, profile.getId());</span>
+<span class="fc" id="L575">			writeProfileActivation(writer, profile.getActivation());</span>
+<span class="fc" id="L576">			writeProperties(writer, profile.properties());</span>
+<span class="fc" id="L577">			writeDependencies(writer, profile.dependencies());</span>
+<span class="fc" id="L578">			writeDependencyManagement(writer, profile.boms());</span>
+<span class="fc" id="L579">			writeProfileBuild(writer, profile);</span>
+<span class="fc" id="L580">			writeRepositories(writer, profile.repositories(), profile.pluginRepositories());</span>
+<span class="fc" id="L581">			writeDistributionManagement(writer, profile.getDistributionManagement());</span>
+<span class="fc" id="L582">		});</span>
+<span class="fc" id="L583">	}</span>
+
+	private void writeProfileActivation(IndentingWriter writer, MavenProfileActivation activation) {
+<span class="fc bfc" id="L586" title="All 2 branches covered.">		if (activation.isEmpty()) {</span>
+<span class="fc" id="L587">			return;</span>
+		}
+<span class="fc" id="L589">		writeElement(writer, &quot;activation&quot;, () -&gt; {</span>
+<span class="fc" id="L590">			writeSingleElement(writer, &quot;activeByDefault&quot;, activation.getActiveByDefault());</span>
+<span class="fc" id="L591">			writeSingleElement(writer, &quot;jdk&quot;, activation.getJdk());</span>
+<span class="fc" id="L592">			ifNotNull(activation.getOs(), (os) -&gt; writeElement(writer, &quot;os&quot;, () -&gt; {</span>
+<span class="fc" id="L593">				writeSingleElement(writer, &quot;name&quot;, os.getName());</span>
+<span class="fc" id="L594">				writeSingleElement(writer, &quot;arch&quot;, os.getArch());</span>
+<span class="fc" id="L595">				writeSingleElement(writer, &quot;family&quot;, os.getFamily());</span>
+<span class="fc" id="L596">				writeSingleElement(writer, &quot;version&quot;, os.getVersion());</span>
+<span class="fc" id="L597">			}));</span>
+<span class="fc" id="L598">			ifNotNull(activation.getProperty(), (property) -&gt; writeElement(writer, &quot;property&quot;, () -&gt; {</span>
+<span class="fc" id="L599">				writeSingleElement(writer, &quot;name&quot;, property.getName());</span>
+<span class="fc" id="L600">				writeSingleElement(writer, &quot;value&quot;, property.getValue());</span>
+<span class="fc" id="L601">			}));</span>
+<span class="fc" id="L602">			ifNotNull(activation.getFile(), (file) -&gt; writeElement(writer, &quot;file&quot;, () -&gt; {</span>
+<span class="fc" id="L603">				writeSingleElement(writer, &quot;exists&quot;, file.getExists());</span>
+<span class="fc" id="L604">				writeSingleElement(writer, &quot;missing&quot;, file.getMissing());</span>
+<span class="fc" id="L605">			}));</span>
+<span class="fc" id="L606">		});</span>
+<span class="fc" id="L607">	}</span>
+
+	private void writeProfileBuild(IndentingWriter writer, MavenProfile profile) {
+<span class="fc" id="L610">		MavenProfile.Settings settings = profile.getSettings();</span>
+<span class="pc bpc" id="L611" title="1 of 6 branches missed.">		if (settings.getDefaultGoal() == null &amp;&amp; settings.getFinalName() == null &amp;&amp; profile.resources().isEmpty()</span>
+<span class="fc bfc" id="L612" title="All 4 branches covered.">				&amp;&amp; profile.testResources().isEmpty() &amp;&amp; profile.pluginManagementPlugins().isEmpty()</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">				&amp;&amp; profile.plugins().isEmpty()) {</span>
+<span class="fc" id="L614">			return;</span>
+		}
+<span class="fc" id="L616">		writeElement(writer, &quot;build&quot;, () -&gt; {</span>
+<span class="fc" id="L617">			writeSingleElement(writer, &quot;defaultGoal&quot;, settings.getDefaultGoal());</span>
+<span class="fc" id="L618">			writeSingleElement(writer, &quot;finalName&quot;, settings.getFinalName());</span>
+<span class="fc" id="L619">			writeResources(writer, profile.resources(), profile.testResources());</span>
+<span class="fc" id="L620">			writePluginManagement(writer, profile.pluginManagementPlugins());</span>
+<span class="fc" id="L621">			writeCollectionElement(writer, &quot;plugins&quot;, profile.plugins().values(), this::writePlugin);</span>
+<span class="fc" id="L622">		});</span>
+<span class="fc" id="L623">	}</span>
+
+	private void writeSingleElement(IndentingWriter writer, String name, Object value) {
+<span class="fc bfc" id="L626" title="All 2 branches covered.">		if (value != null) {</span>
+<span class="fc bfc" id="L627" title="All 2 branches covered.">			CharSequence text = (value instanceof CharSequence) ? (CharSequence) value : value.toString();</span>
+<span class="fc bfc" id="L628" title="All 2 branches covered.">			if (!StringUtils.hasLength(text)) {</span>
+<span class="fc" id="L629">				writer.println(String.format(&quot;&lt;%s/&gt;&quot;, name));</span>
+			}
+			else {
+<span class="fc" id="L632">				writer.print(String.format(&quot;&lt;%s&gt;&quot;, name));</span>
+<span class="fc" id="L633">				writer.print(encodeText(text));</span>
+<span class="fc" id="L634">				writer.println(String.format(&quot;&lt;/%s&gt;&quot;, name));</span>
+			}
+		}
+<span class="fc" id="L637">	}</span>
+
+	private void writeElement(IndentingWriter writer, String name, Runnable withContent) {
+<span class="fc" id="L640">		writer.println(String.format(&quot;&lt;%s&gt;&quot;, name));</span>
+<span class="fc" id="L641">		writer.indented(withContent);</span>
+<span class="fc" id="L642">		writer.println(String.format(&quot;&lt;/%s&gt;&quot;, name));</span>
+<span class="fc" id="L643">	}</span>
+
+	private &lt;T&gt; void writeCollectionElement(IndentingWriter writer, String name, Stream&lt;T&gt; items,
+			BiConsumer&lt;IndentingWriter, T&gt; itemWriter) {
+<span class="fc" id="L647">		writeCollectionElement(writer, name, items.toList(), itemWriter);</span>
+<span class="fc" id="L648">	}</span>
+
+	private &lt;T&gt; void writeCollectionElement(IndentingWriter writer, String name, Collection&lt;T&gt; items,
+			BiConsumer&lt;IndentingWriter, T&gt; itemWriter) {
+<span class="fc bfc" id="L652" title="All 2 branches covered.">		if (!ObjectUtils.isEmpty(items)) {</span>
+<span class="fc" id="L653">			writeElement(writer, name, () -&gt; writeCollection(writer, items, itemWriter));</span>
+		}
+<span class="fc" id="L655">	}</span>
+
+	private &lt;T&gt; void writeCollection(IndentingWriter writer, Collection&lt;T&gt; collection,
+			BiConsumer&lt;IndentingWriter, T&gt; itemWriter) {
+<span class="fc bfc" id="L659" title="All 2 branches covered.">		if (!collection.isEmpty()) {</span>
+<span class="fc" id="L660">			collection.forEach((item) -&gt; itemWriter.accept(writer, item));</span>
+		}
+<span class="fc" id="L662">	}</span>
+
+	private &lt;T&gt; void ifNotNull(T value, Consumer&lt;T&gt; elementWriter) {
+<span class="fc bfc" id="L665" title="All 2 branches covered.">		if (value != null) {</span>
+<span class="fc" id="L666">			elementWriter.accept(value);</span>
+		}
+<span class="fc" id="L668">	}</span>
+
+	private String encodeText(CharSequence text) {
+<span class="fc" id="L671">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">		for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc" id="L673">			char character = text.charAt(i);</span>
+<span class="fc bfc" id="L674" title="All 6 branches covered.">			switch (character) {</span>
+<span class="fc" id="L675">				case '\'' -&gt; sb.append(&quot;&amp;apos;&quot;);</span>
+<span class="fc" id="L676">				case '\&quot;' -&gt; sb.append(&quot;&amp;quot;&quot;);</span>
+<span class="fc" id="L677">				case '&lt;' -&gt; sb.append(&quot;&amp;lt;&quot;);</span>
+<span class="fc" id="L678">				case '&gt;' -&gt; sb.append(&quot;&amp;gt;&quot;);</span>
+<span class="fc" id="L679">				case '&amp;' -&gt; sb.append(&quot;&amp;amp;&quot;);</span>
+<span class="fc" id="L680">				default -&gt; sb.append(character);</span>
+			}
+		}
+<span class="fc" id="L683">		return sb.toString();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

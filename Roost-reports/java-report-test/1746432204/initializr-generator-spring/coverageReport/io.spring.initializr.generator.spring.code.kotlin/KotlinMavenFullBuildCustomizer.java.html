@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KotlinMavenFullBuildCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.code.kotlin</a> &gt; <span class="el_source">KotlinMavenFullBuildCustomizer.java</span></div><h1>KotlinMavenFullBuildCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.code.kotlin;
+
+import io.spring.initializr.generator.buildsystem.maven.MavenBuild;
+import io.spring.initializr.generator.spring.build.BuildCustomizer;
+import io.spring.initializr.generator.version.VersionReference;
+
+/**
+ * {@link BuildCustomizer} for Kotlin projects build with Maven when Kotlin is not
+ * supported by the parent and a full configuration should be provided.
+ *
+ * @author Andy Wilkinson
+ */
+class KotlinMavenFullBuildCustomizer implements BuildCustomizer&lt;MavenBuild&gt; {
+
+	private final KotlinProjectSettings settings;
+
+<span class="fc" id="L33">	KotlinMavenFullBuildCustomizer(KotlinProjectSettings kotlinProjectSettings) {</span>
+<span class="fc" id="L34">		this.settings = kotlinProjectSettings;</span>
+<span class="fc" id="L35">	}</span>
+
+	@Override
+	public void customize(MavenBuild build) {
+<span class="fc" id="L39">		build.properties().version(KotlinMavenBuildCustomizer.KOTLIN_VERSION_PROPERTY, this.settings.getVersion());</span>
+<span class="fc" id="L40">		build.settings()</span>
+<span class="fc" id="L41">			.sourceDirectory(&quot;${project.basedir}/src/main/kotlin&quot;)</span>
+<span class="fc" id="L42">			.testSourceDirectory(&quot;${project.basedir}/src/test/kotlin&quot;);</span>
+<span class="fc" id="L43">		build.plugins().add(&quot;org.jetbrains.kotlin&quot;, &quot;kotlin-maven-plugin&quot;, (kotlinMavenPlugin) -&gt; {</span>
+<span class="fc" id="L44">			kotlinMavenPlugin</span>
+<span class="fc" id="L45">				.versionReference(VersionReference.ofProperty(KotlinMavenBuildCustomizer.KOTLIN_VERSION_PROPERTY));</span>
+<span class="fc" id="L46">			kotlinMavenPlugin.configuration((configuration) -&gt; {</span>
+<span class="fc" id="L47">				configuration.configure(&quot;args&quot;,</span>
+<span class="fc" id="L48">						(args) -&gt; this.settings.getCompilerArgs().forEach((arg) -&gt; args.add(&quot;arg&quot;, arg)));</span>
+<span class="fc" id="L49">				configuration.configure(&quot;compilerPlugins&quot;,</span>
+<span class="fc" id="L50">						(compilerPlugins) -&gt; compilerPlugins.add(&quot;plugin&quot;, &quot;spring&quot;));</span>
+<span class="fc" id="L51">				configuration.add(&quot;jvmTarget&quot;, this.settings.getJvmTarget());</span>
+<span class="fc" id="L52">			});</span>
+<span class="fc" id="L53">			kotlinMavenPlugin.execution(&quot;compile&quot;, (compile) -&gt; compile.phase(&quot;compile&quot;).goal(&quot;compile&quot;));</span>
+<span class="fc" id="L54">			kotlinMavenPlugin.execution(&quot;test-compile&quot;,</span>
+<span class="fc" id="L55">					(compile) -&gt; compile.phase(&quot;test-compile&quot;).goal(&quot;test-compile&quot;));</span>
+<span class="fc" id="L56">			kotlinMavenPlugin.dependency(&quot;org.jetbrains.kotlin&quot;, &quot;kotlin-maven-allopen&quot;,</span>
+<span class="fc" id="L57">					VersionReference.ofProperty(KotlinMavenBuildCustomizer.KOTLIN_VERSION_PROPERTY));</span>
+<span class="fc" id="L58">		});</span>
+
+<span class="fc" id="L60">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

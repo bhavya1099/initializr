@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MavenLicense.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.maven</a> &gt; <span class="el_source">MavenLicense.java</span></div><h1>MavenLicense.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.maven;
+
+/**
+ * A {@code &lt;license&gt;} in a Maven pom.
+ *
+ * @author Jafer Khan Shamshad
+ * @author Stephane Nicoll
+ */
+public class MavenLicense {
+
+	private final String name;
+
+	private final String url;
+
+	private final Distribution distribution;
+
+	private final String comments;
+
+<span class="fc" id="L35">	MavenLicense(Builder builder) {</span>
+<span class="fc" id="L36">		this.name = builder.name;</span>
+<span class="fc" id="L37">		this.url = builder.url;</span>
+<span class="fc" id="L38">		this.distribution = builder.distribution;</span>
+<span class="fc" id="L39">		this.comments = builder.comments;</span>
+<span class="fc" id="L40">	}</span>
+
+	/**
+	 * Return the name of the license.
+	 * @return the name
+	 */
+	public String getName() {
+<span class="fc" id="L47">		return this.name;</span>
+	}
+
+	/**
+	 * Return the URL of the license.
+	 * @return the URL
+	 */
+	public String getUrl() {
+<span class="fc" id="L55">		return this.url;</span>
+	}
+
+	/**
+	 * Return the distribution mechanism of the project associated with the license.
+	 * @return the distribution mechanism
+	 */
+	public Distribution getDistribution() {
+<span class="fc" id="L63">		return this.distribution;</span>
+	}
+
+	/**
+	 * Return the comments associated with the license.
+	 * @return the comments
+	 */
+	public String getComments() {
+<span class="fc" id="L71">		return this.comments;</span>
+	}
+
+	/**
+	 * Builder for a {@link MavenLicense}.
+	 */
+<span class="fc" id="L77">	public static class Builder {</span>
+
+		private String name;
+
+		private String url;
+
+		private Distribution distribution;
+
+		private String comments;
+
+		/**
+		 * Set the name of the license.
+		 * @param name the name of the license or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder name(String name) {
+<span class="fc" id="L93">			this.name = name;</span>
+<span class="fc" id="L94">			return this;</span>
+		}
+
+		/**
+		 * Set the URL of the license.
+		 * @param url the URL of the license or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder url(String url) {
+<span class="fc" id="L103">			this.url = url;</span>
+<span class="fc" id="L104">			return this;</span>
+		}
+
+		/**
+		 * Set the distribution mechanism of the project associated with the license.
+		 * @param distribution the distribution mechanism of the project or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder distribution(Distribution distribution) {
+<span class="fc" id="L113">			this.distribution = distribution;</span>
+<span class="fc" id="L114">			return this;</span>
+		}
+
+		/**
+		 * Set comments associated with the license.
+		 * @param comments the comments for the license or {@code null}
+		 * @return this for method chaining
+		 */
+		public Builder comments(String comments) {
+<span class="fc" id="L123">			this.comments = comments;</span>
+<span class="fc" id="L124">			return this;</span>
+		}
+
+		/**
+		 * Builds the license.
+		 * @return the license
+		 */
+		public MavenLicense build() {
+<span class="fc" id="L132">			return new MavenLicense(this);</span>
+		}
+
+	}
+
+	/**
+	 * Describes how the project may be legally distributed.
+	 */
+<span class="fc" id="L140">	public enum Distribution {</span>
+
+		/**
+		 * May be downloaded from a Maven repository.
+		 */
+<span class="fc" id="L145">		REPO,</span>
+
+		/**
+		 * Must be manually installed.
+		 */
+<span class="fc" id="L150">		MANUAL</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

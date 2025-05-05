@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DefaultStarterBuildCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.build</a> &gt; <span class="el_source">DefaultStarterBuildCustomizer.java</span></div><h1>DefaultStarterBuildCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.build;
+
+import io.spring.initializr.generator.buildsystem.Build;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.metadata.Dependency;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.support.MetadataBuildItemMapper;
+
+import org.springframework.core.Ordered;
+
+/**
+ * A {@link BuildCustomizer} that adds the default starter if none is detected.
+ *
+ * @author Stephane Nicoll
+ */
+class DefaultStarterBuildCustomizer implements BuildCustomizer&lt;Build&gt; {
+
+	/**
+	 * The id of the starter to use if no dependency is defined.
+	 */
+	static final String DEFAULT_STARTER = &quot;root_starter&quot;;
+
+	private final BuildMetadataResolver buildResolver;
+
+<span class="fc" id="L41">	DefaultStarterBuildCustomizer(InitializrMetadata metadata, ProjectDescription projectDescription) {</span>
+<span class="fc" id="L42">		this.buildResolver = new BuildMetadataResolver(metadata, projectDescription.getPlatformVersion());</span>
+<span class="fc" id="L43">	}</span>
+
+	@Override
+	public void customize(Build build) {
+<span class="fc" id="L47">		boolean hasStarter = this.buildResolver.dependencies(build).anyMatch(this::isValidStarter);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		if (!hasStarter) {</span>
+<span class="fc" id="L49">			Dependency root = Dependency.createSpringBootStarter(&quot;&quot;);</span>
+<span class="fc" id="L50">			root.setId(DEFAULT_STARTER);</span>
+<span class="fc" id="L51">			build.dependencies().add(DEFAULT_STARTER, MetadataBuildItemMapper.toDependency(root));</span>
+		}
+<span class="fc" id="L53">	}</span>
+
+	@Override
+	public int getOrder() {
+<span class="fc" id="L57">		return Ordered.LOWEST_PRECEDENCE;</span>
+	}
+
+	private boolean isValidStarter(Dependency dependency) {
+<span class="fc bfc" id="L61" title="All 4 branches covered.">		return dependency.isStarter() &amp;&amp; Dependency.SCOPE_COMPILE.equals(dependency.getScope());</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

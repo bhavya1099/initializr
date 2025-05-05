@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectGenerationInvoker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.project</a> &gt; <span class="el_source">ProjectGenerationInvoker.java</span></div><h1>ProjectGenerationInvoker.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2020 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.project;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.spring.initializr.generator.buildsystem.BuildItemResolver;
+import io.spring.initializr.generator.buildsystem.BuildWriter;
+import io.spring.initializr.generator.project.DefaultProjectAssetGenerator;
+import io.spring.initializr.generator.project.ProjectAssetGenerator;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.project.ProjectGenerationContext;
+import io.spring.initializr.generator.project.ProjectGenerationException;
+import io.spring.initializr.generator.project.ProjectGenerator;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.metadata.support.MetadataBuildItemResolver;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.util.FileSystemUtils;
+
+/**
+ * Invokes the project generation API. This is an intermediate layer that can consume a
+ * {@link ProjectRequest} and trigger project generation based on the request.
+ *
+ * @param &lt;R&gt; the concrete {@link ProjectRequest} type
+ * @author Madhura Bhave
+ * @see ProjectAssetGenerator
+ */
+public class ProjectGenerationInvoker&lt;R extends ProjectRequest&gt; {
+
+	private final ApplicationContext parentApplicationContext;
+
+	private final ApplicationEventPublisher eventPublisher;
+
+	private final ProjectRequestToDescriptionConverter&lt;R&gt; requestConverter;
+
+<span class="fc" id="L60">	private final ProjectAssetGenerator&lt;Path&gt; projectAssetGenerator = new DefaultProjectAssetGenerator();</span>
+
+<span class="fc" id="L62">	private final Map&lt;Path, List&lt;Path&gt;&gt; temporaryFiles = new ConcurrentHashMap&lt;&gt;();</span>
+
+	public ProjectGenerationInvoker(ApplicationContext parentApplicationContext,
+			ProjectRequestToDescriptionConverter&lt;R&gt; requestConverter) {
+<span class="fc" id="L66">		this(parentApplicationContext, parentApplicationContext, requestConverter);</span>
+<span class="fc" id="L67">	}</span>
+
+	protected ProjectGenerationInvoker(ApplicationContext parentApplicationContext,
+<span class="fc" id="L70">			ApplicationEventPublisher eventPublisher, ProjectRequestToDescriptionConverter&lt;R&gt; requestConverter) {</span>
+<span class="fc" id="L71">		this.parentApplicationContext = parentApplicationContext;</span>
+<span class="fc" id="L72">		this.eventPublisher = eventPublisher;</span>
+<span class="fc" id="L73">		this.requestConverter = requestConverter;</span>
+<span class="fc" id="L74">	}</span>
+
+	/**
+	 * Invokes the project generation API that generates the entire project structure for
+	 * the specified {@link ProjectRequest}.
+	 * @param request the project request
+	 * @return the {@link ProjectGenerationResult}
+	 */
+	public ProjectGenerationResult invokeProjectStructureGeneration(R request) {
+<span class="fc" id="L83">		InitializrMetadata metadata = this.parentApplicationContext.getBean(InitializrMetadataProvider.class).get();</span>
+		try {
+<span class="fc" id="L85">			ProjectDescription description = this.requestConverter.convert(request, metadata);</span>
+<span class="fc" id="L86">			ProjectGenerator projectGenerator = createProjectGenerator(metadata);</span>
+<span class="fc" id="L87">			ProjectGenerationResult result = projectGenerator.generate(description,</span>
+<span class="fc" id="L88">					generateProject(description, request));</span>
+<span class="fc" id="L89">			addTempFile(result.getRootDirectory(), result.getRootDirectory());</span>
+<span class="fc" id="L90">			return result;</span>
+		}
+<span class="fc" id="L92">		catch (ProjectGenerationException ex) {</span>
+<span class="fc" id="L93">			publishProjectFailedEvent(request, metadata, ex);</span>
+<span class="fc" id="L94">			throw ex;</span>
+		}
+	}
+
+	private ProjectAssetGenerator&lt;ProjectGenerationResult&gt; generateProject(ProjectDescription description, R request) {
+<span class="fc" id="L99">		return (context) -&gt; {</span>
+<span class="fc" id="L100">			Path projectDir = getProjectAssetGenerator(description).generate(context);</span>
+<span class="fc" id="L101">			publishProjectGeneratedEvent(request, context);</span>
+<span class="fc" id="L102">			return new ProjectGenerationResult(context.getBean(ProjectDescription.class), projectDir);</span>
+		};
+	}
+
+	/**
+	 * Return the {@link ProjectAssetGenerator} to use to generate the project structure
+	 * for the specified {@link ProjectDescription}.
+	 * @param description the project description
+	 * @return an asset generator for the specified request
+	 */
+	protected ProjectAssetGenerator&lt;Path&gt; getProjectAssetGenerator(ProjectDescription description) {
+<span class="fc" id="L113">		return this.projectAssetGenerator;</span>
+	}
+
+	/**
+	 * Invokes the project generation API that knows how to just write the build file.
+	 * Returns a directory containing the project for the specified
+	 * {@link ProjectRequest}.
+	 * @param request the project request
+	 * @return the generated build content
+	 */
+	public byte[] invokeBuildGeneration(R request) {
+<span class="fc" id="L124">		InitializrMetadata metadata = this.parentApplicationContext.getBean(InitializrMetadataProvider.class).get();</span>
+		try {
+<span class="fc" id="L126">			ProjectDescription description = this.requestConverter.convert(request, metadata);</span>
+<span class="fc" id="L127">			ProjectGenerator projectGenerator = createProjectGenerator(metadata);</span>
+<span class="fc" id="L128">			return projectGenerator.generate(description, generateBuild(request));</span>
+		}
+<span class="fc" id="L130">		catch (ProjectGenerationException ex) {</span>
+<span class="fc" id="L131">			publishProjectFailedEvent(request, metadata, ex);</span>
+<span class="fc" id="L132">			throw ex;</span>
+		}
+	}
+
+	/**
+	 * Creates the project generator using provided metadata.
+	 * @param metadata metadata to build the {@link ProjectGenerator} used by this invoker
+	 * @return project generator used to generate the project
+	 */
+	protected ProjectGenerator createProjectGenerator(InitializrMetadata metadata) {
+<span class="fc" id="L142">		return new ProjectGenerator(</span>
+<span class="fc" id="L143">				(projectGenerationContext) -&gt; customizeProjectGenerationContext(projectGenerationContext, metadata));</span>
+	}
+
+	private ProjectAssetGenerator&lt;byte[]&gt; generateBuild(R request) {
+<span class="fc" id="L147">		return (context) -&gt; {</span>
+<span class="fc" id="L148">			byte[] content = generateBuild(context);</span>
+<span class="fc" id="L149">			publishProjectGeneratedEvent(request, context);</span>
+<span class="fc" id="L150">			return content;</span>
+		};
+	}
+
+	/**
+	 * Create a file in the same directory as the given directory using the directory name
+	 * and extension.
+	 * @param dir the directory used to determine the path and name of the new file
+	 * @param extension the extension to use for the new file
+	 * @return the newly created file
+	 */
+	public Path createDistributionFile(Path dir, String extension) {
+<span class="fc" id="L162">		Path download = dir.resolveSibling(dir.getFileName() + extension);</span>
+<span class="fc" id="L163">		addTempFile(dir, download);</span>
+<span class="fc" id="L164">		return download;</span>
+	}
+
+	private void addTempFile(Path group, Path file) {
+<span class="fc" id="L168">		this.temporaryFiles.compute(group, (path, paths) -&gt; {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">			List&lt;Path&gt; newPaths = (paths != null) ? paths : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L170">			newPaths.add(file);</span>
+<span class="fc" id="L171">			return newPaths;</span>
+		});
+<span class="fc" id="L173">	}</span>
+
+	/**
+	 * Clean all the temporary files that are related to this root directory.
+	 * @param dir the directory to clean
+	 * @see #createDistributionFile
+	 */
+	public void cleanTempFiles(Path dir) {
+<span class="fc" id="L181">		List&lt;Path&gt; tempFiles = this.temporaryFiles.remove(dir);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (!tempFiles.isEmpty()) {</span>
+<span class="fc" id="L183">			tempFiles.forEach((path) -&gt; {</span>
+				try {
+<span class="fc" id="L185">					FileSystemUtils.deleteRecursively(path);</span>
+				}
+<span class="nc" id="L187">				catch (IOException ex) {</span>
+					// Continue
+<span class="fc" id="L189">				}</span>
+<span class="fc" id="L190">			});</span>
+		}
+<span class="fc" id="L192">	}</span>
+
+	private byte[] generateBuild(ProjectGenerationContext context) throws IOException {
+<span class="fc" id="L195">		ProjectDescription description = context.getBean(ProjectDescription.class);</span>
+<span class="fc" id="L196">		StringWriter out = new StringWriter();</span>
+<span class="fc" id="L197">		BuildWriter buildWriter = context.getBeanProvider(BuildWriter.class).getIfAvailable();</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (buildWriter != null) {</span>
+<span class="fc" id="L199">			buildWriter.writeBuild(out);</span>
+<span class="fc" id="L200">			return out.toString().getBytes();</span>
+		}
+		else {
+<span class="nc" id="L203">			throw new IllegalStateException(&quot;No BuildWriter implementation found for &quot; + description.getLanguage());</span>
+		}
+	}
+
+	private void customizeProjectGenerationContext(AnnotationConfigApplicationContext context,
+			InitializrMetadata metadata) {
+<span class="fc" id="L209">		context.setParent(this.parentApplicationContext);</span>
+<span class="fc" id="L210">		context.registerBean(InitializrMetadata.class, () -&gt; metadata);</span>
+<span class="fc" id="L211">		context.registerBean(BuildItemResolver.class, () -&gt; new MetadataBuildItemResolver(metadata,</span>
+<span class="fc" id="L212">				context.getBean(ProjectDescription.class).getPlatformVersion()));</span>
+<span class="fc" id="L213">		context.registerBean(MetadataProjectDescriptionCustomizer.class,</span>
+<span class="fc" id="L214">				() -&gt; new MetadataProjectDescriptionCustomizer(metadata));</span>
+<span class="fc" id="L215">	}</span>
+
+	private void publishProjectGeneratedEvent(R request, ProjectGenerationContext context) {
+<span class="fc" id="L218">		InitializrMetadata metadata = context.getBean(InitializrMetadata.class);</span>
+<span class="fc" id="L219">		ProjectGeneratedEvent event = new ProjectGeneratedEvent(request, metadata);</span>
+<span class="fc" id="L220">		this.eventPublisher.publishEvent(event);</span>
+<span class="fc" id="L221">	}</span>
+
+	private void publishProjectFailedEvent(R request, InitializrMetadata metadata, Exception cause) {
+<span class="fc" id="L224">		ProjectFailedEvent event = new ProjectFailedEvent(request, metadata, cause);</span>
+<span class="fc" id="L225">		this.eventPublisher.publishEvent(event);</span>
+<span class="fc" id="L226">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

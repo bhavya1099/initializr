@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MustacheTemplateRenderer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.io.template</a> &gt; <span class="el_source">MustacheTemplateRenderer.java</span></div><h1>MustacheTemplateRenderer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.io.template;
+
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.function.Function;
+
+import com.samskivert.mustache.Mustache;
+import com.samskivert.mustache.Mustache.Compiler;
+import com.samskivert.mustache.Mustache.TemplateLoader;
+import com.samskivert.mustache.Template;
+
+import org.springframework.cache.Cache;
+import org.springframework.cache.Cache.ValueRetrievalException;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
+
+/**
+ * A {@link TemplateRenderer} using Mustache with a configurable resource prefix.
+ * Templates should have an {@code mustache} extension.
+ *
+ * @author Stephane Nicoll
+ */
+public class MustacheTemplateRenderer implements TemplateRenderer {
+
+	private final Compiler mustache;
+
+	private final Function&lt;String, String&gt; keyGenerator;
+
+	private final Cache templateCache;
+
+	/**
+	 * Create a new instance with the resource prefix and the {@link Cache} to use.
+	 * @param resourcePrefix the resource prefix to apply to locate a template based on
+	 * its name
+	 * @param templateCache the cache to use for compiled templates (can be {@code null}
+	 * to not use caching)
+	 */
+<span class="fc" id="L56">	public MustacheTemplateRenderer(String resourcePrefix, Cache templateCache) {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		String prefix = (resourcePrefix.endsWith(&quot;/&quot;) ? resourcePrefix : resourcePrefix + &quot;/&quot;);</span>
+<span class="fc" id="L58">		this.mustache = Mustache.compiler().withLoader(mustacheTemplateLoader(prefix)).escapeHTML(false);</span>
+<span class="fc" id="L59">		this.keyGenerator = (name) -&gt; String.format(&quot;%s%s&quot;, prefix, name);</span>
+<span class="fc" id="L60">		this.templateCache = templateCache;</span>
+<span class="fc" id="L61">	}</span>
+
+	/**
+	 * Create a new instance with the resource prefix to use.
+	 * @param resourcePrefix the resource prefix to apply to locate a template based on
+	 * its name
+	 * @see #MustacheTemplateRenderer(String, Cache)
+	 */
+	public MustacheTemplateRenderer(String resourcePrefix) {
+<span class="fc" id="L70">		this(resourcePrefix, null);</span>
+<span class="fc" id="L71">	}</span>
+
+	private static TemplateLoader mustacheTemplateLoader(String prefix) {
+<span class="fc" id="L74">		ResourceLoader resourceLoader = new DefaultResourceLoader();</span>
+<span class="fc" id="L75">		return (name) -&gt; {</span>
+<span class="fc" id="L76">			String location = prefix + name + &quot;.mustache&quot;;</span>
+<span class="fc" id="L77">			return new InputStreamReader(resourceLoader.getResource(location).getInputStream(), StandardCharsets.UTF_8);</span>
+		};
+	}
+
+	@Override
+	public String render(String templateName, Map&lt;String, ?&gt; model) {
+<span class="fc" id="L83">		Template template = getTemplate(templateName);</span>
+<span class="fc" id="L84">		return template.execute(model);</span>
+	}
+
+	private Template getTemplate(String name) {
+		try {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (this.templateCache != null) {</span>
+				try {
+<span class="fc" id="L91">					return this.templateCache.get(this.keyGenerator.apply(name), () -&gt; loadTemplate(name));</span>
+				}
+<span class="fc" id="L93">				catch (ValueRetrievalException ex) {</span>
+<span class="fc" id="L94">					throw ex.getCause();</span>
+				}
+			}
+<span class="fc" id="L97">			return loadTemplate(name);</span>
+		}
+<span class="fc" id="L99">		catch (Throwable ex) {</span>
+<span class="fc" id="L100">			throw new IllegalStateException(&quot;Cannot load template &quot; + name, ex);</span>
+		}
+	}
+
+	private Template loadTemplate(String name) throws Exception {
+<span class="fc" id="L105">		Reader template = this.mustache.loader.getTemplate(name);</span>
+<span class="fc" id="L106">		return this.mustache.compile(template);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

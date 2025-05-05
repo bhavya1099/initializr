@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Annotation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.language</a> &gt; <span class="el_source">Annotation.java</span></div><h1>Annotation.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.language;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.io.IndentingWriter;
+import io.spring.initializr.generator.language.CodeBlock.FormattingOptions;
+
+import org.springframework.util.ClassUtils;
+
+/**
+ * An annotation.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ */
+public final class Annotation {
+
+	private final ClassName className;
+
+	private final List&lt;Attribute&gt; attributes;
+
+	private final List&lt;String&gt; imports;
+
+<span class="fc" id="L49">	private Annotation(Builder builder) {</span>
+<span class="fc" id="L50">		this.className = builder.className;</span>
+<span class="fc" id="L51">		this.attributes = List.copyOf(builder.attributes.values());</span>
+<span class="fc" id="L52">		this.imports = List.copyOf(builder.imports);</span>
+<span class="fc" id="L53">	}</span>
+
+	/**
+	 * Return the {@link ClassName} of the annotation.
+	 * @return the class name
+	 */
+	public ClassName getClassName() {
+<span class="fc" id="L60">		return this.className;</span>
+	}
+
+	/**
+	 * Return the {@linkplain Attribute attributes} of the annotation or an empty list if
+	 * the annotation has no defined attribute.
+	 * @return the attributes
+	 */
+	public List&lt;Attribute&gt; getAttributes() {
+<span class="fc" id="L69">		return this.attributes;</span>
+	}
+
+	/**
+	 * Return the imports this instance contributes.
+	 * @return the imports.
+	 */
+	public List&lt;String&gt; getImports() {
+<span class="fc" id="L77">		return this.imports;</span>
+	}
+
+	/**
+	 * Initialize an annotation {@link Builder} for the specified class name.
+	 * @param className the class name of the annotation
+	 * @return a builder
+	 */
+	public static Builder of(ClassName className) {
+<span class="fc" id="L86">		return new Builder(className);</span>
+	}
+
+	/**
+	 * Write this annotation using the specified writer.
+	 * @param writer the writer to use
+	 * @param options the formatting options to use
+	 */
+	public void write(IndentingWriter writer, FormattingOptions options) {
+<span class="fc" id="L95">		new AnnotationWriter(writer, options).write(this);</span>
+<span class="fc" id="L96">	}</span>
+
+	/**
+	 * Builder for creating an {@link Annotation}.
+	 */
+	public static final class Builder {
+
+		private final ClassName className;
+
+<span class="fc" id="L105">		private final Set&lt;String&gt; imports = new HashSet&lt;&gt;();</span>
+
+<span class="fc" id="L107">		private final Map&lt;String, Attribute&gt; attributes = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L109">		Builder(ClassName name) {</span>
+<span class="fc" id="L110">			this.className = name;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">			if (!name.getPackageName().isEmpty()) {</span>
+<span class="fc" id="L112">				this.imports.add(name.getName());</span>
+			}
+<span class="fc" id="L114">		}</span>
+
+<span class="fc" id="L116">		Builder(Builder copy) {</span>
+<span class="fc" id="L117">			this.className = copy.className;</span>
+<span class="fc" id="L118">			this.imports.addAll(copy.imports);</span>
+<span class="fc" id="L119">			this.attributes.putAll(copy.attributes);</span>
+<span class="fc" id="L120">		}</span>
+
+		/**
+		 * Set the attribute with the specified name with the specified values. If the
+		 * attribute exists, it is replaced by the specified values.
+		 * @param name the name of the attribute
+		 * @param values the values to associate with the attribute
+		 * @return this for method chaining
+		 */
+		public Builder set(String name, Object... values) {
+<span class="fc" id="L130">			AttributeType type = determineAttributeType(values);</span>
+<span class="fc" id="L131">			this.attributes.put(name, new Attribute(name, type, values));</span>
+<span class="fc" id="L132">			return this;</span>
+		}
+
+		/**
+		 * Add the specified values to the attribute with the specified name. If the
+		 * attribute does not exist, it is created with the specified values.
+		 * @param name the name of the attribute
+		 * @param values the values to add to the attribute
+		 * @return this for method chaining
+		 */
+		public Builder add(String name, Object... values) {
+<span class="fc" id="L143">			AttributeType type = determineAttributeType(values);</span>
+<span class="fc" id="L144">			this.attributes.merge(name, new Attribute(name, type, values), this::append);</span>
+<span class="fc" id="L145">			return this;</span>
+		}
+
+		/**
+		 * Reset the state of the builder to the state of the specified annotation. This
+		 * effectively replaces all customizations by the specified annotation.
+		 * @param annotation the annotation to reset to
+		 * @return this for method chaining
+		 */
+		public Builder from(Annotation annotation) {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">			if (!this.className.equals(annotation.className)) {</span>
+<span class="nc" id="L156">				throw new IllegalArgumentException();</span>
+			}
+<span class="nc" id="L158">			this.imports.clear();</span>
+<span class="nc" id="L159">			this.imports.addAll(annotation.imports);</span>
+<span class="nc" id="L160">			this.attributes.clear();</span>
+<span class="nc" id="L161">			annotation.attributes.forEach((attribute) -&gt; this.attributes.put(attribute.getName(), attribute));</span>
+<span class="nc" id="L162">			return this;</span>
+		}
+
+		private Attribute append(Attribute existing, Attribute additional) {
+<span class="fc" id="L166">			AttributeType typeToUse = AttributeType.getMostSpecificType(existing.type, additional.type);</span>
+<span class="fc" id="L167">			return new Attribute(existing.name, typeToUse,</span>
+<span class="fc" id="L168">					Stream.concat(existing.values.stream(), additional.values.stream()).toArray());</span>
+		}
+
+		private AttributeType determineAttributeType(Object... values) {
+<span class="fc" id="L172">			AttributeType attributeType = AttributeType.of(values);</span>
+<span class="fc" id="L173">			Arrays.stream(values).map(attributeType::getImports).forEach(this.imports::addAll);</span>
+<span class="fc" id="L174">			return attributeType;</span>
+		}
+
+		public Annotation build() {
+<span class="fc" id="L178">			return new Annotation(this);</span>
+		}
+
+	}
+
+	/**
+	 * Define an attribute of an annotation.
+	 */
+	public static final class Attribute {
+
+		private final String name;
+
+		private final AttributeType type;
+
+		private final List&lt;Object&gt; values;
+
+<span class="fc" id="L194">		private Attribute(String name, AttributeType type, Object... values) {</span>
+<span class="fc" id="L195">			this.name = name;</span>
+<span class="fc" id="L196">			this.type = type;</span>
+<span class="fc" id="L197">			this.values = Arrays.asList(values);</span>
+<span class="fc" id="L198">		}</span>
+
+		/**
+		 * Return the attribute name.
+		 * @return the attribute name
+		 */
+		public String getName() {
+<span class="fc" id="L205">			return this.name;</span>
+		}
+
+		/**
+		 * Return the attribute type.
+		 * @return the attribute type
+		 */
+		public AttributeType getType() {
+<span class="nc" id="L213">			return this.type;</span>
+		}
+
+		/**
+		 * Return the values.
+		 * @return the values
+		 */
+		public List&lt;Object&gt; getValues() {
+<span class="fc" id="L221">			return this.values;</span>
+		}
+
+	}
+
+	/**
+	 * Type of an attribute.
+	 */
+<span class="fc" id="L229">	public enum AttributeType {</span>
+
+		/**
+		 * Primitive type.
+		 */
+<span class="fc" id="L234">		PRIMITIVE,</span>
+
+		/**
+		 * String type.
+		 */
+<span class="fc" id="L239">		STRING,</span>
+
+		/**
+		 * Class type.
+		 */
+<span class="fc" id="L244">		CLASS() {</span>
+			@Override
+			protected Collection&lt;String&gt; getImports(Object value) {
+<span class="fc bfc" id="L247" title="All 2 branches covered.">				if (value instanceof Class type) {</span>
+<span class="fc" id="L248">					return List.of(type.getName());</span>
+				}
+<span class="fc bfc" id="L250" title="All 2 branches covered.">				else if (value instanceof ClassName name) {</span>
+<span class="fc" id="L251">					return List.of(name.getName());</span>
+				}
+<span class="fc" id="L253">				return super.getImports(value);</span>
+			}
+		},
+
+		/**
+		 * Enum type.
+		 */
+<span class="fc" id="L260">		ENUM() {</span>
+			@Override
+			protected Collection&lt;String&gt; getImports(Object value) {
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">				if (value instanceof Enum enumeration) {</span>
+<span class="fc" id="L264">					return List.of(enumeration.getClass().getName());</span>
+				}
+<span class="nc" id="L266">				return super.getImports(value);</span>
+			}
+		},
+
+		/**
+		 * Annotation type.
+		 */
+<span class="fc" id="L273">		ANNOTATION() {</span>
+			@Override
+			protected Collection&lt;String&gt; getImports(Object value) {
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">				if (value instanceof Annotation annotation) {</span>
+<span class="fc" id="L277">					return annotation.getImports();</span>
+				}
+<span class="nc" id="L279">				return super.getImports(value);</span>
+			}
+		},
+
+		/**
+		 * Code type.
+		 */
+<span class="fc" id="L286">		CODE {</span>
+			@Override
+			protected boolean isCompatible(AttributeType attributeType) {
+<span class="nc" id="L289">				return true;</span>
+			}
+		};
+
+		protected boolean isCompatible(AttributeType attributeType) {
+<span class="fc bfc" id="L294" title="All 4 branches covered.">			return this.equals(attributeType) || attributeType == AttributeType.CODE;</span>
+		}
+
+		protected Collection&lt;String&gt; getImports(Object value) {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">			if (value instanceof CodeBlock codeBlock) {</span>
+<span class="fc" id="L299">				return codeBlock.getImports();</span>
+			}
+<span class="fc" id="L301">			return Collections.emptyList();</span>
+		}
+
+		static AttributeType getMostSpecificType(AttributeType left, AttributeType right) {
+<span class="fc bfc" id="L305" title="All 2 branches covered.">			if (!left.isCompatible(right)) {</span>
+<span class="fc" id="L306">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L307">						&quot;Incompatible type. '%s' is not compatible with '%s'&quot;.formatted(left, right));</span>
+			}
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">			return (left == CODE) ? right : left;</span>
+		}
+
+		static AttributeType of(Object... values) {
+<span class="fc" id="L313">			List&lt;AttributeType&gt; types = Arrays.stream(values)</span>
+<span class="fc" id="L314">				.map(AttributeType::determineAttributeType)</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">				.filter((type) -&gt; type != CODE)</span>
+<span class="fc" id="L316">				.distinct()</span>
+<span class="fc" id="L317">				.toList();</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">			if (types.size() &gt; 1) {</span>
+<span class="fc" id="L319">				throw new IllegalArgumentException(&quot;Parameter value must not have mixed types, got [&quot;</span>
+<span class="fc" id="L320">						+ types.stream().map(AttributeType::name).collect(Collectors.joining(&quot;, &quot;)) + &quot;]&quot;);</span>
+			}
+<span class="fc bfc" id="L322" title="All 2 branches covered.">			return (types.size() == 1) ? types.get(0) : CODE;</span>
+		}
+
+		private static AttributeType determineAttributeType(Object value) {
+<span class="fc bfc" id="L326" title="All 2 branches covered.">			if (ClassUtils.isPrimitiveOrWrapper(value.getClass())) {</span>
+<span class="fc" id="L327">				return PRIMITIVE;</span>
+			}
+<span class="fc bfc" id="L329" title="All 2 branches covered.">			else if (value instanceof CharSequence) {</span>
+<span class="fc" id="L330">				return STRING;</span>
+			}
+<span class="fc bfc" id="L332" title="All 4 branches covered.">			else if (value instanceof Class&lt;?&gt; || value instanceof ClassName) {</span>
+<span class="fc" id="L333">				return CLASS;</span>
+			}
+<span class="fc bfc" id="L335" title="All 2 branches covered.">			else if (value instanceof Enum&lt;?&gt;) {</span>
+<span class="fc" id="L336">				return ENUM;</span>
+			}
+<span class="fc bfc" id="L338" title="All 2 branches covered.">			else if (value instanceof Annotation) {</span>
+<span class="fc" id="L339">				return ANNOTATION;</span>
+			}
+<span class="fc bfc" id="L341" title="All 2 branches covered.">			else if (value instanceof CodeBlock) {</span>
+<span class="fc" id="L342">				return CODE;</span>
+			}
+			else {
+<span class="fc" id="L345">				throw new IllegalArgumentException(</span>
+						&quot;Incompatible type. Found: '%s', required: primitive, String, Class, an Enum, an Annotation, or a CodeBlock&quot;
+<span class="fc" id="L347">							.formatted(value.getClass().getName()));</span>
+			}
+		}
+
+	}
+
+	private static class AnnotationWriter {
+
+		private final IndentingWriter writer;
+
+		private final FormattingOptions formattingOptions;
+
+<span class="fc" id="L359">		AnnotationWriter(IndentingWriter writer, FormattingOptions formattingOptions) {</span>
+<span class="fc" id="L360">			this.writer = writer;</span>
+<span class="fc" id="L361">			this.formattingOptions = formattingOptions;</span>
+<span class="fc" id="L362">		}</span>
+
+		void write(Annotation annotation) {
+<span class="fc" id="L365">			generateAnnotationCode(annotation).write(this.writer, this.formattingOptions);</span>
+<span class="fc" id="L366">		}</span>
+
+		private CodeBlock generateAnnotationCode(Annotation annotation) {
+<span class="fc" id="L369">			CodeBlock.Builder code = CodeBlock.builder();</span>
+<span class="fc" id="L370">			code.add(&quot;@$T&quot;, annotation.className);</span>
+<span class="fc bfc" id="L371" title="All 4 branches covered.">			if (annotation.attributes.size() == 1 &amp;&amp; annotation.attributes.get(0).getName().equals(&quot;value&quot;)) {</span>
+<span class="fc" id="L372">				code.add(&quot;($L)&quot;, generateAttributeValuesCode(annotation.attributes.get(0)));</span>
+			}
+<span class="fc bfc" id="L374" title="All 2 branches covered.">			else if (!annotation.attributes.isEmpty()) {</span>
+<span class="fc" id="L375">				CodeBlock attributes = annotation.attributes.stream()</span>
+<span class="fc" id="L376">					.map(this::generateAttributeCode)</span>
+<span class="fc" id="L377">					.collect(CodeBlock.joining(&quot;, &quot;));</span>
+<span class="fc" id="L378">				code.add(&quot;($L)&quot;, attributes);</span>
+			}
+<span class="fc" id="L380">			return code.build();</span>
+		}
+
+		private CodeBlock generateAttributeCode(Attribute attribute) {
+<span class="fc" id="L384">			return CodeBlock.of(&quot;$L = $L&quot;, attribute.name, generateAttributeValuesCode(attribute));</span>
+		}
+
+		private CodeBlock generateAttributeValuesCode(Attribute attribute) {
+<span class="fc" id="L388">			CodeBlock[] values = attribute.values.stream()</span>
+<span class="fc" id="L389">				.map((value) -&gt; generateValueCode(attribute.type, value))</span>
+<span class="fc" id="L390">				.toArray(CodeBlock[]::new);</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">			return (values.length == 1) ? values[0] : this.formattingOptions.arrayOf(values);</span>
+		}
+
+		private CodeBlock generateValueCode(AttributeType attributeType, Object value) {
+<span class="fc" id="L395">			Class&lt;?&gt; valueType = ClassUtils.resolvePrimitiveIfNecessary(value.getClass());</span>
+			// CodeBlock can be anything
+<span class="fc bfc" id="L397" title="All 2 branches covered.">			if (value instanceof CodeBlock codeBlock) {</span>
+<span class="fc" id="L398">				return codeBlock;</span>
+			}
+<span class="pc bpc" id="L400" title="1 of 6 branches missed.">			return switch (attributeType) {</span>
+				case PRIMITIVE -&gt; {
+<span class="fc bfc" id="L402" title="All 2 branches covered.">					if (valueType == Character.class) {</span>
+<span class="fc" id="L403">						yield CodeBlock.of(&quot;'$L'&quot;, value);</span>
+					}
+					else {
+<span class="fc" id="L406">						yield CodeBlock.of(&quot;$L&quot;, value);</span>
+					}
+				}
+<span class="fc" id="L409">				case STRING -&gt; CodeBlock.of(&quot;$S&quot;, value);</span>
+				case CLASS -&gt; {
+<span class="fc bfc" id="L411" title="All 2 branches covered.">					ClassName className = (value instanceof Class clazz) ? ClassName.of(clazz) : (ClassName) value;</span>
+<span class="fc" id="L412">					yield this.formattingOptions.classReference(className);</span>
+				}
+				case ENUM -&gt; {
+<span class="fc" id="L415">					Enum&lt;?&gt; enumValue = (Enum&lt;?&gt;) value;</span>
+<span class="fc" id="L416">					yield CodeBlock.of(&quot;$T.$L&quot;, enumValue.getClass(), enumValue.name());</span>
+				}
+<span class="fc" id="L418">				case ANNOTATION -&gt; generateAnnotationCode((Annotation) value);</span>
+<span class="nc" id="L419">				case CODE -&gt; (CodeBlock) value;</span>
+			};
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

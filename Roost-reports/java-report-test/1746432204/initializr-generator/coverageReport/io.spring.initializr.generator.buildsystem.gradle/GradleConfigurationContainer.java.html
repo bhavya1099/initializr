@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GradleConfigurationContainer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.buildsystem.gradle</a> &gt; <span class="el_source">GradleConfigurationContainer.java</span></div><h1>GradleConfigurationContainer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.buildsystem.gradle;
+
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.gradle.GradleConfiguration.Builder;
+
+/**
+ * A container for custom configuration and {@linkplain GradleConfiguration configuration
+ * customizations}.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L34">public class GradleConfigurationContainer {</span>
+
+<span class="fc" id="L36">	private final Set&lt;String&gt; configurations = new LinkedHashSet&lt;&gt;();</span>
+
+<span class="fc" id="L38">	private final Map&lt;String, GradleConfiguration.Builder&gt; configurationCustomizations = new LinkedHashMap&lt;&gt;();</span>
+
+	/**
+	 * Specify if this container is empty.
+	 * @return {@code true} if no custom configuration is registered or no configuration
+	 * is customized
+	 */
+	public boolean isEmpty() {
+<span class="fc bfc" id="L46" title="All 4 branches covered.">		return this.configurations.isEmpty() &amp;&amp; this.configurationCustomizations.isEmpty();</span>
+	}
+
+	/**
+	 * Specify if this container has a configuration with the specified {@code name}.
+	 * @param name the name of a configuration
+	 * @return {@code true} if a configuration with the specified {@code name} exists
+	 */
+	public boolean has(String name) {
+<span class="fc bfc" id="L55" title="All 4 branches covered.">		return this.configurations.contains(name) || this.configurationCustomizations.containsKey(name);</span>
+	}
+
+	/**
+	 * Return the configuration names that should be registered.
+	 * @return the configuration names
+	 */
+	public Stream&lt;String&gt; names() {
+<span class="fc" id="L63">		return this.configurations.stream();</span>
+	}
+
+	/**
+	 * Return the configuration that should be customized.
+	 * @return the configuration customizations
+	 */
+	public Stream&lt;GradleConfiguration&gt; customizations() {
+<span class="fc" id="L71">		return this.configurationCustomizations.values().stream().map(Builder::build);</span>
+	}
+
+	/**
+	 * Register a {@code configuration} with the specified name.
+	 * @param name the name of a configuration
+	 */
+	public void add(String name) {
+<span class="fc" id="L79">		this.configurations.add(name);</span>
+<span class="fc" id="L80">	}</span>
+
+	/**
+	 * Customize an existing {@code configuration} with the specified {@code name}. If the
+	 * configuration has already been customized, the consumer can be used to further tune
+	 * the existing configuration customization.
+	 * @param name the name of the configuration to customize
+	 * @param configuration a {@link Consumer} to customize the
+	 * {@link GradleConfiguration}
+	 */
+	public void customize(String name, Consumer&lt;Builder&gt; configuration) {
+<span class="fc" id="L91">		Builder builder = this.configurationCustomizations.computeIfAbsent(name, Builder::new);</span>
+<span class="fc" id="L92">		configuration.accept(builder);</span>
+<span class="fc" id="L93">	}</span>
+
+	/**
+	 * Remove the configuration with the specified {@code name}.
+	 * @param name the name of a configuration to register or customization
+	 * @return {@code true} if such a configuration was registered, {@code false}
+	 * otherwise
+	 */
+	public boolean remove(String name) {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (this.configurations.remove(name)) {</span>
+<span class="fc" id="L103">			return true;</span>
+		}
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		return this.configurationCustomizations.remove(name) != null;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MainSourceCodeProjectContributor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.code</a> &gt; <span class="el_source">MainSourceCodeProjectContributor.java</span></div><h1>MainSourceCodeProjectContributor.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.code;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import io.spring.initializr.generator.language.CompilationUnit;
+import io.spring.initializr.generator.language.SourceCode;
+import io.spring.initializr.generator.language.SourceCodeWriter;
+import io.spring.initializr.generator.language.TypeDeclaration;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.generator.project.contributor.ProjectContributor;
+import io.spring.initializr.generator.spring.util.LambdaSafe;
+
+import org.springframework.beans.factory.ObjectProvider;
+
+/**
+ * {@link ProjectContributor} for the application's main source code.
+ *
+ * @param &lt;T&gt; language-specific type declaration
+ * @param &lt;C&gt; language-specific compilation unit
+ * @param &lt;S&gt; language-specific source code
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ */
+public class MainSourceCodeProjectContributor&lt;T extends TypeDeclaration, C extends CompilationUnit&lt;T&gt;, S extends SourceCode&lt;T, C&gt;&gt;
+		implements ProjectContributor {
+
+	private final ProjectDescription description;
+
+	private final Supplier&lt;S&gt; sourceFactory;
+
+	private final SourceCodeWriter&lt;S&gt; sourceWriter;
+
+	private final ObjectProvider&lt;MainApplicationTypeCustomizer&lt;? extends TypeDeclaration&gt;&gt; mainTypeCustomizers;
+
+	private final ObjectProvider&lt;MainCompilationUnitCustomizer&lt;?, ?&gt;&gt; mainCompilationUnitCustomizers;
+
+	private final ObjectProvider&lt;MainSourceCodeCustomizer&lt;?, ?, ?&gt;&gt; mainSourceCodeCustomizers;
+
+	public MainSourceCodeProjectContributor(ProjectDescription description, Supplier&lt;S&gt; sourceFactory,
+			SourceCodeWriter&lt;S&gt; sourceWriter, ObjectProvider&lt;MainApplicationTypeCustomizer&lt;?&gt;&gt; mainTypeCustomizers,
+			ObjectProvider&lt;MainCompilationUnitCustomizer&lt;?, ?&gt;&gt; mainCompilationUnitCustomizers,
+<span class="fc" id="L62">			ObjectProvider&lt;MainSourceCodeCustomizer&lt;?, ?, ?&gt;&gt; mainSourceCodeCustomizers) {</span>
+<span class="fc" id="L63">		this.description = description;</span>
+<span class="fc" id="L64">		this.sourceFactory = sourceFactory;</span>
+<span class="fc" id="L65">		this.sourceWriter = sourceWriter;</span>
+<span class="fc" id="L66">		this.mainTypeCustomizers = mainTypeCustomizers;</span>
+<span class="fc" id="L67">		this.mainCompilationUnitCustomizers = mainCompilationUnitCustomizers;</span>
+<span class="fc" id="L68">		this.mainSourceCodeCustomizers = mainSourceCodeCustomizers;</span>
+<span class="fc" id="L69">	}</span>
+
+	@Override
+	public void contribute(Path projectRoot) throws IOException {
+<span class="fc" id="L73">		S sourceCode = this.sourceFactory.get();</span>
+<span class="fc" id="L74">		String applicationName = this.description.getApplicationName();</span>
+<span class="fc" id="L75">		C compilationUnit = sourceCode.createCompilationUnit(this.description.getPackageName(), applicationName);</span>
+<span class="fc" id="L76">		T mainApplicationType = compilationUnit.createTypeDeclaration(applicationName);</span>
+<span class="fc" id="L77">		customizeMainApplicationType(mainApplicationType);</span>
+<span class="fc" id="L78">		customizeMainCompilationUnit(compilationUnit);</span>
+<span class="fc" id="L79">		customizeMainSourceCode(sourceCode);</span>
+<span class="fc" id="L80">		this.sourceWriter.writeTo(</span>
+<span class="fc" id="L81">				this.description.getBuildSystem().getMainSource(projectRoot, this.description.getLanguage()),</span>
+				sourceCode);
+<span class="fc" id="L83">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void customizeMainApplicationType(T mainApplicationType) {
+<span class="fc" id="L87">		List&lt;MainApplicationTypeCustomizer&lt;?&gt;&gt; customizers = this.mainTypeCustomizers.orderedStream()</span>
+<span class="fc" id="L88">			.collect(Collectors.toList());</span>
+<span class="fc" id="L89">		LambdaSafe.callbacks(MainApplicationTypeCustomizer.class, customizers, mainApplicationType)</span>
+<span class="fc" id="L90">			.invoke((customizer) -&gt; customizer.customize(mainApplicationType));</span>
+<span class="fc" id="L91">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void customizeMainCompilationUnit(C compilationUnit) {
+<span class="fc" id="L95">		List&lt;MainCompilationUnitCustomizer&lt;?, ?&gt;&gt; customizers = this.mainCompilationUnitCustomizers.orderedStream()</span>
+<span class="fc" id="L96">			.collect(Collectors.toList());</span>
+<span class="fc" id="L97">		LambdaSafe.callbacks(MainCompilationUnitCustomizer.class, customizers, compilationUnit)</span>
+<span class="fc" id="L98">			.invoke((customizer) -&gt; customizer.customize(compilationUnit));</span>
+<span class="fc" id="L99">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private void customizeMainSourceCode(S sourceCode) {
+<span class="fc" id="L103">		List&lt;MainSourceCodeCustomizer&lt;?, ?, ?&gt;&gt; customizers = this.mainSourceCodeCustomizers.orderedStream()</span>
+<span class="fc" id="L104">			.collect(Collectors.toList());</span>
+<span class="fc" id="L105">		LambdaSafe.callbacks(MainSourceCodeCustomizer.class, customizers, sourceCode)</span>
+<span class="fc" id="L106">			.invoke((customizer) -&gt; customizer.customize(sourceCode));</span>
+<span class="fc" id="L107">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

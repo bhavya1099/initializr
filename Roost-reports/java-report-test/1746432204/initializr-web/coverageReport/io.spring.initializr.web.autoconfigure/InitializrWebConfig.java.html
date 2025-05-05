@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrWebConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.autoconfigure</a> &gt; <span class="el_source">InitializrWebConfig.java</span></div><h1>InitializrWebConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.autoconfigure;
+
+import java.util.Collections;
+import java.util.List;
+
+import io.spring.initializr.web.support.Agent;
+import io.spring.initializr.web.support.Agent.AgentId;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
+import org.springframework.web.accept.ContentNegotiationStrategy;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.util.UrlPathHelper;
+
+/**
+ * Spring Initializr web configuration.
+ *
+ * @author Stephane Nicoll
+ */
+<span class="fc" id="L41">public class InitializrWebConfig implements WebMvcConfigurer {</span>
+
+	@Override
+	public void addViewControllers(ViewControllerRegistry registry) {
+<span class="fc" id="L45">		registry.addRedirectViewController(&quot;/info&quot;, &quot;/actuator/info&quot;);</span>
+<span class="fc" id="L46">	}</span>
+
+	@Override
+	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+<span class="fc" id="L50">		configurer.defaultContentTypeStrategy(new CommandLineContentNegotiationStrategy());</span>
+<span class="fc" id="L51">	}</span>
+
+	/**
+	 * A command-line aware {@link ContentNegotiationStrategy} that forces the media type
+	 * to &quot;text/plain&quot; for compatible agents.
+	 */
+<span class="fc" id="L57">	private static final class CommandLineContentNegotiationStrategy implements ContentNegotiationStrategy {</span>
+
+<span class="fc" id="L59">		private final UrlPathHelper urlPathHelper = new UrlPathHelper();</span>
+
+		@Override
+		public List&lt;MediaType&gt; resolveMediaTypes(NativeWebRequest request) {
+<span class="fc" id="L63">			String path = this.urlPathHelper</span>
+<span class="fc" id="L64">				.getPathWithinApplication(request.getNativeRequest(HttpServletRequest.class));</span>
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">			if (!StringUtils.hasText(path) || !path.equals(&quot;/&quot;)) { // Only care about &quot;/&quot;</span>
+<span class="fc" id="L66">				return MEDIA_TYPE_ALL_LIST;</span>
+			}
+<span class="fc" id="L68">			String userAgent = request.getHeader(HttpHeaders.USER_AGENT);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">			if (userAgent != null) {</span>
+<span class="fc" id="L70">				Agent agent = Agent.fromUserAgent(userAgent);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">				if (agent != null) {</span>
+<span class="fc bfc" id="L72" title="All 4 branches covered.">					if (AgentId.CURL.equals(agent.getId()) || AgentId.HTTPIE.equals(agent.getId())) {</span>
+<span class="fc" id="L73">						return Collections.singletonList(MediaType.TEXT_PLAIN);</span>
+					}
+				}
+			}
+<span class="fc" id="L77">			return Collections.singletonList(MediaType.APPLICATION_JSON);</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

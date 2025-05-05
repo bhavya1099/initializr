@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MetadataProjectDescriptionCustomizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.project</a> &gt; <span class="el_source">MetadataProjectDescriptionCustomizer.java</span></div><h1>MetadataProjectDescriptionCustomizer.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.project;
+
+import java.util.function.Supplier;
+
+import io.spring.initializr.generator.project.MutableProjectDescription;
+import io.spring.initializr.generator.project.ProjectDescriptionCustomizer;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.metadata.InitializrMetadata;
+
+import org.springframework.util.StringUtils;
+
+/**
+ * A {@link ProjectDescriptionCustomizer} that uses the {@link InitializrMetadata
+ * metadata} to set default values for missing attributes if necessary.
+ *
+ * @author Stephane Nicoll
+ */
+public class MetadataProjectDescriptionCustomizer implements ProjectDescriptionCustomizer {
+
+<span class="fc" id="L36">	private static final char[] VALID_MAVEN_SPECIAL_CHARACTERS = new char[] { '_', '-', '.' };</span>
+
+	private final InitializrMetadata metadata;
+
+<span class="fc" id="L40">	public MetadataProjectDescriptionCustomizer(InitializrMetadata metadata) {</span>
+<span class="fc" id="L41">		this.metadata = metadata;</span>
+<span class="fc" id="L42">	}</span>
+
+	@Override
+	public void customize(MutableProjectDescription description) {
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (!StringUtils.hasText(description.getApplicationName())) {</span>
+<span class="fc" id="L47">			description</span>
+<span class="fc" id="L48">				.setApplicationName(this.metadata.getConfiguration().generateApplicationName(description.getName()));</span>
+		}
+<span class="fc" id="L50">		String targetArtifactId = determineValue(description.getArtifactId(),</span>
+<span class="fc" id="L51">				() -&gt; this.metadata.getArtifactId().getContent());</span>
+<span class="fc" id="L52">		description.setArtifactId(cleanMavenCoordinate(targetArtifactId, &quot;-&quot;));</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (targetArtifactId.equals(description.getBaseDirectory())) {</span>
+<span class="fc" id="L54">			description.setBaseDirectory(cleanMavenCoordinate(targetArtifactId, &quot;-&quot;));</span>
+		}
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		if (!StringUtils.hasText(description.getDescription())) {</span>
+<span class="fc" id="L57">			description.setDescription(this.metadata.getDescription().getContent());</span>
+		}
+<span class="fc" id="L59">		String targetGroupId = determineValue(description.getGroupId(), () -&gt; this.metadata.getGroupId().getContent());</span>
+<span class="fc" id="L60">		description.setGroupId(cleanMavenCoordinate(targetGroupId, &quot;.&quot;));</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (!StringUtils.hasText(description.getName())) {</span>
+<span class="fc" id="L62">			description.setName(this.metadata.getName().getContent());</span>
+		}
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		else if (targetArtifactId.equals(description.getName())) {</span>
+<span class="fc" id="L65">			description.setName(cleanMavenCoordinate(targetArtifactId, &quot;-&quot;));</span>
+		}
+<span class="fc" id="L67">		description.setPackageName(this.metadata.getConfiguration()</span>
+<span class="fc" id="L68">			.cleanPackageName(description.getPackageName(), description.getLanguage(),</span>
+<span class="fc" id="L69">					this.metadata.getPackageName().getContent()));</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (description.getPlatformVersion() == null) {</span>
+<span class="fc" id="L71">			description.setPlatformVersion(Version.parse(this.metadata.getBootVersions().getDefault().getId()));</span>
+		}
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (!StringUtils.hasText(description.getVersion())) {</span>
+<span class="fc" id="L74">			description.setVersion(this.metadata.getVersion().getContent());</span>
+		}
+<span class="fc" id="L76">	}</span>
+
+	private String cleanMavenCoordinate(String coordinate, String delimiter) {
+<span class="fc" id="L79">		String[] elements = coordinate.split(&quot;[^\\w\\-.]+&quot;);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (elements.length == 1) {</span>
+<span class="fc" id="L81">			return coordinate;</span>
+		}
+<span class="fc" id="L83">		StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		for (String element : elements) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			if (shouldAppendDelimiter(element, builder)) {</span>
+<span class="fc" id="L86">				builder.append(delimiter);</span>
+			}
+<span class="fc" id="L88">			builder.append(element);</span>
+		}
+<span class="fc" id="L90">		return builder.toString();</span>
+	}
+
+	private boolean shouldAppendDelimiter(String element, StringBuilder builder) {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (builder.isEmpty()) {</span>
+<span class="fc" id="L95">			return false;</span>
+		}
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (char c : VALID_MAVEN_SPECIAL_CHARACTERS) {</span>
+<span class="fc" id="L98">			int prevIndex = builder.length() - 1;</span>
+<span class="fc bfc" id="L99" title="All 4 branches covered.">			if (element.charAt(0) == c || builder.charAt(prevIndex) == c) {</span>
+<span class="fc" id="L100">				return false;</span>
+			}
+		}
+<span class="fc" id="L103">		return true;</span>
+	}
+
+	private String determineValue(String candidate, Supplier&lt;String&gt; fallback) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		return (StringUtils.hasText(candidate)) ? candidate : fallback.get();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

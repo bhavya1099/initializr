@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitProjectGenerationConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Generator (Spring projects)</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.generator.spring.scm.git</a> &gt; <span class="el_source">GitProjectGenerationConfiguration.java</span></div><h1>GitProjectGenerationConfiguration.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.generator.spring.scm.git;
+
+import io.spring.initializr.generator.buildsystem.gradle.GradleBuildSystem;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuildSystem;
+import io.spring.initializr.generator.condition.ConditionalOnBuildSystem;
+import io.spring.initializr.generator.project.ProjectGenerationConfiguration;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Bean;
+
+/**
+ * Configuration for Git-related contributions to a generated project.
+ *
+ * @author Andy Wilkinson
+ * @author Stephane Nicoll
+ * @author Moritz Halbritter
+ */
+@ProjectGenerationConfiguration
+<span class="fc" id="L35">public class GitProjectGenerationConfiguration {</span>
+
+	@Bean
+	public GitIgnoreContributor gitIgnoreContributor(GitIgnore gitIgnore) {
+<span class="fc" id="L39">		return new GitIgnoreContributor(gitIgnore);</span>
+	}
+
+	@Bean
+	public GitIgnore gitIgnore(ObjectProvider&lt;GitIgnoreCustomizer&gt; gitIgnoreCustomizers) {
+<span class="fc" id="L44">		GitIgnore gitIgnore = createGitIgnore();</span>
+<span class="fc" id="L45">		gitIgnoreCustomizers.orderedStream().forEach((customizer) -&gt; customizer.customize(gitIgnore));</span>
+<span class="fc" id="L46">		return gitIgnore;</span>
+	}
+
+	@Bean
+	GitAttributesContributor gitAttributesContributor(GitAttributes gitAttributes) {
+<span class="fc" id="L51">		return new GitAttributesContributor(gitAttributes);</span>
+	}
+
+	@Bean
+	GitAttributes gitAttributes(ObjectProvider&lt;GitAttributesCustomizer&gt; gitAttributesCustomizers) {
+<span class="fc" id="L56">		GitAttributes gitAttributes = new GitAttributes();</span>
+<span class="fc" id="L57">		gitAttributesCustomizers.orderedStream().forEach((customizer) -&gt; customizer.customize(gitAttributes));</span>
+<span class="fc" id="L58">		return gitAttributes;</span>
+	}
+
+	@Bean
+	@ConditionalOnBuildSystem(MavenBuildSystem.ID)
+	public GitIgnoreCustomizer mavenGitIgnoreCustomizer() {
+<span class="fc" id="L64">		return (gitIgnore) -&gt; {</span>
+<span class="fc" id="L65">			gitIgnore.getGeneral()</span>
+<span class="fc" id="L66">				.add(&quot;target/&quot;, &quot;!.mvn/wrapper/maven-wrapper.jar&quot;, &quot;!**/src/main/**/target/&quot;,</span>
+						&quot;!**/src/test/**/target/&quot;);
+<span class="fc" id="L68">			gitIgnore.getNetBeans().add(&quot;build/&quot;, &quot;!**/src/main/**/build/&quot;, &quot;!**/src/test/**/build/&quot;);</span>
+<span class="fc" id="L69">		};</span>
+	}
+
+	@Bean
+	@ConditionalOnBuildSystem(GradleBuildSystem.ID)
+	public GitIgnoreCustomizer gradleGitIgnoreCustomizer() {
+<span class="fc" id="L75">		return (gitIgnore) -&gt; {</span>
+<span class="fc" id="L76">			gitIgnore.getGeneral()</span>
+<span class="fc" id="L77">				.add(&quot;.gradle&quot;, &quot;build/&quot;, &quot;!gradle/wrapper/gradle-wrapper.jar&quot;, &quot;!**/src/main/**/build/&quot;,</span>
+						&quot;!**/src/test/**/build/&quot;);
+<span class="fc" id="L79">			gitIgnore.getIntellijIdea().add(&quot;out/&quot;, &quot;!**/src/main/**/out/&quot;, &quot;!**/src/test/**/out/&quot;);</span>
+<span class="fc" id="L80">			gitIgnore.getSts().add(&quot;bin/&quot;, &quot;!**/src/main/**/bin/&quot;, &quot;!**/src/test/**/bin/&quot;);</span>
+<span class="fc" id="L81">		};</span>
+	}
+
+	@Bean
+	@ConditionalOnBuildSystem(MavenBuildSystem.ID)
+	public GitAttributesCustomizer mavenGitAttributesCustomizer() {
+<span class="fc" id="L87">		return (gitAttributes) -&gt; {</span>
+<span class="fc" id="L88">			gitAttributes.add(&quot;/mvnw&quot;, &quot;text&quot;, &quot;eol=lf&quot;);</span>
+<span class="fc" id="L89">			gitAttributes.add(&quot;*.cmd&quot;, &quot;text&quot;, &quot;eol=crlf&quot;);</span>
+<span class="fc" id="L90">		};</span>
+	}
+
+	@Bean
+	@ConditionalOnBuildSystem(GradleBuildSystem.ID)
+	public GitAttributesCustomizer gradleGitAttributesCustomizer() {
+<span class="fc" id="L96">		return (gitAttributes) -&gt; {</span>
+<span class="fc" id="L97">			gitAttributes.add(&quot;/gradlew&quot;, &quot;text&quot;, &quot;eol=lf&quot;);</span>
+<span class="fc" id="L98">			gitAttributes.add(&quot;*.bat&quot;, &quot;text&quot;, &quot;eol=crlf&quot;);</span>
+<span class="fc" id="L99">			gitAttributes.add(&quot;*.jar&quot;, &quot;binary&quot;);</span>
+<span class="fc" id="L100">		};</span>
+	}
+
+	private GitIgnore createGitIgnore() {
+<span class="fc" id="L104">		GitIgnore gitIgnore = new GitIgnore();</span>
+<span class="fc" id="L105">		gitIgnore.getSts()</span>
+<span class="fc" id="L106">			.add(&quot;.apt_generated&quot;, &quot;.classpath&quot;, &quot;.factorypath&quot;, &quot;.project&quot;, &quot;.settings&quot;, &quot;.springBeans&quot;,</span>
+					&quot;.sts4-cache&quot;);
+<span class="fc" id="L108">		gitIgnore.getIntellijIdea().add(&quot;.idea&quot;, &quot;*.iws&quot;, &quot;*.iml&quot;, &quot;*.ipr&quot;);</span>
+<span class="fc" id="L109">		gitIgnore.getNetBeans().add(&quot;/nbproject/private/&quot;, &quot;/nbbuild/&quot;, &quot;/dist/&quot;, &quot;/nbdist/&quot;, &quot;/.nb-gradle/&quot;);</span>
+<span class="fc" id="L110">		gitIgnore.getVscode().add(&quot;.vscode/&quot;);</span>
+<span class="fc" id="L111">		return gitIgnore;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

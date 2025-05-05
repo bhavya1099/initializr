@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitializrProperties.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">InitializrProperties.java</span></div><h1>InitializrProperties.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
+
+/**
+ * Configuration of the initializr service.
+ *
+ * @author Stephane Nicoll
+ */
+@ConfigurationProperties(prefix = &quot;initializr&quot;)
+<span class="fc" id="L33">public class InitializrProperties extends InitializrConfiguration {</span>
+
+	/**
+	 * Dependencies, organized in groups (i.e. themes).
+	 */
+<span class="fc" id="L38">	@JsonIgnore</span>
+	private final List&lt;DependencyGroup&gt; dependencies = new ArrayList&lt;&gt;();
+
+	/**
+	 * Available project types.
+	 */
+<span class="fc" id="L44">	@JsonIgnore</span>
+	private final List&lt;Type&gt; types = new ArrayList&lt;&gt;();
+
+	/**
+	 * Available packaging types.
+	 */
+<span class="fc" id="L50">	@JsonIgnore</span>
+	private final List&lt;DefaultMetadataElement&gt; packagings = new ArrayList&lt;&gt;();
+
+	/**
+	 * Available java versions.
+	 */
+<span class="fc" id="L56">	@JsonIgnore</span>
+	private final List&lt;DefaultMetadataElement&gt; javaVersions = new ArrayList&lt;&gt;();
+
+	/**
+	 * Available programming languages.
+	 */
+<span class="fc" id="L62">	@JsonIgnore</span>
+	private final List&lt;DefaultMetadataElement&gt; languages = new ArrayList&lt;&gt;();
+
+	/**
+	 * Available Spring Boot versions.
+	 */
+<span class="fc" id="L68">	@JsonIgnore</span>
+	private final List&lt;DefaultMetadataElement&gt; bootVersions = new ArrayList&lt;&gt;();
+
+	/**
+	 * GroupId metadata.
+	 */
+<span class="fc" id="L74">	@JsonIgnore</span>
+	private final SimpleElement groupId = new SimpleElement(&quot;com.example&quot;);
+
+	/**
+	 * ArtifactId metadata.
+	 */
+<span class="fc" id="L80">	@JsonIgnore</span>
+	private final SimpleElement artifactId = new SimpleElement(null);
+
+	/**
+	 * Version metadata.
+	 */
+<span class="fc" id="L86">	@JsonIgnore</span>
+	private final SimpleElement version = new SimpleElement(&quot;0.0.1-SNAPSHOT&quot;);
+
+	/**
+	 * Name metadata.
+	 */
+<span class="fc" id="L92">	@JsonIgnore</span>
+	private final SimpleElement name = new SimpleElement(&quot;demo&quot;);
+
+	/**
+	 * Description metadata.
+	 */
+<span class="fc" id="L98">	@JsonIgnore</span>
+	private final SimpleElement description = new SimpleElement(&quot;Demo project for Spring Boot&quot;);
+
+	/**
+	 * Package name metadata.
+	 */
+<span class="fc" id="L104">	@JsonIgnore</span>
+	private final SimpleElement packageName = new SimpleElement(null);
+
+	public List&lt;DependencyGroup&gt; getDependencies() {
+<span class="fc" id="L108">		return this.dependencies;</span>
+	}
+
+	public List&lt;Type&gt; getTypes() {
+<span class="fc" id="L112">		return this.types;</span>
+	}
+
+	public List&lt;DefaultMetadataElement&gt; getPackagings() {
+<span class="fc" id="L116">		return this.packagings;</span>
+	}
+
+	public List&lt;DefaultMetadataElement&gt; getJavaVersions() {
+<span class="fc" id="L120">		return this.javaVersions;</span>
+	}
+
+	public List&lt;DefaultMetadataElement&gt; getLanguages() {
+<span class="fc" id="L124">		return this.languages;</span>
+	}
+
+	public List&lt;DefaultMetadataElement&gt; getBootVersions() {
+<span class="fc" id="L128">		return this.bootVersions;</span>
+	}
+
+	public SimpleElement getGroupId() {
+<span class="fc" id="L132">		return this.groupId;</span>
+	}
+
+	public SimpleElement getArtifactId() {
+<span class="fc" id="L136">		return this.artifactId;</span>
+	}
+
+	public SimpleElement getVersion() {
+<span class="fc" id="L140">		return this.version;</span>
+	}
+
+	public SimpleElement getName() {
+<span class="fc" id="L144">		return this.name;</span>
+	}
+
+	public SimpleElement getDescription() {
+<span class="fc" id="L148">		return this.description;</span>
+	}
+
+	public SimpleElement getPackageName() {
+<span class="fc" id="L152">		return this.packageName;</span>
+	}
+
+	/**
+	 * A simple element from the properties.
+	 */
+	public static final class SimpleElement {
+
+		/**
+		 * Element title.
+		 */
+		private String title;
+
+		/**
+		 * Element description.
+		 */
+		private String description;
+
+		/**
+		 * Element default value.
+		 */
+		private String value;
+
+		/**
+		 * Create a new instance with the given value.
+		 * @param value the value
+		 */
+<span class="fc" id="L179">		public SimpleElement(String value) {</span>
+<span class="fc" id="L180">			this.value = value;</span>
+<span class="fc" id="L181">		}</span>
+
+		public String getTitle() {
+<span class="nc" id="L184">			return this.title;</span>
+		}
+
+		public void setTitle(String title) {
+<span class="nc" id="L188">			this.title = title;</span>
+<span class="nc" id="L189">		}</span>
+
+		public String getDescription() {
+<span class="nc" id="L192">			return this.description;</span>
+		}
+
+		public void setDescription(String description) {
+<span class="nc" id="L196">			this.description = description;</span>
+<span class="nc" id="L197">		}</span>
+
+		public String getValue() {
+<span class="nc" id="L200">			return this.value;</span>
+		}
+
+		public void setValue(String value) {
+<span class="fc" id="L204">			this.value = value;</span>
+<span class="fc" id="L205">		}</span>
+
+		public void apply(TextCapability capability) {
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">			if (StringUtils.hasText(this.title)) {</span>
+<span class="nc" id="L209">				capability.setTitle(this.title);</span>
+			}
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			if (StringUtils.hasText(this.description)) {</span>
+<span class="nc" id="L212">				capability.setDescription(this.description);</span>
+			}
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (StringUtils.hasText(this.value)) {</span>
+<span class="fc" id="L215">				capability.setContent(this.value);</span>
+			}
+<span class="fc" id="L217">		}</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

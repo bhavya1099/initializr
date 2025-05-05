@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Dependency.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Metadata</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.metadata</a> &gt; <span class="el_source">Dependency.java</span></div><h1>Dependency.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2022 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.metadata;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.spring.initializr.generator.version.InvalidVersionException;
+import io.spring.initializr.generator.version.Version;
+import io.spring.initializr.generator.version.VersionParser;
+import io.spring.initializr.generator.version.VersionRange;
+
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+/**
+ * Meta-data for a dependency. Each dependency has a primary identifier and an arbitrary
+ * number of {@code aliases}.
+ *
+ * @author Stephane Nicoll
+ */
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+public class Dependency extends MetadataElement implements Describable {
+
+	/**
+	 * Compile Scope.
+	 */
+	public static final String SCOPE_COMPILE = &quot;compile&quot;;
+
+	/**
+	 * Compile Only Scope.
+	 */
+	public static final String SCOPE_COMPILE_ONLY = &quot;compileOnly&quot;;
+
+	/**
+	 * Annotation Processor Scope.
+	 */
+	public static final String SCOPE_ANNOTATION_PROCESSOR = &quot;annotationProcessor&quot;;
+
+	/**
+	 * Runtime Scope.
+	 */
+	public static final String SCOPE_RUNTIME = &quot;runtime&quot;;
+
+	/**
+	 * Provided Scope.
+	 */
+	public static final String SCOPE_PROVIDED = &quot;provided&quot;;
+
+	/**
+	 * Test Scope.
+	 */
+	public static final String SCOPE_TEST = &quot;test&quot;;
+
+	/**
+	 * All scope types.
+	 */
+<span class="fc" id="L75">	public static final List&lt;String&gt; SCOPE_ALL = List.of(SCOPE_COMPILE, SCOPE_RUNTIME, SCOPE_COMPILE_ONLY,</span>
+			SCOPE_ANNOTATION_PROCESSOR, SCOPE_PROVIDED, SCOPE_TEST);
+
+<span class="fc" id="L78">	private List&lt;String&gt; aliases = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L80">	private List&lt;String&gt; facets = new ArrayList&lt;&gt;();</span>
+
+	private String groupId;
+
+	private String artifactId;
+
+	private String version;
+
+	private String classifier;
+
+	private String type;
+
+<span class="fc" id="L92">	private List&lt;Mapping&gt; mappings = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L94">	private String scope = SCOPE_COMPILE;</span>
+
+	private String description;
+
+	private String compatibilityRange;
+
+	@JsonIgnore
+	private String versionRequirement;
+
+	@JsonIgnore
+	private VersionRange range;
+
+	private String bom;
+
+	private String repository;
+
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+	private int weight;
+
+	/**
+	 * Specify if the dependency represents a &quot;starter&quot;, i.e. the sole presence of that
+	 * dependency is enough to bootstrap the context.
+	 */
+<span class="fc" id="L117">	private boolean starter = true;</span>
+
+<span class="fc" id="L119">	private List&lt;String&gt; keywords = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L121">	private List&lt;Link&gt; links = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L123">	public Dependency() {</span>
+<span class="fc" id="L124">	}</span>
+
+	public Dependency(Dependency dependency) {
+<span class="fc" id="L127">		super(dependency);</span>
+<span class="fc" id="L128">		this.aliases.addAll(dependency.aliases);</span>
+<span class="fc" id="L129">		this.facets.addAll(dependency.facets);</span>
+<span class="fc" id="L130">		this.groupId = dependency.groupId;</span>
+<span class="fc" id="L131">		this.artifactId = dependency.artifactId;</span>
+<span class="fc" id="L132">		this.version = dependency.version;</span>
+<span class="fc" id="L133">		this.classifier = dependency.classifier;</span>
+<span class="fc" id="L134">		this.type = dependency.type;</span>
+<span class="fc" id="L135">		this.mappings.addAll(dependency.mappings);</span>
+<span class="fc" id="L136">		this.scope = dependency.scope;</span>
+<span class="fc" id="L137">		this.description = dependency.description;</span>
+<span class="fc" id="L138">		this.compatibilityRange = dependency.compatibilityRange;</span>
+<span class="fc" id="L139">		this.versionRequirement = dependency.versionRequirement;</span>
+<span class="fc" id="L140">		this.range = dependency.range;</span>
+<span class="fc" id="L141">		this.bom = dependency.bom;</span>
+<span class="fc" id="L142">		this.repository = dependency.repository;</span>
+<span class="fc" id="L143">		this.weight = dependency.weight;</span>
+<span class="fc" id="L144">		this.starter = dependency.starter;</span>
+<span class="fc" id="L145">		this.keywords.addAll(dependency.keywords);</span>
+<span class="fc" id="L146">		this.links.addAll(dependency.links);</span>
+<span class="fc" id="L147">	}</span>
+
+	public void setScope(String scope) {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (!SCOPE_ALL.contains(scope)) {</span>
+<span class="fc" id="L151">			throw new InvalidInitializrMetadataException(&quot;Invalid scope &quot; + scope + &quot; must be one of &quot; + SCOPE_ALL);</span>
+		}
+<span class="fc" id="L153">		this.scope = scope;</span>
+<span class="fc" id="L154">	}</span>
+
+	public void setCompatibilityRange(String compatibilityRange) {
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		this.compatibilityRange = (StringUtils.hasText(compatibilityRange) ? compatibilityRange.trim() : null);</span>
+<span class="fc" id="L158">	}</span>
+
+	/**
+	 * Returns if the dependency has its coordinates set, i.e. {@code groupId} and
+	 * {@code artifactId}.
+	 * @return if the dependency has coordinates
+	 */
+	private boolean hasCoordinates() {
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">		return this.groupId != null &amp;&amp; this.artifactId != null;</span>
+	}
+
+	/**
+	 * Validate the dependency and complete its state based on the available information.
+	 */
+	public void resolve() {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (getId() == null) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			if (!hasCoordinates()) {</span>
+<span class="fc" id="L175">				throw new InvalidInitializrMetadataException(</span>
+						&quot;Invalid dependency, should have at least an id or a groupId/artifactId pair.&quot;);
+			}
+<span class="fc" id="L178">			generateId();</span>
+		}
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		else if (!hasCoordinates()) {</span>
+			// Let&quot;s build the coordinates from the id
+<span class="fc" id="L182">			StringTokenizer st = new StringTokenizer(getId(), &quot;:&quot;);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">			if (st.countTokens() == 1) { // assume spring-boot-starter</span>
+<span class="fc" id="L184">				asSpringBootStarter(getId());</span>
+			}
+<span class="fc bfc" id="L186" title="All 4 branches covered.">			else if (st.countTokens() == 2 || st.countTokens() == 3) {</span>
+<span class="fc" id="L187">				this.groupId = st.nextToken();</span>
+<span class="fc" id="L188">				this.artifactId = st.nextToken();</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				if (st.hasMoreTokens()) {</span>
+<span class="fc" id="L190">					this.version = st.nextToken();</span>
+				}
+			}
+			else {
+<span class="fc" id="L194">				throw new InvalidInitializrMetadataException(</span>
+<span class="fc" id="L195">						&quot;Invalid dependency, id should have the form groupId:artifactId[:version] but got &quot; + getId());</span>
+			}
+		}
+<span class="fc" id="L198">		this.links.forEach(Link::resolve);</span>
+<span class="fc" id="L199">		updateCompatibilityRange(VersionParser.DEFAULT);</span>
+<span class="fc" id="L200">	}</span>
+
+	private Dependency asSpringBootStarter(String name) {
+<span class="fc" id="L203">		this.groupId = &quot;org.springframework.boot&quot;;</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">		this.artifactId = (StringUtils.hasText(name) ? &quot;spring-boot-starter-&quot; + name : &quot;spring-boot-starter&quot;);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		if (StringUtils.hasText(name)) {</span>
+<span class="fc" id="L206">			setId(name);</span>
+		}
+<span class="fc" id="L208">		return this;</span>
+	}
+
+	public void updateCompatibilityRange(VersionParser versionParser) {
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		if (this.compatibilityRange != null) {</span>
+			try {
+<span class="fc" id="L214">				this.range = versionParser.parseRange(this.compatibilityRange);</span>
+<span class="fc" id="L215">				this.compatibilityRange = this.range.toRangeString();</span>
+<span class="fc" id="L216">				this.versionRequirement = this.range.toString();</span>
+			}
+<span class="fc" id="L218">			catch (InvalidVersionException ex) {</span>
+<span class="fc" id="L219">				throw new InvalidInitializrMetadataException(&quot;Invalid compatibility range '&quot; + this.compatibilityRange</span>
+<span class="fc" id="L220">						+ &quot; for &quot; + &quot;dependency with id '&quot; + getId() + &quot;'&quot;, ex);</span>
+<span class="fc" id="L221">			}</span>
+		}
+<span class="fc" id="L223">		this.mappings.forEach((it) -&gt; {</span>
+			try {
+<span class="fc" id="L225">				Assert.notNull(it.compatibilityRange,</span>
+						&quot;Invalid mapping for &quot; + this + &quot;: compatibility range is mandatory&quot;);
+<span class="fc" id="L227">				it.range = versionParser.parseRange(it.compatibilityRange);</span>
+			}
+<span class="fc" id="L229">			catch (InvalidVersionException ex) {</span>
+<span class="fc" id="L230">				throw new InvalidInitializrMetadataException(</span>
+						&quot;Invalid compatibility range &quot; + it.compatibilityRange + &quot; for &quot; + this, ex);
+<span class="fc" id="L232">			}</span>
+<span class="fc" id="L233">		});</span>
+<span class="fc" id="L234">	}</span>
+
+	/**
+	 * Resolve this instance according to the specified Spring Boot {@link Version}.
+	 * Return a {@link Dependency} instance that has its state resolved against the
+	 * specified version.
+	 * @param bootVersion the Spring Boot version
+	 * @return this instance
+	 */
+	public Dependency resolve(Version bootVersion) {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">		for (Mapping mapping : this.mappings) {</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">			if (mapping.range.match(bootVersion)) {</span>
+<span class="fc" id="L246">				Dependency dependency = new Dependency(this);</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">				dependency.groupId = (mapping.groupId != null) ? mapping.groupId : this.groupId;</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">				dependency.artifactId = (mapping.artifactId != null) ? mapping.artifactId : this.artifactId;</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">				dependency.version = (mapping.version != null) ? mapping.version : this.version;</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">				dependency.starter = (mapping.starter != null) ? mapping.starter : this.starter;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">				dependency.bom = (mapping.bom != null) ? mapping.bom : this.bom;</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">				dependency.repository = (mapping.repository != null) ? mapping.repository : this.repository;</span>
+<span class="fc" id="L253">				dependency.versionRequirement = mapping.range.toString();</span>
+<span class="fc" id="L254">				dependency.mappings = null;</span>
+<span class="fc" id="L255">				return dependency;</span>
+			}
+<span class="fc" id="L257">		}</span>
+<span class="fc" id="L258">		return this;</span>
+	}
+
+	/**
+	 * Specify if this dependency is available for the specified Spring Boot version.
+	 * @param version the version the check
+	 * @return of the version matches
+	 */
+	public boolean match(Version version) {
+<span class="nc bnc" id="L267" title="All 2 branches missed.">		if (this.range != null) {</span>
+<span class="nc" id="L268">			return this.range.match(version);</span>
+		}
+<span class="nc" id="L270">		return true;</span>
+	}
+
+	/**
+	 * Generate an id using the groupId and artifactId.
+	 * @return the generated ID
+	 */
+	public String generateId() {
+<span class="fc bfc" id="L278" title="All 4 branches covered.">		if (this.groupId == null || this.artifactId == null) {</span>
+<span class="fc" id="L279">			throw new IllegalArgumentException(</span>
+					&quot;Could not generate id for &quot; + this + &quot;: at least groupId and artifactId must be set.&quot;);
+		}
+<span class="fc" id="L282">		setId(this.groupId + &quot;:&quot; + this.artifactId);</span>
+<span class="fc" id="L283">		return getId();</span>
+	}
+
+	public List&lt;String&gt; getAliases() {
+<span class="fc" id="L287">		return this.aliases;</span>
+	}
+
+	public void setAliases(List&lt;String&gt; aliases) {
+<span class="fc" id="L291">		this.aliases = aliases;</span>
+<span class="fc" id="L292">	}</span>
+
+	public List&lt;String&gt; getFacets() {
+<span class="fc" id="L295">		return this.facets;</span>
+	}
+
+	public void setFacets(List&lt;String&gt; facets) {
+<span class="fc" id="L299">		this.facets = facets;</span>
+<span class="fc" id="L300">	}</span>
+
+	public String getGroupId() {
+<span class="fc" id="L303">		return this.groupId;</span>
+	}
+
+	public void setGroupId(String groupId) {
+<span class="fc" id="L307">		this.groupId = groupId;</span>
+<span class="fc" id="L308">	}</span>
+
+	public String getArtifactId() {
+<span class="fc" id="L311">		return this.artifactId;</span>
+	}
+
+	public void setArtifactId(String artifactId) {
+<span class="fc" id="L315">		this.artifactId = artifactId;</span>
+<span class="fc" id="L316">	}</span>
+
+	/**
+	 * Return the default version, can be {@code null} to indicate that the version is
+	 * managed by the project and does not need to be specified.
+	 * @return the default version or {@code null}
+	 */
+	public String getVersion() {
+<span class="fc" id="L324">		return this.version;</span>
+	}
+
+	public void setVersion(String version) {
+<span class="fc" id="L328">		this.version = version;</span>
+<span class="fc" id="L329">	}</span>
+
+	/**
+	 * Return the classifier, can be {@code null} to indicate that no classifier is
+	 * available.
+	 * @return the classifier or {@code null}
+	 */
+	public String getClassifier() {
+<span class="fc" id="L337">		return this.classifier;</span>
+	}
+
+	public void setClassifier(String classifier) {
+<span class="fc" id="L341">		this.classifier = classifier;</span>
+<span class="fc" id="L342">	}</span>
+
+	/**
+	 * Return the type, can be {@code null} to indicate that the default type should be
+	 * used (i.e. {@code jar}).
+	 * @return the type or {@code null}
+	 */
+	public String getType() {
+<span class="fc" id="L350">		return this.type;</span>
+	}
+
+	public void setType(String type) {
+<span class="nc" id="L354">		this.type = type;</span>
+<span class="nc" id="L355">	}</span>
+
+	/**
+	 * Return the dependency mapping if an attribute of the dependency differs according
+	 * to the Spring Boot version. If no mapping matches, default attributes are used.
+	 * @return the dependency mappings
+	 */
+	public List&lt;Mapping&gt; getMappings() {
+<span class="fc" id="L363">		return this.mappings;</span>
+	}
+
+	public void setMappings(List&lt;Mapping&gt; mappings) {
+<span class="nc" id="L367">		this.mappings = mappings;</span>
+<span class="nc" id="L368">	}</span>
+
+	@Override
+	public String getDescription() {
+<span class="nc" id="L372">		return this.description;</span>
+	}
+
+	public void setDescription(String description) {
+<span class="fc" id="L376">		this.description = description;</span>
+<span class="fc" id="L377">	}</span>
+
+	public String getVersionRequirement() {
+<span class="fc" id="L380">		return this.versionRequirement;</span>
+	}
+
+	public void setVersionRequirement(String versionRequirement) {
+<span class="nc" id="L384">		this.versionRequirement = versionRequirement;</span>
+<span class="nc" id="L385">	}</span>
+
+	public VersionRange getRange() {
+<span class="nc" id="L388">		return this.range;</span>
+	}
+
+	public void setRange(VersionRange range) {
+<span class="nc" id="L392">		this.range = range;</span>
+<span class="nc" id="L393">	}</span>
+
+	public String getBom() {
+<span class="fc" id="L396">		return this.bom;</span>
+	}
+
+	public void setBom(String bom) {
+<span class="fc" id="L400">		this.bom = bom;</span>
+<span class="fc" id="L401">	}</span>
+
+	public String getRepository() {
+<span class="fc" id="L404">		return this.repository;</span>
+	}
+
+	public void setRepository(String repository) {
+<span class="fc" id="L408">		this.repository = repository;</span>
+<span class="fc" id="L409">	}</span>
+
+	public int getWeight() {
+<span class="nc" id="L412">		return this.weight;</span>
+	}
+
+	public void setWeight(int weight) {
+<span class="fc" id="L416">		this.weight = weight;</span>
+<span class="fc" id="L417">	}</span>
+
+	public boolean isStarter() {
+<span class="fc" id="L420">		return this.starter;</span>
+	}
+
+	public void setStarter(boolean starter) {
+<span class="fc" id="L424">		this.starter = starter;</span>
+<span class="fc" id="L425">	}</span>
+
+	public List&lt;String&gt; getKeywords() {
+<span class="fc" id="L428">		return this.keywords;</span>
+	}
+
+	public void setKeywords(List&lt;String&gt; keywords) {
+<span class="fc" id="L432">		this.keywords = keywords;</span>
+<span class="fc" id="L433">	}</span>
+
+	public List&lt;Link&gt; getLinks() {
+<span class="fc" id="L436">		return this.links;</span>
+	}
+
+	public void setLinks(List&lt;Link&gt; links) {
+<span class="fc" id="L440">		this.links = links;</span>
+<span class="fc" id="L441">	}</span>
+
+	public String getScope() {
+<span class="fc" id="L444">		return this.scope;</span>
+	}
+
+	public String getCompatibilityRange() {
+<span class="fc" id="L448">		return this.compatibilityRange;</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L453">		return &quot;Dependency{&quot; + &quot;id='&quot; + getId() + '\'' + &quot;, groupId='&quot; + this.groupId + '\'' + &quot;, artifactId='&quot;</span>
+				+ this.artifactId + '\'' + &quot;, version='&quot; + this.version + '\'' + '}';
+	}
+
+	public static Dependency create(String groupId, String artifactId, String version, String scope) {
+<span class="nc" id="L458">		Dependency dependency = withId(null, groupId, artifactId, version);</span>
+<span class="nc" id="L459">		dependency.setScope(scope);</span>
+<span class="nc" id="L460">		return dependency;</span>
+	}
+
+	public static Dependency createSpringBootStarter(String name) {
+<span class="fc" id="L464">		return createSpringBootStarter(name, null);</span>
+	}
+
+	public static Dependency createSpringBootStarter(String name, String scope) {
+<span class="fc" id="L468">		Dependency dependency = new Dependency();</span>
+<span class="fc" id="L469">		dependency.asSpringBootStarter(name);</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">		if (StringUtils.hasText(scope)) {</span>
+<span class="nc" id="L471">			dependency.setScope(scope);</span>
+		}
+<span class="fc" id="L473">		return dependency;</span>
+	}
+
+	public static Dependency withId(String id, String groupId, String artifactId, String version, String scope) {
+<span class="fc" id="L477">		Dependency dependency = new Dependency();</span>
+<span class="fc" id="L478">		dependency.setId(id);</span>
+<span class="fc" id="L479">		dependency.groupId = groupId;</span>
+<span class="fc" id="L480">		dependency.artifactId = artifactId;</span>
+<span class="fc" id="L481">		dependency.version = version;</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">		dependency.scope = (scope != null) ? scope : SCOPE_COMPILE;</span>
+<span class="fc" id="L483">		return dependency;</span>
+	}
+
+	public static Dependency withId(String id, String groupId, String artifactId, String version) {
+<span class="fc" id="L487">		return withId(id, groupId, artifactId, version, null);</span>
+	}
+
+	public static Dependency withId(String id, String groupId, String artifactId) {
+<span class="fc" id="L491">		return withId(id, groupId, artifactId, null);</span>
+	}
+
+	public static Dependency withId(String id, String scope) {
+<span class="fc" id="L495">		Dependency dependency = withId(id, null, null);</span>
+<span class="fc" id="L496">		dependency.setScope(scope);</span>
+<span class="fc" id="L497">		return dependency;</span>
+	}
+
+	public static Dependency withId(String id) {
+<span class="fc" id="L501">		return withId(id, SCOPE_COMPILE);</span>
+	}
+
+	/**
+	 * Map several attribute of the dependency for a given compatibility range.
+	 */
+<span class="fc" id="L507">	public static class Mapping {</span>
+
+		/**
+		 * The compatibility range of this mapping.
+		 */
+		private String compatibilityRange;
+
+		/**
+		 * The version to use for this mapping or {@code null} to use the default.
+		 */
+		private String groupId;
+
+		/**
+		 * The groupId to use for this mapping or {@code null} to use the default.
+		 */
+		private String artifactId;
+
+		/**
+		 * The artifactId to use for this mapping or {@code null} to use the default.
+		 */
+		private String version;
+
+		/**
+		 * The starter setting to use for the mapping or {@code null} to use the default.
+		 */
+		private Boolean starter;
+
+		/**
+		 * The extra Bill of Materials to use for this mapping or {@code null} to use the
+		 * default.
+		 */
+		private String bom;
+
+		/**
+		 * The extra repository to use for this mapping or {@code null} to use the
+		 * default.
+		 */
+		private String repository;
+
+		@JsonIgnore
+		private VersionRange range;
+
+		public String getGroupId() {
+<span class="nc" id="L550">			return this.groupId;</span>
+		}
+
+		public void setGroupId(String groupId) {
+<span class="nc" id="L554">			this.groupId = groupId;</span>
+<span class="nc" id="L555">		}</span>
+
+		public String getArtifactId() {
+<span class="nc" id="L558">			return this.artifactId;</span>
+		}
+
+		public void setArtifactId(String artifactId) {
+<span class="nc" id="L562">			this.artifactId = artifactId;</span>
+<span class="nc" id="L563">		}</span>
+
+		public String getVersion() {
+<span class="nc" id="L566">			return this.version;</span>
+		}
+
+		public void setVersion(String version) {
+<span class="nc" id="L570">			this.version = version;</span>
+<span class="nc" id="L571">		}</span>
+
+		public Boolean getStarter() {
+<span class="nc" id="L574">			return this.starter;</span>
+		}
+
+		public void setStarter(Boolean starter) {
+<span class="nc" id="L578">			this.starter = starter;</span>
+<span class="nc" id="L579">		}</span>
+
+		public String getBom() {
+<span class="nc" id="L582">			return this.bom;</span>
+		}
+
+		public void setBom(String bom) {
+<span class="nc" id="L586">			this.bom = bom;</span>
+<span class="nc" id="L587">		}</span>
+
+		public String getRepository() {
+<span class="nc" id="L590">			return this.repository;</span>
+		}
+
+		public void setRepository(String repository) {
+<span class="nc" id="L594">			this.repository = repository;</span>
+<span class="nc" id="L595">		}</span>
+
+		public VersionRange getRange() {
+<span class="nc" id="L598">			return this.range;</span>
+		}
+
+		public String getCompatibilityRange() {
+<span class="nc" id="L602">			return this.compatibilityRange;</span>
+		}
+
+		public void setCompatibilityRange(String compatibilityRange) {
+<span class="nc" id="L606">			this.compatibilityRange = compatibilityRange;</span>
+<span class="nc" id="L607">		}</span>
+
+		public static Mapping create(String range, String groupId, String artifactId, String version, Boolean starter,
+				String bom, String repository) {
+<span class="fc" id="L611">			Mapping mapping = new Mapping();</span>
+<span class="fc" id="L612">			mapping.compatibilityRange = range;</span>
+<span class="fc" id="L613">			mapping.groupId = groupId;</span>
+<span class="fc" id="L614">			mapping.artifactId = artifactId;</span>
+<span class="fc" id="L615">			mapping.version = version;</span>
+<span class="fc" id="L616">			mapping.starter = starter;</span>
+<span class="fc" id="L617">			mapping.bom = bom;</span>
+<span class="fc" id="L618">			mapping.repository = repository;</span>
+<span class="fc" id="L619">			return mapping;</span>
+		}
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

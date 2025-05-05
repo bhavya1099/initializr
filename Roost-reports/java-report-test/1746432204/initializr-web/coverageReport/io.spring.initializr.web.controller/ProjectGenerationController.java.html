@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProjectGenerationController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Spring Initializr :: Web</a> &gt; <a href="index.source.html" class="el_package">io.spring.initializr.web.controller</a> &gt; <span class="el_source">ProjectGenerationController.java</span></div><h1>ProjectGenerationController.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2012-2023 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.spring.initializr.web.controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import io.spring.initializr.generator.buildsystem.BuildSystem;
+import io.spring.initializr.generator.buildsystem.maven.MavenBuildSystem;
+import io.spring.initializr.generator.project.ProjectDescription;
+import io.spring.initializr.metadata.InitializrMetadata;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.web.project.InvalidProjectRequestException;
+import io.spring.initializr.web.project.ProjectGenerationInvoker;
+import io.spring.initializr.web.project.ProjectGenerationResult;
+import io.spring.initializr.web.project.ProjectRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.UnixStat;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Base {@link RestController} that provides endpoints for project generation.
+ *
+ * @param &lt;R&gt; the {@link ProjectRequest} type to use to bind request parameters
+ * @author Stephane Nicoll
+ */
+@RestController
+public abstract class ProjectGenerationController&lt;R extends ProjectRequest&gt; {
+
+<span class="fc" id="L73">	private static final Log logger = LogFactory.getLog(ProjectGenerationController.class);</span>
+
+	private final InitializrMetadataProvider metadataProvider;
+
+	private final ProjectGenerationInvoker&lt;R&gt; projectGenerationInvoker;
+
+	public ProjectGenerationController(InitializrMetadataProvider metadataProvider,
+<span class="fc" id="L80">			ProjectGenerationInvoker&lt;R&gt; projectGenerationInvoker) {</span>
+<span class="fc" id="L81">		this.metadataProvider = metadataProvider;</span>
+<span class="fc" id="L82">		this.projectGenerationInvoker = projectGenerationInvoker;</span>
+<span class="fc" id="L83">	}</span>
+
+	@ModelAttribute
+	R projectRequest(@RequestHeader Map&lt;String, String&gt; headers,
+			@RequestParam(name = &quot;style&quot;, required = false) String style) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (style != null) {</span>
+<span class="fc" id="L89">			throw new InvalidProjectRequestException(&quot;Dependencies must be specified using 'dependencies'&quot;);</span>
+		}
+<span class="fc" id="L91">		return projectRequest(headers);</span>
+	}
+
+	/**
+	 * Create an initialized {@link ProjectRequest} instance to use to bind the parameters
+	 * of a project generation request.
+	 * @param headers the headers of the request
+	 * @return a new {@link ProjectRequest} instance
+	 */
+	public abstract R projectRequest(@RequestHeader Map&lt;String, String&gt; headers);
+
+	protected InitializrMetadata getMetadata() {
+<span class="fc" id="L103">		return this.metadataProvider.get();</span>
+	}
+
+	@ExceptionHandler
+	public void invalidProjectRequest(HttpServletResponse response, InvalidProjectRequestException ex)
+			throws IOException {
+<span class="fc" id="L109">		response.sendError(HttpStatus.BAD_REQUEST.value(), ex.getMessage());</span>
+<span class="fc" id="L110">	}</span>
+
+	@RequestMapping(path = { &quot;/pom&quot;, &quot;/pom.xml&quot; }, method = { RequestMethod.GET, RequestMethod.POST })
+	public ResponseEntity&lt;byte[]&gt; pom(R request) {
+<span class="fc" id="L114">		request.setType(&quot;maven-build&quot;);</span>
+<span class="fc" id="L115">		byte[] mavenPom = this.projectGenerationInvoker.invokeBuildGeneration(request);</span>
+<span class="fc" id="L116">		return createResponseEntity(mavenPom, &quot;application/octet-stream&quot;, &quot;pom.xml&quot;);</span>
+	}
+
+	@RequestMapping(path = { &quot;/build&quot;, &quot;/build.gradle&quot; }, method = { RequestMethod.GET, RequestMethod.POST })
+	public ResponseEntity&lt;byte[]&gt; gradle(R request) {
+<span class="fc" id="L121">		request.setType(&quot;gradle-build&quot;);</span>
+<span class="fc" id="L122">		byte[] gradleBuild = this.projectGenerationInvoker.invokeBuildGeneration(request);</span>
+<span class="fc" id="L123">		return createResponseEntity(gradleBuild, &quot;application/octet-stream&quot;, &quot;build.gradle&quot;);</span>
+	}
+
+	@RequestMapping(path = &quot;/starter.zip&quot;, method = { RequestMethod.GET, RequestMethod.POST })
+	public ResponseEntity&lt;byte[]&gt; springZip(R request) throws IOException {
+<span class="fc" id="L128">		ProjectGenerationResult result = this.projectGenerationInvoker.invokeProjectStructureGeneration(request);</span>
+<span class="fc" id="L129">		Path archive = createArchive(result, &quot;zip&quot;, ZipArchiveOutputStream::new, ZipArchiveEntry::new,</span>
+				ZipArchiveEntry::setUnixMode);
+<span class="fc" id="L131">		return upload(archive, result.getRootDirectory(),</span>
+<span class="fc" id="L132">				generateFileName(result.getProjectDescription().getArtifactId(), &quot;zip&quot;), &quot;application/zip&quot;);</span>
+	}
+
+	@RequestMapping(path = &quot;/starter.tgz&quot;, method = { RequestMethod.GET, RequestMethod.POST },
+			produces = &quot;application/x-compress&quot;)
+	public ResponseEntity&lt;byte[]&gt; springTgz(R request) throws IOException {
+<span class="fc" id="L138">		ProjectGenerationResult result = this.projectGenerationInvoker.invokeProjectStructureGeneration(request);</span>
+<span class="fc" id="L139">		Path archive = createArchive(result, &quot;tar.gz&quot;, this::createTarArchiveOutputStream, TarArchiveEntry::new,</span>
+				TarArchiveEntry::setMode);
+<span class="fc" id="L141">		return upload(archive, result.getRootDirectory(),</span>
+<span class="fc" id="L142">				generateFileName(result.getProjectDescription().getArtifactId(), &quot;tar.gz&quot;), &quot;application/x-compress&quot;);</span>
+	}
+
+	private TarArchiveOutputStream createTarArchiveOutputStream(OutputStream output) {
+		try {
+<span class="fc" id="L147">			TarArchiveOutputStream out = new TarArchiveOutputStream(new GzipCompressorOutputStream(output));</span>
+<span class="fc" id="L148">			out.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);</span>
+<span class="fc" id="L149">			out.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);</span>
+<span class="fc" id="L150">			return out;</span>
+		}
+<span class="nc" id="L152">		catch (IOException ex) {</span>
+<span class="nc" id="L153">			throw new IllegalStateException(ex);</span>
+		}
+	}
+
+	private &lt;T extends ArchiveEntry&gt; Path createArchive(ProjectGenerationResult result, String fileExtension,
+			Function&lt;OutputStream, ? extends ArchiveOutputStream&lt;T&gt;&gt; archiveOutputStream,
+			BiFunction&lt;File, String, T&gt; archiveEntry, BiConsumer&lt;T, Integer&gt; setMode) throws IOException {
+<span class="fc" id="L160">		Path archive = this.projectGenerationInvoker.createDistributionFile(result.getRootDirectory(),</span>
+				&quot;.&quot; + fileExtension);
+<span class="fc" id="L162">		String wrapperScript = getWrapperScript(result.getProjectDescription());</span>
+<span class="fc" id="L163">		try (ArchiveOutputStream&lt;T&gt; output = archiveOutputStream.apply(Files.newOutputStream(archive))) {</span>
+<span class="fc" id="L164">			Stream&lt;Path&gt; files = Files.walk(result.getRootDirectory());</span>
+<span class="fc" id="L165">			try (files) {</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">				files.filter((path) -&gt; !result.getRootDirectory().equals(path)).forEach((path) -&gt; {</span>
+					try {
+<span class="fc" id="L168">						String entryName = getEntryName(result.getRootDirectory(), path);</span>
+<span class="fc" id="L169">						T entry = archiveEntry.apply(path.toFile(), entryName);</span>
+<span class="fc" id="L170">						setMode.accept(entry, getUnixMode(wrapperScript, entryName, path));</span>
+<span class="fc" id="L171">						output.putArchiveEntry(entry);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">						if (!Files.isDirectory(path)) {</span>
+<span class="fc" id="L173">							Files.copy(path, output);</span>
+						}
+<span class="fc" id="L175">						output.closeArchiveEntry();</span>
+					}
+<span class="nc" id="L177">					catch (IOException ex) {</span>
+<span class="nc" id="L178">						throw new IllegalStateException(ex);</span>
+<span class="fc" id="L179">					}</span>
+<span class="fc" id="L180">				});</span>
+			}
+		}
+<span class="fc" id="L183">		return archive;</span>
+	}
+
+	private String getEntryName(Path root, Path path) {
+<span class="fc" id="L187">		String entryName = root.relativize(path).toString().replace('\\', '/');</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (Files.isDirectory(path)) {</span>
+<span class="fc" id="L189">			entryName += &quot;/&quot;;</span>
+		}
+<span class="fc" id="L191">		return entryName;</span>
+	}
+
+	private int getUnixMode(String wrapperScript, String entryName, Path path) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (Files.isDirectory(path)) {</span>
+<span class="fc" id="L196">			return UnixStat.DIR_FLAG | UnixStat.DEFAULT_DIR_PERM;</span>
+		}
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		return UnixStat.FILE_FLAG | (entryName.equals(wrapperScript) ? 0755 : UnixStat.DEFAULT_FILE_PERM);</span>
+	}
+
+	private String generateFileName(String artifactId, String extension) {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		String candidate = (StringUtils.hasText(artifactId) ? artifactId</span>
+<span class="pc" id="L203">				: this.metadataProvider.get().getArtifactId().getContent());</span>
+<span class="fc" id="L204">		return URLEncoder.encode(candidate, StandardCharsets.UTF_8) + &quot;.&quot; + extension;</span>
+	}
+
+	private static String getWrapperScript(ProjectDescription description) {
+<span class="fc" id="L208">		BuildSystem buildSystem = description.getBuildSystem();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		String script = buildSystem.id().equals(MavenBuildSystem.ID) ? &quot;mvnw&quot; : &quot;gradlew&quot;;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		return (description.getBaseDirectory() != null) ? description.getBaseDirectory() + &quot;/&quot; + script : script;</span>
+	}
+
+	private ResponseEntity&lt;byte[]&gt; upload(Path archive, Path dir, String fileName, String contentType)
+			throws IOException {
+<span class="fc" id="L215">		byte[] bytes = Files.readAllBytes(archive);</span>
+<span class="fc" id="L216">		logger.info(String.format(&quot;Uploading: %s (%s bytes)&quot;, archive, bytes.length));</span>
+<span class="fc" id="L217">		ResponseEntity&lt;byte[]&gt; result = createResponseEntity(bytes, contentType, fileName);</span>
+<span class="fc" id="L218">		this.projectGenerationInvoker.cleanTempFiles(dir);</span>
+<span class="fc" id="L219">		return result;</span>
+	}
+
+	private ResponseEntity&lt;byte[]&gt; createResponseEntity(byte[] content, String contentType, String fileName) {
+<span class="fc" id="L223">		String contentDispositionValue = &quot;attachment; filename=\&quot;&quot; + fileName + &quot;\&quot;&quot;;</span>
+<span class="fc" id="L224">		return ResponseEntity.ok()</span>
+<span class="fc" id="L225">			.header(&quot;Content-Type&quot;, contentType)</span>
+<span class="fc" id="L226">			.header(&quot;Content-Disposition&quot;, contentDispositionValue)</span>
+<span class="fc" id="L227">			.body(content);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
