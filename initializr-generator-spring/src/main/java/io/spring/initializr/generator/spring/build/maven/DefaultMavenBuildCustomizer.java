@@ -15,7 +15,7 @@
  */
 
 package io.spring.initializr.generator.spring.build.maven;
-
+//some random changes
 import io.spring.initializr.generator.buildsystem.BillOfMaterials;
 import io.spring.initializr.generator.buildsystem.maven.MavenBuild;
 import io.spring.initializr.generator.project.ProjectDescription;
