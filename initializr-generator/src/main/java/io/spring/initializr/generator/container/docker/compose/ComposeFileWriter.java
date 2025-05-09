@@ -61,6 +61,7 @@ public class ComposeFileWriter {
 	}
 
 	private void writerServiceEnvironment(IndentingWriter writer, Map<String, String> environment) {
+		System.out.println("check inside!!");
 		if (environment.isEmpty()) {
 			return;
 		}
